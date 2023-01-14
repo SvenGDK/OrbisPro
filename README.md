@@ -12,11 +12,23 @@ A very first Alpha build will be available soon to test some features.
 - Disc addition/removal on the main menu
 - PS1, PS2 & PS3 games support (you need to manually add the BIOS/Firmware)
 - Application 'Libary'
+- Some system settings
 
 ## Game Support
 - Supports PS1 & PS2 discs
 - Supports PS1, PS2 & PS3 backups
 - Game emulators need to configurated outside of OrbisPro at the moment (system/emulators)
+
+## Background Videos & Audio
+- OrbisPro Alpha comes only with 2 included background videos with no audio
+- You can set your own background video in the system settings
+  - Settings -> Background
+    - Use video background must be ON
+    - Use custom background must be ON
+    - Select your background video
+  - Recommended codec: H264 - MPEG-4 AVC (.mp4)
+- You can turn the video background audio on/off in the system settings
+  - Settings -> Audio -> Background Video Audio ON/OFF
 
 ## Keyboard Shortcuts
 - Cross (X) -> X
