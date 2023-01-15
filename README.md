@@ -2,6 +2,7 @@
 Media center and game launcher for Windows in the style of PS4's UI.
 
 A very first Alpha build will be available soon to test some features.
+This build is only optimized for FHD 1920x1080, other resolutions will be added on later builds.
 
 ## Current Core Features
 - Basic setup
@@ -38,12 +39,12 @@ A very first Alpha build will be available soon to test some features.
   - Different emulator configurators
 
 ## Game Support
-- Supports PS1 & PS2 discs (Other game discs from Saturn/Dreamcast will be supported too at a later point)
-- Supports PlaySt. PS1, PS2, PS3 & PS4, Nint. (including Switch), Sega backups, more will be added at a later point
+- Supports PS1 & PS2 discs (Other game discs like Saturn, Dreamcast, ... will be supported too at a later point)
+- Supports PS1, PS2, PS3 & PS4, Nint. (including Switch), Sega backups, more will be added at a later point
 - Game emulators can be configured inside OrbisPro or manually (system/emulators)
 
 ## Background Videos & Audio
-- OrbisPro Alpha comes only with 2 included background videos with no audio
+- OrbisPro Alpha comes only with 2 included background videos (1 with and 1 without audio)
 - You can set your own background video in the system settings
   - Settings -> Background
     - Use video background must be ON
@@ -63,4 +64,3 @@ A very first Alpha build will be available soon to test some features.
 - Up -> Up arrow
 - Down -> Down arrow
 
-Note : The Alpha builds are only optimized for FHD 1920x1080 displays.
