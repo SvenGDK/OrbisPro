@@ -1,7 +1,7 @@
 # OrbisPro
 Media center and game launcher for Windows in the style of PS4's UI.
 
-A very first Alpha build will be available soon to test some features.
+A very first Alpha build will be available soon to test some features. </br>
 This build is only optimized for FHD 1920x1080, other resolutions will be added on later builds.
 
 ## Current Core Features
