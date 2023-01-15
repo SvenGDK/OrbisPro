@@ -6,18 +6,41 @@ A very first Alpha build will be available soon to test some features.
 ## Current Core Features
 - Basic setup
 - Downloads
-- Keyboard support
-- Interface browsing
+- Keyboard & Gamepad support
+  - XInput & DirectInput are available
+- Animated interface navigation
+- Supports video backgrounds
 - USB & Disc support
+- Notification Pop-Ups
+- Game Discs support
 - Disc addition/removal on the main menu
-- PS1, PS2 & PS3 games support (you need to manually add the BIOS/Firmware)
-- Application 'Libary'
-- Some system settings
+- Game Emulators
+  - BIOS files need to be added manually
+  - Firmware can be downloaded & installed in OrbisPro
+- Game Installer
+  - Set up your games in OrbisPro
+  - Choose where to show the game [Main Menu / Library]
+- Emulator Configurators
+  - Settings -> Emulator Settings
+- Games can be booted from the Main Menu / Library / Disc
+- Application/Game Libary
+- File Explorer
+- Audio Settings
+  - Change notification volume
+  - Enable/Disable background audio
+  - Select a navigation sound pack (Changes the sound effects of the UI navigation)
+- Background Settings
+  - Turn video background on/off (Off will change the background to a color or image)
+  - Use Custom Background on/off (Off will use the default background)
+  - Choose your background (Can be a color, image or video)
+- Emulator Settings
+  - Show the installed emulators -> Here you can install new emulators or update existing ones
+  - Different emulator configurators
 
 ## Game Support
-- Supports PS1 & PS2 discs
-- Supports PS1, PS2 & PS3 backups
-- Game emulators need to configurated outside of OrbisPro at the moment (system/emulators)
+- Supports PS1 & PS2 discs (Other game discs from Saturn/Dreamcast will be supported too at a later point)
+- Supports PlaySt. PS1, PS2, PS3 & PS4, Nint. (including Switch), Sega backups, more will be added at a later point
+- Game emulators can be configured inside OrbisPro or manually (system/emulators)
 
 ## Background Videos & Audio
 - OrbisPro Alpha comes only with 2 included background videos with no audio
