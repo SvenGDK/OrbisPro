@@ -7,10 +7,10 @@ This build is only optimized for FHD 1920x1080, other resolutions will be added 
 OrbisPro itself requires at least :
 - 750 MB RAM
 - Video RAM (not determined yet)
-- Modern Dual Core CPU
+- Dual Core CPU
 - Windows 7, 8, 10 or 11 with .NET Framework 4.8
 
-OrbisPro Mimimum Requirements (To play any games up to PS2) :
+OrbisPro Mimimum Requirements (To play any games up to PS2 and similar) :
 - 4 GB RAM
 - 2 GB video memory
 - Modern Dual Core CPU
