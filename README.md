@@ -2,7 +2,25 @@
 Media center and game launcher for Windows in the style of PS4's UI.
 
 A very first Alpha build will be available soon to test some features. </br>
-This build is only optimized for FHD 1920x1080, other resolutions will be added on later builds.
+This build is only optimized for FHD 1920x1080, other resolutions will be added on later builds.</br>
+
+OrbisPro itself requires at least :
+- 750 MB RAM
+- Video RAM (not determined yet)
+- Modern Dual Core CPU
+- Windows 7, 8, 10 or 11 with .NET Framework 4.8
+
+OrbisPro Mimimum Requirements (To play any games up to PS2) :
+- 4 GB RAM
+- 2 GB video memory
+- Modern Dual Core CPU
+- Windows 7, 8, 10 or 11 (x64 version is recommended)
+
+OrbisPro Recommended Requirements (To play modern games like Switch, PS3 & PS4) :
+- 8 GB of Dual Channel (2x4 GB) RAM
+- AMD RX 400 / NVIDIA GTX 900 or newer (With Vulkan API support)
+- AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
+- Windows 10 or 11 x64
 
 ## Current Core Features
 - Basic setup
@@ -64,3 +82,8 @@ This build is only optimized for FHD 1920x1080, other resolutions will be added 
 - Up -> Up arrow
 - Down -> Down arrow
 
+## Tested & Build On
+- Intel i9-10900K
+- NVIDIA GTX 3080
+- 64 GB (2x32 GB) of Dual Channel RAM
+- Windows 11 22H2 (Build 22621.1105) x64 
