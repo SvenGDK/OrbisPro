@@ -10,17 +10,19 @@ OrbisPro itself requires at least :
 - Dual Core CPU
 - Windows 7, 8, 10 or 11 with .NET Framework 4.8
 
-OrbisPro Mimimum Requirements (To play any games up to PS2 and similar) :
+Mimimum Requirements (To play any games up to PS2 and similar) :
 - 4 GB RAM
 - 2 GB video memory
 - Modern Dual Core CPU
 - Windows 7, 8, 10 or 11 (x64 version is recommended)
 
-OrbisPro Recommended Requirements (To play modern games like Switch, PS3 & PS4) :
+Recommended Requirements (To play modern games like Switch, PS3 & PS4) :
 - 8 GB of Dual Channel (2x4 GB) RAM
 - AMD RX 400 / NVIDIA GTX 900 or newer (With Vulkan API support)
 - AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
 - Windows 10 or 11 x64
+
+Later builds will turn off most parts of OrbisPro when launching a game and enable only the 'Game Options Menu' to save system resources.
 
 ## Current Core Features
 - Basic setup
