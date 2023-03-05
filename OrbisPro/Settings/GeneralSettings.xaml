@@ -1,0 +1,342 @@
+﻿<Window x:Name="SettingsWindow" x:Class="GeneralSettings"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="GeneralSettings" Height="1080" Width="1920" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None" Background="Black">
+    <Window.Resources>
+        <Style x:Key="{x:Type CheckBox}" TargetType="{x:Type CheckBox}">
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="Foreground" Value="#FF262E34"/>
+            <Setter Property="BorderThickness" Value="0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" >
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" Width="15" Height="15">
+                                <Path Stretch="Uniform" Width="15" Height="10" Fill="White" Name="eliCheck" Data="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z " Visibility="Collapsed"/>
+                            </Border>
+                            <TextBlock Margin="5,0,0,0"  VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}" Text="{TemplateBinding Content}"></TextBlock>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="LightGray" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#FF9C9E9F" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="LightGray" />
+                                <Setter Property="Foreground" Value="Gray" />
+                                <Setter Property="BorderBrush" Value="Gray"/>
+                                <Setter TargetName="eliCheck" Property="Opacity" Value="0.5" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="eliCheck" Property="Visibility" Value="Visible"></Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <DataTemplate x:Key="DefaultSetting" DataType="local:SettingsListViewItem">
+            <Canvas x:Name="SettingCanvas" Height="100" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}">
+                <Separator Width="1250" Canvas.Left="162" Canvas.Top="98" HorizontalAlignment="Center" VerticalAlignment="Top" Foreground="White"></Separator>
+                <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="100" Width="1345" Visibility="{Binding IsSettingSelected}" FocusVisualStyle="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <Image x:Name="SettingIcon" Canvas.Left="45" Canvas.Top="20" Width="64" Height="64" Source="{Binding SettingsIcon}" FocusVisualStyle="{x:Null}"/>
+                <TextBlock x:Name="SettingTitle" Height="50" HorizontalAlignment="Center" VerticalAlignment="Top" Text="{Binding SettingsTitle}" FocusVisualStyle="{x:Null}" Canvas.Left="160" Width="850" Canvas.Top="25"/>
+            </Canvas>
+        </DataTemplate>
+        <DataTemplate x:Key="SettingWithDescription" DataType="local:SettingsListViewItem">
+            <Canvas x:Name="SettingCanvas" Height="100" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}">
+                <Separator x:Name="SettingSeparator" Width="1185" Canvas.Left="162" Canvas.Top="97" HorizontalAlignment="Center" VerticalAlignment="Top" Foreground="White" FocusVisualStyle="{x:Null}"/>
+                <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="100" Width="1345" Visibility="{Binding IsSettingSelected}" FocusVisualStyle="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <Image x:Name="SettingIcon" Canvas.Left="45" Canvas.Top="20" Width="64" Height="64" Source="{Binding SettingsIcon}" FocusVisualStyle="{x:Null}"/>
+                <TextBlock x:Name="SettingTitle" Height="50" HorizontalAlignment="Center" VerticalAlignment="Top" Text="{Binding SettingsTitle}" FocusVisualStyle="{x:Null}" Canvas.Left="160" Width="850" Canvas.Top="25"/>
+                <TextBlock x:Name="SettingState" Height="50" HorizontalAlignment="Center" VerticalAlignment="Top" Text="{Binding SettingsState}" FocusVisualStyle="{x:Null}" Canvas.Left="1050" Width="250" TextWrapping="Wrap" Canvas.Top="25" TextAlignment="Right" Opacity="0.7"/>
+                <TextBlock x:Name="SettingDescription" Height="150" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}" Canvas.Left="160" Width="1150" TextWrapping="Wrap" Canvas.Top="74" Text="{Binding SettingsDescription}" FontSize="24" Opacity="0">
+                    <TextBlock.Foreground>
+                        <SolidColorBrush Color="White" Opacity="0.7"/>
+                    </TextBlock.Foreground>
+                </TextBlock>
+            </Canvas>
+        </DataTemplate>
+        <DataTemplate x:Key="SettingWithCheckBox">
+            <Canvas x:Name="SettingCanvas" Height="100" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}">
+                <Separator x:Name="SettingSeparator" Width="1185" Canvas.Left="162" Canvas.Top="97" HorizontalAlignment="Center" VerticalAlignment="Top" Foreground="White" FocusVisualStyle="{x:Null}"/>
+                <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="100" Width="1345" Visibility="{Binding IsSettingSelected}" FocusVisualStyle="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <Image x:Name="SettingIcon" Canvas.Left="45" Canvas.Top="20" Width="64" Height="64" Source="{Binding SettingsIcon}" FocusVisualStyle="{x:Null}"/>
+                <TextBlock x:Name="SettingTitle" Height="50" HorizontalAlignment="Center" VerticalAlignment="Top" Text="{Binding SettingsTitle}" FocusVisualStyle="{x:Null}" Canvas.Left="160" Width="850" Canvas.Top="25"/>
+                <CheckBox x:Name="SettingCheckBox" Width="15" Height="15" Canvas.Left="1285" Canvas.Top="46" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="{Binding IsSettingChecked}" FocusVisualStyle="{x:Null}">
+                    <CheckBox.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="3.5" ScaleY="3.5"/>
+                            <SkewTransform/>
+                            <RotateTransform/>
+                            <TranslateTransform/>
+                        </TransformGroup>
+                    </CheckBox.RenderTransform>
+                    <CheckBox.Background>
+                        <SolidColorBrush Opacity="0.3" Color="White"></SolidColorBrush>
+                    </CheckBox.Background>
+                </CheckBox>
+            </Canvas>
+        </DataTemplate>
+        <DataTemplate x:Key="SettingWithColorBox">
+            <Canvas Height="128" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}">
+                <Separator Width="1250" Canvas.Left="162" Canvas.Top="126" HorizontalAlignment="Center" VerticalAlignment="Top" Foreground="White"></Separator>
+                <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="128" Width="1398" Visibility="{Binding IsSettingSelected}" FocusVisualStyle="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <Image x:Name="SettingIcon" Canvas.Left="28" Canvas.Top="14" Width="100" Height="100" Source="{Binding SettingsIcon}" FocusVisualStyle="{x:Null}"/>
+                <TextBlock x:Name="SettingTitle" Height="50" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{Binding SettingsTitle}" FocusVisualStyle="{x:Null}" Canvas.Left="162" Width="550" Canvas.Top="42"/>
+                <TextBlock x:Name="SettingState" Height="50" HorizontalAlignment="Left" VerticalAlignment="Top" Text="{Binding SettingsState}" FocusVisualStyle="{x:Null}" Canvas.Left="729" Width="550" Canvas.Top="47" TextAlignment="Right" FontSize="30">
+                    <TextBlock.Foreground>
+                        <SolidColorBrush Color="White" Opacity="0.6"/>
+                    </TextBlock.Foreground>
+                </TextBlock>
+                <Rectangle x:Name="SelectedColorRectangle" Fill="White" Width="64" Height="64" Canvas.Left="1295" Canvas.Top="30" HorizontalAlignment="Left" VerticalAlignment="Center"></Rectangle>
+            </Canvas>
+        </DataTemplate>
+        <DataTemplate x:Key="SettingWithAudioControl">
+            <Canvas x:Name="SettingCanvas" Height="100" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}">
+                <Separator x:Name="SettingSeparator" Width="1185" Canvas.Left="162" Canvas.Top="97" HorizontalAlignment="Center" VerticalAlignment="Top" Foreground="White" FocusVisualStyle="{x:Null}"/>
+                <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="100" Width="1345" Visibility="{Binding IsSettingSelected}" FocusVisualStyle="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <Image x:Name="SettingIcon" Canvas.Left="45" Canvas.Top="20" Width="64" Height="64" Source="{Binding SettingsIcon}" FocusVisualStyle="{x:Null}"/>
+                <TextBlock x:Name="SettingTitle" Height="50" HorizontalAlignment="Center" VerticalAlignment="Top" Text="{Binding SettingsTitle}" FocusVisualStyle="{x:Null}" Canvas.Left="160" Width="850" Canvas.Top="25"/>
+                <Image x:Name="VolumeImage" Source="/Icons/Sound.png" Width="32" Height="32" Canvas.Left="968" Canvas.Top="48" HorizontalAlignment="Left" VerticalAlignment="Top"></Image>
+                <Rectangle x:Name="VolumeRect1" Width="5" Height="44" Canvas.Left="1019" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect2" Width="5" Height="44" Canvas.Left="1031" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect3" Width="5" Height="44" Canvas.Left="1043" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect4" Width="5" Height="44" Canvas.Left="1055" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect5" Width="5" Height="44" Canvas.Left="1067" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect6" Width="5" Height="44" Canvas.Left="1079" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect7" Width="5" Height="44" Canvas.Left="1091" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect8" Width="5" Height="44" Canvas.Left="1103" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect9" Width="5" Height="44" Canvas.Left="1115" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect10" Width="5" Height="44" Canvas.Left="1127" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect11" Width="5" Height="44" Canvas.Left="1139" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect12" Width="5" Height="44" Canvas.Left="1151" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect13" Width="5" Height="44" Canvas.Left="1163" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect14" Width="5" Height="44" Canvas.Left="1175" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect15" Width="5" Height="44" Canvas.Left="1187" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect16" Width="5" Height="44" Canvas.Left="1199" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect17" Width="5" Height="44" Canvas.Left="1211" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect18" Width="5" Height="44" Canvas.Left="1223" Canvas.Top="40" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}"/>
+                <Rectangle x:Name="VolumeRect19" Width="5" Height="44" Canvas.Left="1235" Canvas.Top="40" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="White" Opacity="0.5"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle x:Name="VolumeRect20" Width="5" Height="44" Canvas.Left="1247" Canvas.Top="40" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="White" Opacity="0.5"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle x:Name="VolumeRect21" Width="5" Height="44" Canvas.Left="1259" Canvas.Top="40" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="White" Opacity="0.5"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle x:Name="VolumeRect22" Width="5" Height="44" Canvas.Left="1271" Canvas.Top="40" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="White" Opacity="0.5"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle x:Name="VolumeRect23" Width="5" Height="44" Canvas.Left="1283" Canvas.Top="40" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="White" Opacity="0.5"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle x:Name="VolumeRect24" Width="5" Height="44" Canvas.Left="1295" Canvas.Top="40" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="White" Opacity="0.5"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Rectangle x:Name="VolumeRect25" Width="5" Height="44" Canvas.Left="1307" Canvas.Top="40" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="{Binding VolumeLevelOpacity}">
+                    <Rectangle.Fill>
+                        <SolidColorBrush Color="White" Opacity="0.5"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+            </Canvas>
+        </DataTemplate>
+    </Window.Resources>
+    <Canvas x:Name="SettingsCanvas">
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" IsMuted="True">
+            <MediaElement.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <MediaTimeline Storyboard.TargetName="BackgroundMedia" RepeatBehavior="Forever" Source="./Backgrounds/gradient_bg.mp4" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </MediaElement.Triggers>
+        </MediaElement>
+        <Label x:Name="WindowTitle" Content="Settings" Canvas.Left="101" Canvas.Top="43" Height="90" Width="1808" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Separator x:Name="TopSeparator" Height="10" Canvas.Top="133" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <ListView x:Name="GeneralSettingsListView" Height="774" Canvas.Left="286" Canvas.Top="161" Width="1349" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0">
+            <ListView.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="1" ScaleX="1"/>
+                    <SkewTransform AngleX="0" AngleY="0"/>
+                    <RotateTransform/>
+                    <TranslateTransform X="0"/>
+                </TransformGroup>
+            </ListView.RenderTransform>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel FocusVisualStyle="{x:Null}"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+        <ListView x:Name="AudioSettingsListView" Height="774" Canvas.Left="286" Canvas.Top="161" Width="1349" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0">
+            <ListView.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="1" ScaleX="1"/>
+                    <SkewTransform AngleX="0" AngleY="0"/>
+                    <RotateTransform/>
+                    <TranslateTransform X="0"/>
+                </TransformGroup>
+            </ListView.RenderTransform>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel FocusVisualStyle="{x:Null}"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+        <ListView x:Name="BackgroundSettingsListView" Height="774" Canvas.Left="286" Canvas.Top="161" Width="1349" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0">
+            <ListView.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="1" ScaleX="1"/>
+                    <SkewTransform AngleX="0" AngleY="0"/>
+                    <RotateTransform/>
+                    <TranslateTransform X="0"/>
+                </TransformGroup>
+            </ListView.RenderTransform>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel FocusVisualStyle="{x:Null}"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+        <ListView x:Name="EmulatorSettingsListView" Height="774" Canvas.Left="286" Canvas.Top="161" Width="1349" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0">
+            <ListView.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleY="1" ScaleX="1"/>
+                    <SkewTransform AngleX="0" AngleY="0"/>
+                    <RotateTransform/>
+                    <TranslateTransform X="0"/>
+                </TransformGroup>
+            </ListView.RenderTransform>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel FocusVisualStyle="{x:Null}"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+        </ListView>
+        <Image x:Name="CircleButton" Height="48" Canvas.Left="254" Canvas.Top="950" Width="48" Source="/Icons/circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Label x:Name="BackLabel" Content="Back" Canvas.Left="302" Canvas.Top="950" Height="48" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Image x:Name="CrossButton" Height="48" Canvas.Left="101" Canvas.Top="950" Width="48" Source="/Icons/cross.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Label x:Name="CrossButtonLabel" Content="Enter" Canvas.Left="149" Canvas.Top="950" Height="48" Width="100" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Label x:Name="UsernameLabel" Content="SvenGDK" Canvas.Left="1472" Canvas.Top="955" Height="48" Width="250" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Rectangle x:Name="RightMenu" Height="1080" Canvas.Left="1925" Stroke="White" Width="495" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Rectangle.Fill>
+                <LinearGradientBrush EndPoint="1,2" StartPoint="0.5,2" Opacity="0.795">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF151515" Offset="1"/>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Button x:Name="SettingButton3" Content="Setting3" Canvas.Left="1925" Canvas.Top="509" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton2" Content="Setting2" Canvas.Left="1925" Canvas.Top="439" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton1" Content="Setting1" Canvas.Left="1925" Canvas.Top="369" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="White" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton4" Content="Setting4" Canvas.Left="1925" Canvas.Top="579" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton5" Content="Setting5" Canvas.Left="1925" Canvas.Top="649" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+    </Canvas>
+</Window>

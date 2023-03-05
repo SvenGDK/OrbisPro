@@ -1,0 +1,92 @@
+﻿<Window x:Name="OrbisMainWindow" x:Class="MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="OrbisPro" Height="1080" Width="1920" WindowStyle="None" Background="Black" WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <Canvas x:Name="OrbisGrid">
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" IsMuted="True">
+            <MediaElement.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <MediaTimeline Storyboard.TargetName="BackgroundMedia" RepeatBehavior="Forever" Source="./Backgrounds/gradient_bg.mp4" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </MediaElement.Triggers>
+        </MediaElement>
+        <Border x:Name="SelectedAppBorder" BorderBrush="White" BorderThickness="3" Height="175" Canvas.Left="455" Canvas.Top="204" Width="175">
+            <Border.Effect>
+                <BlurEffect Radius="4"/>
+            </Border.Effect>
+        </Border>
+        <Image x:Name="App1" Height="165" Width="165" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="461" Canvas.Top="209" Source="/Icons/Twitter.png" />
+        <Image x:Name="App2" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="631" Canvas.Top="209" Source="/Icons/Browser.png" />
+        <Image x:Name="App3" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="786" Canvas.Top="209" Source="/Icons/gallery.png" />
+        <Image x:Name="App4" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="941" Canvas.Top="209" Source="/Icons/Library.png" />
+        <Image x:Name="App5" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1096" Canvas.Top="209" Source="/Icons/USBMedia.png" />
+        <Image x:Name="App6" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1251" Canvas.Top="209" Source="/Icons/ExplorerNew.png" />
+        <Image x:Name="App7" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1406" Canvas.Top="209" Source="/Icons/SettingsNew.png" />
+        <Image x:Name="App8" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1561" Canvas.Top="209" Source="/Icons/OrbisProLogo.png" />
+        <Label x:Name="AppTitle" Content="" Width="1076" FontFamily="SST Light" FontSize="60" Foreground="White" Canvas.Left="635" Canvas.Top="526" HorizontalAlignment="Left" VerticalAlignment="Center" Background="{x:Null}" Visibility="Hidden">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1"/>
+            </Label.Effect>
+        </Label>
+        <Image x:Name="PlusBanner" Height="48" Canvas.Left="96" Canvas.Top="78" Width="48" Source="/Icons/psplus.png"/>
+        <Image x:Name="NotificationsBannerB" Height="48" Canvas.Left="192" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_notifications.png"/>
+        <Image x:Name="FriendsBanner" Height="48" Canvas.Left="720" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_friends.png"/>
+        <Image x:Name="OnlineBanner" Height="48" Canvas.Left="822" Canvas.Top="78" Width="48" Source="/Icons/online.png"/>
+        <Image x:Name="TrophyBanner" Height="48" Canvas.Left="1297" Canvas.Top="78" Width="48" Source="/Icons/trophy.png"/>
+        <Label x:Name="NotificationsBanner" Content="OrbisPro TEST 0.0.1-A" Canvas.Left="328" Canvas.Top="75" Height="48" Width="387" FontFamily="SST Light" Foreground="White" FontSize="24" HorizontalContentAlignment="Right" VerticalContentAlignment="Bottom" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Label x:Name="UsernameLabel" Content="SvenGDK" Canvas.Left="917" Canvas.Top="75" Height="48" Width="190" FontFamily="SST Light" Foreground="White" FontSize="26" VerticalContentAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Label x:Name="SystemClock" Content="00:00" Canvas.Left="1726" Canvas.Top="75" Height="48" Width="104" FontFamily="SST Light" Foreground="White" FontSize="32" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Label x:Name="AppStartLabel" Content="Starten" Canvas.Left="290" Canvas.Top="545" Height="50" Width="325" FontFamily="SST Light" Foreground="White" FontSize="30" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Visibility="Hidden">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Image x:Name="PlusTopButton" Height="64" Canvas.Left="139" Canvas.Top="5" Width="64" Focusable="True" FocusVisualStyle="{x:Null}" Opacity="0.5" Source="/Icons/psplus.png" Visibility="Hidden"/>
+        <Image x:Name="NotificationsTopButton" Height="64" Canvas.Left="296" Canvas.Top="5" Width="64" Focusable="True" FocusVisualStyle="{x:Null}" Opacity="0.5" Source="/Icons/quickmenu_notifications.png" Visibility="Hidden"/>
+        <Image x:Name="FriendsTopButton" Height="64" Canvas.Left="454" Canvas.Top="5" Width="64" Focusable="True" FocusVisualStyle="{x:Null}" Opacity="0.5" Source="/Icons/quickmenu_friends.png" Visibility="Hidden"/>
+        <Image x:Name="CommunityTopButton" Height="64" Canvas.Left="611" Canvas.Top="5" Width="64" Focusable="True" FocusVisualStyle="{x:Null}" Opacity="0.5" Visibility="Hidden" Source="/Icons/community_big_selected.png"/>
+        <Image x:Name="CalenderTopButton" Height="64" Canvas.Left="770" Canvas.Top="5" Width="64" Focusable="True" FocusVisualStyle="{x:Null}" Opacity="0.5" Visibility="Hidden" Source="/Icons/calender_big_selected.png"/>
+        <Image x:Name="MessagesTopButton" Height="64" Canvas.Left="928" Canvas.Top="5" Width="64" Focusable="True" FocusVisualStyle="{x:Null}" Opacity="0.5" Visibility="Hidden" Source="/Icons/messages_big_selected.png"/>
+        <Image x:Name="PartyTopButton" Height="64" Canvas.Left="1086" Canvas.Top="5" Width="64" Opacity="0.5" Focusable="True" FocusVisualStyle="{x:Null}" Visibility="Hidden" Source="/Icons/party_big_selected.png"/>
+        <Image x:Name="TrophyTopButton" Height="64" Canvas.Left="1401" Canvas.Top="5" Width="64" Focusable="True" FocusVisualStyle="{x:Null}" Opacity="0.5" Source="/Icons/trophy.png" Visibility="Hidden"/>
+        <Image x:Name="SettingsTopButton" Height="64" Canvas.Left="1560" Canvas.Top="5" Width="64" Opacity="0.5" Focusable="True" FocusVisualStyle="{x:Null}" Source="/Icons/psplus.png" Visibility="Hidden"/>
+        <Image x:Name="PowerTopButton" Height="64" Canvas.Left="1718" Canvas.Top="5" Width="64" Opacity="0.5" Focusable="True" FocusVisualStyle="{x:Null}" Visibility="Hidden" Source="/Icons/power_big_selected.png"/>
+        <Image x:Name="AvatarTopButton" Height="64" Canvas.Left="1241" Canvas.Top="5" Width="64" Opacity="0.5" Focusable="True" FocusVisualStyle="{x:Null}" Visibility="Hidden" Source="/Icons/psplus.png"/>
+        <Label x:Name="TopAppTitle" Content="Notifications" Canvas.Left="230" Canvas.Top="780" Height="50" Width="196" FontFamily="Humnst777 BT" Foreground="White" FontSize="24" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Visibility="Hidden">
+            <Label.Effect>
+                <DropShadowEffect Color="White" Direction="0" BlurRadius="15"/>
+            </Label.Effect>
+        </Label>
+        <Label x:Name="TopTitleLabel" Content="New Notifications" Canvas.Left="96" Canvas.Top="103" Height="48" Width="303" FontFamily="Humnst777 BT" Foreground="White" FontSize="30" HorizontalContentAlignment="Right" VerticalContentAlignment="Bottom" Opacity="0.7" Visibility="Hidden">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Label x:Name="TopContentLabel" Content="There are no notifications." Canvas.Left="96" Canvas.Top="209" Height="330" Width="1737" FontFamily="Humnst777 BT" Foreground="White" FontSize="36" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Visibility="Hidden">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Image x:Name="DiscApp" Height="200" Width="200" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="248" Canvas.Top="209" Source="/Icons/Media-DVD-icon.png" Visibility="Hidden" />
+    </Canvas>
+</Window>

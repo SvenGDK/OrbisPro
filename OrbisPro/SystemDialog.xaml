@@ -1,0 +1,41 @@
+﻿<Window x:Name="SystemDialogWindow" x:Class="SystemDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="System Dialog" Height="1080" Width="1920" Background="Black" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None">
+    <Canvas>
+        <MediaElement x:Name="BGVid" Height="1080" Width="1920">
+            <MediaElement.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <MediaTimeline Source="./Backgrounds/gradient_bg.mp4" Storyboard.TargetName="BGVid" RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </MediaElement.Triggers>
+        </MediaElement>
+        <Label x:Name="SetupTitle" Content="System Dialog" Canvas.Left="101" Canvas.Top="43" Height="90" Width="1808" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Separator x:Name="TopSeparator" Height="10" Canvas.Top="128" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Image x:Name="CircleButton" Height="48" Canvas.Left="1524" Canvas.Top="955" Width="48" Source="/Icons/circle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBlock x:Name="BackLabel" Text="Close" Canvas.Left="1577" Canvas.Top="955" Height="48" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBlock x:Name="SystemDialogTextBlock" Canvas.Left="255" TextWrapping="Wrap" Text="System Message" Canvas.Top="165" Foreground="White" FontSize="48" FontFamily="SST Light" HorizontalAlignment="Center" VerticalAlignment="Top" Width="1500" Height="750" TextAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+    </Canvas>
+</Window>

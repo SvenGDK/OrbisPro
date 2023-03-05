@@ -1,0 +1,422 @@
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{4743B9EA-ABA6-49B5-9685-6C6E63401D49}</ProjectGuid>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{F184B08F-C81C-45F6-A57F-5ABD9991F28F}</ProjectTypeGuids>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>OrbisPro</RootNamespace>
+    <AssemblyName>OrbisPro</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <MyType>Custom</MyType>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <IncrementalBuild>true</IncrementalBuild>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>OrbisPro.xml</DocumentationFile>
+    <NoWarn>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036,42314</NoWarn>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <IncrementalBuild>false</IncrementalBuild>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>OrbisPro.xml</DocumentationFile>
+    <NoWarn>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036,42314</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>Off</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>OrbisProLogo.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="Application.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="Classes\DeviceListViewItem.vb" />
+    <Compile Include="Classes\DownloadListViewItem.vb" />
+    <Compile Include="Classes\FileBrowserListViewItem.vb" />
+    <Compile Include="Classes\GameStarter.vb" />
+    <Compile Include="Classes\INI.vb" />
+    <Compile Include="Classes\OpenWindowListViewItem.vb" />
+    <Compile Include="Classes\SettingsListViewItem.vb" />
+    <Compile Include="CopyWindow.xaml.vb">
+      <DependentUpon>CopyWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Explorers\FileExplorer.xaml.vb">
+      <DependentUpon>FileExplorer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Explorers\SystemWebBrowser.xaml.vb">
+      <DependentUpon>SystemWebBrowser.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Queues\AppInstallsOrUpdates.xaml.vb">
+      <DependentUpon>AppInstallsOrUpdates.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Queues\Downloads.xaml.vb">
+      <DependentUpon>Downloads.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Queues\GameOrAppInstaller.xaml.vb">
+      <DependentUpon>GameOrAppInstaller.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Queues\OpenWindows.xaml.vb">
+      <DependentUpon>OpenWindows.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Settings\GeneralSettings.xaml.vb">
+      <DependentUpon>GeneralSettings.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="SystemDialog.xaml.vb">
+      <DependentUpon>SystemDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="SystemSetup\SetupEmulators.xaml.vb">
+      <DependentUpon>SetupEmulators.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="SystemSetup\SetupPS3.xaml.vb">
+      <DependentUpon>SetupPS3.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="SystemSetup\WelcomeToSetup.xaml.vb">
+      <DependentUpon>WelcomeToSetup.xaml</DependentUpon>
+    </Compile>
+    <Page Include="CopyWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Explorers\FileExplorer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Explorers\GameLibrary.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Explorers\SystemWebBrowser.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="Application.xaml.vb">
+      <DependentUpon>Application.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\AppListViewItem.vb" />
+    <Compile Include="Classes\OrbisAnimations.vb" />
+    <Compile Include="Classes\OrbisAudio.vb" />
+    <Compile Include="Classes\OrbisCDVDManager.vb" />
+    <Compile Include="Classes\OrbisNotifications.vb" />
+    <Compile Include="Explorers\GameLibrary.xaml.vb">
+      <DependentUpon>GameLibrary.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="MainWindow.xaml.vb">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="MessagePopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Queues\AppInstallsOrUpdates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Queues\Downloads.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Queues\GameOrAppInstaller.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Queues\OpenWindows.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Settings\GeneralSettings.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SystemDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SystemSetup\SetupEmulators.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SystemSetup\SetupPS3.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SystemSetup\WelcomeToSetup.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="System.Threading.Tasks" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Windows.Documents" />
+    <Import Include="System.Xml.Linq" />
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Windows" />
+    <Import Include="System.Windows.Controls" />
+    <Import Include="System.Windows.Data" />
+    <Import Include="System.Windows.Input" />
+    <Import Include="System.Windows.Shapes" />
+    <Import Include="System.Windows.Media" />
+    <Import Include="System.Windows.Media.Imaging" />
+    <Import Include="System.Windows.Navigation" />
+    <Import Include="Winnster.Interop.LibHook" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="MessagePopup.xaml.vb">
+      <DependentUpon>MessagePopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\AssemblyInfo.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="My Project\MyExtensions\MyWpfExtension.vb">
+      <VBMyExtensionTemplateID>Microsoft.VisualBasic.WPF.MyExtension</VBMyExtensionTemplateID>
+      <VBMyExtensionTemplateVersion>1.0.0.0</VBMyExtensionTemplateVersion>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+    <None Include="My Project\app.manifest" />
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\Media-DVD-icon.png" />
+    <Resource Include="Icons\usb-icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Icons\boot_controllersetup1.png" />
+    <Resource Include="Icons\calender_big_selected.png" />
+    <Resource Include="Icons\circle.png" />
+    <Resource Include="Icons\community_big_selected.png" />
+    <Resource Include="Icons\cross.png" />
+    <Resource Include="Icons\gallery.png" />
+    <Resource Include="Icons\mediaplayer.png" />
+    <Resource Include="Icons\messages_big_selected.png" />
+    <Resource Include="Icons\news.png" />
+    <Resource Include="Icons\online.png" />
+    <Resource Include="Icons\options.png" />
+    <Resource Include="Icons\orbisProTw.png" />
+    <Resource Include="Icons\party_big_selected.png" />
+    <Resource Include="Icons\power_big_selected.png" />
+    <Resource Include="Icons\psmusic.png" />
+    <Resource Include="Icons\psnow.png" />
+    <Resource Include="Icons\psplus.png" />
+    <Resource Include="Icons\psstore_large.png" />
+    <Resource Include="Icons\quickmenu_controller.png" />
+    <Resource Include="Icons\quickmenu_devices.png" />
+    <Resource Include="Icons\quickmenu_friends.png" />
+    <Resource Include="Icons\quickmenu_notifications.png" />
+    <Resource Include="Icons\r1.png" />
+    <Resource Include="Icons\recs.png" />
+    <Resource Include="Icons\rpcs3.png" />
+    <Resource Include="Icons\rpcs3black.png" />
+    <Resource Include="Icons\triangle.png" />
+    <Resource Include="Icons\trophy.png" />
+    <Resource Include="Icons\trophy_big_selected.png" />
+    <Resource Include="Icons\tvservices.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Backgrounds\gradient_bg.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Resource Include="OrbisProLogo.ico" />
+    <Resource Include="Icons\Browser.png" />
+    <Resource Include="Icons\DiscApp.png" />
+    <Resource Include="Icons\FileManager.png" />
+    <Resource Include="Icons\Library.png" />
+    <Resource Include="Icons\PS5Connect.png" />
+    <Resource Include="Icons\USBMedia.png" />
+    <Resource Include="Icons\Twitter.png" />
+    <Resource Include="Icons\Media-CD-icon.png" />
+    <None Include="Resources\ps5_trophy.wav" />
+    <None Include="Resources\ps5_start.wav" />
+    <None Include="Resources\ps5_notification.wav" />
+    <None Include="Resources\ps2_back.wav" />
+    <Resource Include="Icons\ExplorerNew.png" />
+    <Resource Include="Icons\SettingsNew.png" />
+    <Resource Include="Icons\Duckstation.png" />
+    <Resource Include="Icons\OrbisProLogo.png" />
+    <Resource Include="Icons\ePSXe.png" />
+    <Resource Include="Icons\PCSX2.png" />
+    <Resource Include="Icons\fileJPG.png" />
+    <Resource Include="Icons\filePNG.png" />
+    <Resource Include="Icons\fileTXT.png" />
+    <Resource Include="Icons\fileTMP.png" />
+    <Resource Include="Icons\fileSYS.png" />
+    <Resource Include="Icons\FileBIN.png" />
+    <Resource Include="Icons\FileDLL.png" />
+    <Resource Include="Icons\FileEXE.png" />
+    <Resource Include="Icons\FileINI.png" />
+    <Resource Include="Icons\FileIcon.png" />
+    <Resource Include="Icons\USBDevice.png" />
+    <Resource Include="Icons\CDDrive.png" />
+    <Resource Include="Icons\InternalStorage.png" />
+    <Resource Include="Icons\Storage.png" />
+    <Resource Include="Icons\Update.png" />
+    <Resource Include="Icons\GalleryTransparent.png" />
+    <Resource Include="Icons\browser_icon.png" />
+    <Resource Include="Icons\Picture.png" />
+    <Resource Include="Icons\Music.png" />
+    <Resource Include="Icons\Video.png" />
+    <Resource Include="Icons\Setting.png" />
+    <None Include="Resources\ps5_uiselect.wav" />
+    <None Include="Resources\ps5_uimove.wav" />
+    <None Include="Resources\ps5_uiback.wav" />
+    <None Include="Resources\ps5_boot.wav" />
+    <None Include="Resources\ps2_select.wav" />
+    <None Include="Resources\ps2_move.wav" />
+    <None Include="Resources\ps2_listmove.wav" />
+    <Resource Include="Icons\Sound.png" />
+    <Resource Include="TestImages\cyberpunk 2077.png" />
+    <Resource Include="TestImages\gran turismo 7.png" />
+    <Resource Include="TestImages\metal gear v- a.png" />
+    <Resource Include="TestImages\sonic mania.png" />
+    <Resource Include="TestImages\yakusa like a dragon.png" />
+    <Resource Include="TestImages\netflix.png" />
+    <Resource Include="TestImages\spotify.png" />
+    <Resource Include="TestImages\youtube.png" />
+    <Resource Include="Icons\Folder.png" />
+    <Resource Include="Icons\ControllerWhite.png" />
+    <Resource Include="Icons\BrowserNew.png" />
+    <Resource Include="Icons\DiscAppNew.png" />
+    <Resource Include="Icons\GalleryNew.png" />
+    <Resource Include="Icons\LibraryNew.png" />
+    <Resource Include="Icons\NewsNew.png" />
+    <Resource Include="Icons\StoreNew.png" />
+    <Resource Include="Icons\TVServicesNew.png" />
+    <Resource Include="Icons\USBMediaNew.png" />
+    <Resource Include="Icons\Media-PS1-icon.png" />
+    <Resource Include="TestImages\SLES-53702.jpg" />
+    <Resource Include="TestImages\ICON1.PNG" />
+    <None Include="Resources\trophy_offline.wav" />
+    <None Include="Resources\trophy.wav" />
+    <None Include="Resources\start.wav" />
+    <None Include="Resources\select.wav" />
+    <None Include="Resources\options.wav" />
+    <None Include="Resources\notification.wav" />
+    <None Include="Resources\move.wav" />
+    <None Include="Resources\logout.wav" />
+    <None Include="Resources\home.wav" />
+    <None Include="Resources\error.wav" />
+    <None Include="Resources\back2.wav" />
+    <None Include="Resources\back.wav" />
+    <Resource Include="TestImages\ICON0.PNG" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="LibHook">
+      <Version>2014.1.22.9</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Bcl.HashCode">
+      <Version>1.1.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CSharp">
+      <Version>4.7.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions">
+      <Version>3.1.6</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyModel">
+      <Version>7.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Web.WebView2">
+      <Version>1.0.1587.40</Version>
+    </PackageReference>
+    <PackageReference Include="SharpDX.DirectInput">
+      <Version>4.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <Version>7.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="XInput.Wrapper">
+      <Version>0.3.1</Version>
+    </PackageReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+</Project>

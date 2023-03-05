@@ -1,0 +1,99 @@
+﻿<Window x:Name="DownloadsWindow" x:Class="Downloads"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="Downloads" Height="1080" Width="1920" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None" Background="Black">
+    <Canvas x:Name="DownloadsCanvas">
+        <MediaElement x:Name="BGVid" Height="1080" Width="1920">
+            <MediaElement.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <MediaTimeline Source="./Backgrounds/gradient_bg.mp4" Storyboard.TargetName="BGVid" RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </MediaElement.Triggers>
+        </MediaElement>
+        <ListView x:Name="DownloadsListView" Height="790" Canvas.Left="252" Canvas.Top="143" Width="1415" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Canvas Height="225" Width="1400" FocusVisualStyle="{x:Null}" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True">
+                        <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3" Height="184" Canvas.Left="28" Canvas.Top="20" Width="1346" Visibility="{Binding IsAppSelected}"/>
+                        <Image x:Name="AppIcon" Width="160" Height="160" Canvas.Left="40" Canvas.Top="35" Source="{Binding AppIcon}"/>
+                        <Label x:Name="AppTitle" Content="{Binding AppName}" Width="550" Foreground="White" Height="55" FontSize="36" Canvas.Left="216" Canvas.Top="30" VerticalContentAlignment="Center" FontFamily="SST Light">
+                            <Label.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+                            </Label.Effect>
+                        </Label>
+                        <Label x:Name="DataLabel" Content="{Binding AppDataLabel}" Width="459" Foreground="White" Height="43" FontSize="25" Canvas.Left="216" Canvas.Top="80" VerticalContentAlignment="Center" Opacity="0.8" Visibility="{Binding AppIsDownloading}" FontFamily="SST Light">
+                            <Label.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+                            </Label.Effect>
+                        </Label>
+                        <Label x:Name="SecondDataLabel" Content="{Binding AllDataLabel}" Width="459" Foreground="White" Height="43" FontSize="25" Canvas.Left="216" Canvas.Top="115" VerticalContentAlignment="Center" Opacity="0.8" Visibility="{Binding AppIsDownloading}" FontFamily="SST Light">
+                            <Label.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+                            </Label.Effect>
+                        </Label>
+                        <Label x:Name="AppProgressLabel" Content="{Binding DownloadProgress}" Width="570" Foreground="White" Height="43" FontSize="26" Canvas.Left="780" Canvas.Top="80" HorizontalContentAlignment="Right" Visibility="{Binding AppIsDownloading}" FontFamily="SST Light">
+                            <Label.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+                            </Label.Effect>
+                        </Label>
+                        <Label x:Name="AppSecondProgressLabel" Content="{Binding SecondDownloadProgress}" Width="570" Foreground="White" Height="43" FontSize="26" Canvas.Left="780" Canvas.Top="115" HorizontalContentAlignment="Right" Visibility="{Binding AppIsDownloading}" FontFamily="SST Light">
+                            <Label.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+                            </Label.Effect>
+                        </Label>
+                        <ProgressBar x:Name="AppProgressBar" Width="1130" Height="16" Canvas.Left="220" Canvas.Top="163" Background="{x:Null}" Foreground="White" BorderThickness="2" Value="{Binding ProgressValue}" Visibility="{Binding AppIsDownloading}">
+                            <ProgressBar.BorderBrush>
+                                <SolidColorBrush Color="White" Opacity="0.4"/>
+                            </ProgressBar.BorderBrush>
+                        </ProgressBar>
+                        <Label x:Name="InstalledLabel" Content="{Binding InstalledOrUpdated}" Width="459" Foreground="White" Height="43" FontSize="26" Canvas.Left="216" Canvas.Top="150" VerticalContentAlignment="Center" Opacity="0.8" Visibility="{Binding AppInstalled}" FontFamily="SST Light">
+                            <Label.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+                            </Label.Effect>
+                        </Label>
+                        <Separator x:Name="ItemSeparator" Height="10" Margin="0" Canvas.Top="194" Width="1158" Background="White" Foreground="{x:Null}" Canvas.Left="216" Opacity="0.5" Visibility="Hidden"/>
+                    </Canvas>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+        <Label x:Name="SetupTitle" Content="Downloads" Canvas.Left="101" Canvas.Top="43" Height="90" Width="1808" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="941" Width="1920" Background="White" Foreground="{x:Null}"/>
+        <Separator x:Name="TopSeparator" Height="10" Margin="0" Canvas.Top="131" Width="1920" Background="White" Foreground="{x:Null}"/>
+        <Image x:Name="CrossButton" Height="48" Canvas.Left="104" Canvas.Top="948" Width="48" Source="/Icons/cross.png"/>
+        <Label x:Name="SelectLabel" Content="Back" Canvas.Left="152" Canvas.Top="948" Height="48" Width="141" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Image x:Name="CircleButton" Canvas.Left="298" Canvas.Top="948" Width="48" Height="48" Source="/Icons/circle.png"/>
+        <Label x:Name="BackLabel" Content="Cancel" Canvas.Left="346" Canvas.Top="948" Height="48" Width="121" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Image x:Name="TriangleButton" Height="48" Canvas.Left="472" Canvas.Top="948" Width="48" Source="/Icons/triangle.png" Visibility="Hidden"/>
+        <Label x:Name="DeleteLabel" Content="Delete" Canvas.Left="521" Canvas.Top="948" Height="48" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" Visibility="Hidden">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+        <Image x:Name="OptionsButton" Canvas.Left="673" Canvas.Top="955" Width="75" Height="35" Source="/Icons/options.png" Visibility="Hidden"/>
+        <Label x:Name="OptionsLabel" Content="Menu 'Options'" Canvas.Left="748" Canvas.Top="948" Height="55" Width="255" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden">
+            <Label.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Label.Effect>
+        </Label>
+    </Canvas>
+</Window>

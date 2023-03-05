@@ -1,0 +1,17 @@
+﻿<UserControl x:Class="MessagePopup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:OrbisProWPF"
+             mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="535">
+    <UserControl.Effect>
+        <DropShadowEffect/>
+    </UserControl.Effect>
+    <Canvas x:Name="PopupCanvas" Width="535" Height="100" Background="White">
+        <Label x:Name="PopupTitle" Content="" Canvas.Left="185" Canvas.Top="8" Height="48" Width="330" FontFamily="SST Light" Foreground="Black" FontSize="30" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="0" Background="{x:Null}"/>
+        <Label x:Name="PopupDetail" Content="" Canvas.Left="185" Canvas.Top="45" Height="48" Width="330" FontFamily="SST Light" Foreground="#FF6B6B6B" FontSize="26" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="0" Background="{x:Null}"/>
+        <Image x:Name="PopupImage" Height="64" Canvas.Left="101" Canvas.Top="18" Width="64"/>
+    </Canvas>
+</UserControl>
