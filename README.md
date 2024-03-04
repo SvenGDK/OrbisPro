@@ -5,10 +5,8 @@ Media center and game launcher for Windows in the style of PS4's UI.
 
 ## Read before using
 OrbisPro is on a ALPHA stage, so many bugs can occur and you probably need to restart the application.</br>
-This build is only optimized for FHD 1920x1080, other resolutions will be added on later builds.</br>
 BIOS files are still required to use emulators like PS1, PS2, ... Read the 'BIOS Setup' below.</br>
 The PS3 firmware can be downloaded and installed directly with RPCS3 (Thanks for this command!)</br>
-A Steam Deck optimized version will be available too.
 
 Mimimum Requirements (To play any games up to PS2 and similar) :
 - 4 GB RAM
@@ -23,8 +21,6 @@ Recommended Requirements (To play modern games like Switch, PS3 & PS4) :
 - AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
 - Windows 10 or 11 x64
 
-Sidenote: Later builds will turn off most parts of OrbisPro when launching a game and enable only the 'Game Options Menu' & 'System Dialog' to save system resources.
-
 ## Current Available Core Features
 - Very Basic setup
 - Download of PS3 Firmware
@@ -32,18 +28,19 @@ Sidenote: Later builds will turn off most parts of OrbisPro when launching a gam
   - XInput & DirectInput are available
 - Animated user interface
 - Supports video backgrounds
-- USB (only for notifications atm) & Disc support (displaying on the main menu & booting)
+- USB support (shows only for notifications at the moment)
+- Disc support (Shows up on Home and can be booted if supported)
 - System-wide Notification Pop-Ups
 - Detects physical game discs (PS1, PS2 & PC-Engine only atm)
 - Game Emulators (ePSXe, PCSX2, RPCS3 & Mednafen only atm)
   - Some BIOS files need to be added manually (Read 'BIOS Setup' below)
 - Game Installer (Not working atm - games need to be added in the 'File Explorer')
   - Set up your games in OrbisPro
-  - Choose where to show the game [Main Menu / Library]
-- Emulator Configurators (Not working atm)
+  - Choose where to show the game [Main Menu and/or Library]
+- Emulator Configurators (Not working at the moment)
   - Settings -> Emulator Settings
-- Games can be booted from the Main Menu / Library / Disc
-- Application/Game Libary
+- Games can be started from the Home, Library or Disc
+- Application & Game Libary
 - File Explorer
 - Audio Settings
   - Change notification volume (not working yet)
@@ -60,13 +57,13 @@ Sidenote: Later builds will turn off most parts of OrbisPro when launching a gam
 ## Game Support
 - Supports PS1 & PS2 discs (Other game discs like Saturn, Dreamcast, ... will be supported too at a later point)
 - Supports PS1, PS2, PS3 & PS4 (Nint. (including Switch), Sega backups, more will be added at a later point)
-- Game emulators need to be configured manually atm (System\Emulators - they can be configured inside OrbisPro at a later point)
+- Game emulators need to be configured manually at the moment (Folder: System\Emulators - they can be configured inside OrbisPro at a later point)
 
 ## FIRST Setup
 - OPTIONAL: Connect a controller if you have one pre-configured
 - Start "OrbisPro.exe"
 - Press the 'Home' key (controllers need to remap the PS/Home Button to the keyboard home key)
-- Continue in 'English'
+- Continue in 'English' for now
 - Setup the PS3 Emulator
 - You can skip this part by hitting 'Select Backups' with the keyboard key 'X' or Cross/A on a controller
 - After choosing 'Select Backups' the 'File Explorer' will start
