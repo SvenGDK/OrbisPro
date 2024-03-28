@@ -1,5 +1,9 @@
 # OrbisPro
-Media center and game launcher for Windows in the style of PS4's UI.
+Media center and game launcher for Windows in the style of PS4's UI.<br>
+<img width="360" alt="OrbisProBetaScreenshot1" src="https://github.com/SvenGDK/OrbisPro/assets/84620/85f51a20-eabb-4159-89ef-29cf17455751">
+<img width="360" alt="OrbisProBetaScreenshot2" src="https://github.com/SvenGDK/OrbisPro/assets/84620/937f572f-4f64-4072-baf3-a84f851388f3">
+<img width="360" alt="OrbisProBetaScreenshot3" src="https://github.com/SvenGDK/OrbisPro/assets/84620/06bd3293-bed5-4048-b2f0-a86e909ecc1d">
+<img width="360" alt="OrbisProBetaScreenshot5" src="https://github.com/SvenGDK/OrbisPro/assets/84620/1342ecf8-4900-4720-bc62-d53c25605f86">
 
 ## Read before using
 OrbisPro is on a BETA stage and some bugs may occur while running the application.<br>
