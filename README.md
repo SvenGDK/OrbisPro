@@ -1,11 +1,6 @@
 # OrbisPro
 Media center and game launcher for Windows in the style of PS4's UI.
 
-<<<<<<< Updated upstream
-# Upgrade
-A first OrbisPro BETA build is upcoming within the next days.</br>
-Readme will be updated soon.
-=======
 ## Read before using
 OrbisPro is on a BETA stage and some bugs may occur while running the application.<br>
 Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/wiki/First-Run
@@ -87,4 +82,3 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - Account Management Settings
   - Change the Username
   
->>>>>>> Stashed changes
