@@ -1,213 +1,511 @@
-﻿Imports System.ComponentModel
+﻿Imports OrbisPro.OrbisAudio
+Imports OrbisPro.OrbisInput
+Imports OrbisPro.OrbisUtils
+Imports System.ComponentModel
 Imports System.Net
+Imports System.Threading
 Imports System.Windows.Media.Animation
-Imports XInput.Wrapper
+Imports SharpDX.XInput
 
 Public Class Downloads
 
+    Public Opener As String
+    Public PS3SetupDownload As Boolean = False
+    Public PSVitaSetupDownload As Boolean = False
+
     Public Shared DownloadsList As New List(Of DownloadListViewItem)()
+    Private DownloadPath As String
 
-    Public WithEvents DownloadThread1 As New WebClient()
-    Public WithEvents DownloadThread2 As New WebClient()
-    Public WithEvents DownloadThread3 As New WebClient()
+    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
-    Dim WithEvents ClosingAnim As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-    Dim WithEvents CurrentController As X.Gamepad
+    'Controller input
+    Private MainController As Controller
+    Private RemoteController As Controller
+    Private CTS As New CancellationTokenSource()
+    Public PauseInput As Boolean = True
 
-    'Get connected controllers
-    Private Sub GetAttachedControllers()
+    Private Sub Downloads_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
+        'Set background
+        SetBackground()
 
-        'If a compatible controller is found set 'CurrentController' to 'X.Gamepad_1'
-        If X.IsAvailable Then
-            CurrentController = X.Gamepad_1
-            X.UpdatesPerSecond = 12 'This is important, otherwise the controller input is too fast
-            X.StartPolling(CurrentController) 'Start listening to controller input
+        If Not ConfigFile.IniReadValue("Network", "DownloadPath") = "Default" Then
+            DownloadPath = ConfigFile.IniReadValue("Network", "DownloadPath")
+        End If
+    End Sub
+
+    Private Async Sub Downloads_ContentRendered(sender As Object, e As EventArgs) Handles Me.ContentRendered
+
+        'Select the first item if there's a download
+        If DownloadsList IsNot Nothing AndAlso PS3SetupDownload = False Then
+            'Focus the first item
+            Dim FirstListViewItem As ListViewItem = CType(DownloadsListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+            FirstListViewItem.Focus()
+
+            'Convert to FirstListViewItem to control the item's customized properties
+            Dim FirstSelectedItem As DownloadListViewItem = CType(FirstListViewItem.Content, DownloadListViewItem)
+            FirstSelectedItem.IsAppSelected = Visibility.Visible 'Show the selection border
+        Else
+            DownloadsListView.Focus()
         End If
 
+        If PS3SetupDownload Then
+            DownloadCurrentPS3Firmware()
+        End If
+
+        If PSVitaSetupDownload Then
+            DownloadCurrentPSVitaFirmware()
+        End If
+
+        Try
+            'Check for gamepads
+            If GetAndSetGamepads() Then MainController = SharedController1
+            ChangeButtonLayout()
+
+            If SharedController1 IsNot Nothing Then Await ReadGamepadInputAsync(CTS.Token)
+        Catch ex As Exception
+            PauseInput = True
+            ExceptionDialog("System Error", ex.Message)
+        End Try
+    End Sub
+
+    Private Sub Downloads_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
+        CTS?.Cancel()
+        MainController = Nothing
+        RemoteController = Nothing
+    End Sub
+
+    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
+        PlayBackgroundSound(Sounds.Back)
+
+        'Reactive previous window
+        Select Case Opener
+            Case "FileExplorer"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.FileExplorer" Then
+                        'Re-activate the 'File Explorer'
+                        CType(Win, FileExplorer).Activate()
+                        CType(Win, FileExplorer).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "GameLibrary"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.GameLibrary" Then
+                        'Re-activate the 'File Explorer'
+                        CType(Win, GameLibrary).Activate()
+                        CType(Win, GameLibrary).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "GeneralSettings"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.GeneralSettings" Then
+                        'Re-activate the 'File Explorer'
+                        CType(Win, GeneralSettings).Activate()
+                        CType(Win, GeneralSettings).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "MainWindow"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.MainWindow" Then
+                        CType(Win, MainWindow).Activate()
+                        CType(Win, MainWindow).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "OpenWindows"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.OpenWindows" Then
+                        CType(Win, OpenWindows).Activate()
+                        CType(Win, OpenWindows).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "SetupPS3"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.SetupPS3" Then
+
+                        If PS3SetupDownload Then
+                            CType(Win, SetupPS3).FirmwareDownloadedCheckBox.IsChecked = True
+                            CType(Win, SetupPS3).DownloadFirmwareButton.BorderBrush = Nothing
+                            CType(Win, SetupPS3).InstallFirmwareButton.Focus()
+                        End If
+
+                        CType(Win, SetupPS3).AdditionalPauseDelay = 100
+                        CType(Win, SetupPS3).PauseInput = False
+                        CType(Win, SetupPS3).Activate()
+
+                        Exit For
+                    End If
+                Next
+            Case "SetupPSVita"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.SetupPSVita" Then
+
+                        If PS3SetupDownload Then
+                            CType(Win, SetupPSVita).FirmwareDownloadedCheckBox.IsChecked = True
+                            CType(Win, SetupPSVita).DownloadFirmwareButton.BorderBrush = Nothing
+                            CType(Win, SetupPSVita).InstallFirmwareButton.Focus()
+                        End If
+
+                        CType(Win, SetupPSVita).AdditionalPauseDelay = 100
+                        CType(Win, SetupPSVita).PauseInput = False
+                        CType(Win, SetupPSVita).Activate()
+
+                        Exit For
+                    End If
+                Next
+        End Select
+
+        Close()
     End Sub
 
     Public Sub DownloadCurrentPS3Firmware()
 
-        Dim ItemIndexOfNewDownload As Integer
+        Dim ItemIndexOfNewDownload As Integer = 0
+        OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware Version", "4.91", "/Icons/rpcs3black.png")
 
-        'Add Firmware to Downloads list
-        DownloadsList.Add(New DownloadListViewItem() With {.AppName = "PS3 Firmware 4.90", .AppIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute)),
-                           .AppIsDownloading = Visibility.Visible, .IsAppSelected = Visibility.Hidden,
-                           .AllDataLabel = "All Data", .AppDataLabel = "",
-                           .DownloadProgress = "Preparing", .SecondDownloadProgress = "", .ProgressValue = 0,
-                           .InstalledOrUpdated = ""})
+        Dim NewWebClient As New WebClient()
+        Dim NewDownload As New DownloadListViewItem() With {
+                          .AppName = "PS3 Firmware 4.91",
+                          .AppIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute)),
+                          .AppIsDownloading = Visibility.Visible,
+                          .AssociatedWebClient = NewWebClient,
+                          .IsAppSelected = Visibility.Visible,
+                          .AllDataLabel = "All Data",
+                          .AppDataLabel = "",
+                          .DownloadProgress = "Preparing",
+                          .SecondDownloadProgress = "",
+                          .ProgressValue = 0,
+                          .InstalledOrUpdated = ""}
 
-        'Get Index of added Item
-        ItemIndexOfNewDownload = 0
-
+        DownloadsListView.Items.Add(NewDownload)
         DownloadsListView.Items.Refresh()
-        OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware Version", "4.90", "/Icons/rpcs3black.png")
 
-        'Check if DownloadThread is busy
-        If DownloadThread1.IsBusy = False Then
-            'Add 'PS3FW' to the query (so we can find this one back) and download the file
-            DownloadThread1.QueryString.Add("PS3FW", ItemIndexOfNewDownload.ToString())
-            DownloadThread1.DownloadFileAsync(New Uri("http://deu01.ps3.update.playstation.net/update/ps3/image/shop/2023_0228_f8c0c15ebda82e4347fbabf4a7cf53bc/PS3UPDAT.PUP"),
-                                              My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP", Stopwatch.StartNew)
-        ElseIf DownloadThread2.IsBusy = False Then
-            DownloadThread2.QueryString.Add("PS3FW", ItemIndexOfNewDownload.ToString())
-            DownloadThread2.DownloadFileAsync(New Uri("http://deu01.ps3.update.playstation.net/update/ps3/image/shop/2023_0228_f8c0c15ebda82e4347fbabf4a7cf53bc/PS3UPDAT.PUP"),
-                                              My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP", Stopwatch.StartNew)
-        ElseIf DownloadThread3.IsBusy = False Then
-            DownloadThread3.QueryString.Add("PS3FW", ItemIndexOfNewDownload.ToString())
-            DownloadThread3.DownloadFileAsync(New Uri("http://deu01.ps3.update.playstation.net/update/ps3/image/shop/2023_0228_f8c0c15ebda82e4347fbabf4a7cf53bc/PS3UPDAT.PUP"),
-                                              My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP", Stopwatch.StartNew)
+        If Not String.IsNullOrEmpty(DownloadPath) Then
+            NewWebClient.DownloadFileAsync(New Uri("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2024_0227_3694eb3fb8d9915c112e6ab41a60c69f/PS3UPDAT.PUP"), DownloadPath + "\PS3UPDAT.PUP", Stopwatch.StartNew)
+        Else
+            NewWebClient.DownloadFileAsync(New Uri("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2024_0227_3694eb3fb8d9915c112e6ab41a60c69f/PS3UPDAT.PUP"), My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP", Stopwatch.StartNew)
         End If
+
+        AddHandler NewWebClient.DownloadProgressChanged, Sub(sender As Object, e As DownloadProgressChangedEventArgs)
+                                                             'Update values
+                                                             Dim ClientSender As WebClient = CType(sender, WebClient)
+
+                                                             For Each DownloadItem In DownloadsListView.Items
+                                                                 Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                                 If DLListViewItem.AssociatedWebClient Is ClientSender Then
+                                                                     DLListViewItem.DownloadProgress = (e.BytesReceived / (1024 * 1024)).ToString("0.000 MB") + "/" + (e.TotalBytesToReceive / (1024 * 1024)).ToString("0.000 MB")
+                                                                     DLListViewItem.ProgressValue = e.ProgressPercentage
+                                                                 End If
+                                                             Next
+
+                                                         End Sub
+
+        AddHandler NewWebClient.DownloadFileCompleted, Sub(sender As Object, e As AsyncCompletedEventArgs)
+                                                           Dim ClientSender As WebClient = CType(sender, WebClient)
+
+                                                           'Update values
+                                                           For Each DownloadItem In DownloadsListView.Items
+                                                               Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                               If DLListViewItem.AssociatedWebClient Is ClientSender Then
+                                                                   DLListViewItem.AppIsDownloading = Visibility.Hidden
+                                                                   DLListViewItem.AllDataLabel = "Completed and ready to use."
+                                                                   DLListViewItem.DownloadProgress = ""
+                                                               End If
+                                                           Next
+
+                                                           'Let the installer know that the PS3 firmware download finished
+                                                           For Each Win In Windows.Application.Current.Windows()
+                                                               If Win.ToString = "OrbisPro.SetupPS3" Then
+                                                                   CType(Win, SetupPS3).FirmwareDownloadCompleted = True
+                                                                   Exit For
+                                                               End If
+                                                           Next
+
+                                                           'Send notification when download did finish
+                                                           OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware", "DL Completed", "/Icons/rpcs3black.png")
+                                                           PlayBackgroundSound(Sounds.Trophy)
+                                                       End Sub
+
     End Sub
 
-    Private Sub DownloadThread1_DownloadProgressChanged(sender As Object, e As DownloadProgressChangedEventArgs) Handles DownloadThread1.DownloadProgressChanged
-        'Convert sender to Webclient and update the correct item in the ListView
-        Dim ClientSender As WebClient = CType(sender, WebClient)
+    Public Sub DownloadCurrentPSVitaFirmware()
 
-        'Update
-        DownloadsList.Item(CInt(ClientSender.QueryString("PS3FW"))).DownloadProgress = (e.BytesReceived / (1024 * 1024)).ToString("0.000 MB") + "/" + (e.TotalBytesToReceive / (1024 * 1024)).ToString("0.000 MB")
-        DownloadsList.Item(CInt(ClientSender.QueryString("PS3FW"))).ProgressValue = e.ProgressPercentage
+        Dim ItemIndexOfNewDownload As Integer = 0
+        OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware Version", "4.91", "/Icons/rpcs3black.png")
+
+        Dim NewWebClient As New WebClient()
+        Dim NewDownload As New DownloadListViewItem() With {
+                          .AppName = "PS Vita Firmware 3.74",
+                          .AppIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute)),
+                          .AppIsDownloading = Visibility.Visible,
+                          .AssociatedWebClient = NewWebClient,
+                          .IsAppSelected = Visibility.Visible,
+                          .AllDataLabel = "All Data",
+                          .AppDataLabel = "",
+                          .DownloadProgress = "Preparing",
+                          .SecondDownloadProgress = "",
+                          .ProgressValue = 0,
+                          .InstalledOrUpdated = ""}
+
+        DownloadsListView.Items.Add(NewDownload)
+        DownloadsListView.Items.Refresh()
+
+        If Not String.IsNullOrEmpty(DownloadPath) Then
+            NewWebClient.DownloadFileAsync(New Uri("http://dus01.psv.update.playstation.net/update/psv/image/2022_0209/rel_f2c7b12fe85496ec88a0391b514d6e3b/PSVUPDAT.PUP"),
+                                           DownloadPath + "\PSVUPDAT.PUP",
+                                           Stopwatch.StartNew)
+        Else
+            NewWebClient.DownloadFileAsync(New Uri("http://dus01.psv.update.playstation.net/update/psv/image/2022_0209/rel_f2c7b12fe85496ec88a0391b514d6e3b/PSVUPDAT.PUP"),
+                                           My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PSVUPDAT.PUP",
+                                           Stopwatch.StartNew)
+        End If
+
+        AddHandler NewWebClient.DownloadProgressChanged, Sub(sender As Object, e As DownloadProgressChangedEventArgs)
+                                                             'Update values
+                                                             Dim ClientSender As WebClient = CType(sender, WebClient)
+
+                                                             For Each DownloadItem In DownloadsListView.Items
+                                                                 Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                                 If DLListViewItem.AssociatedWebClient Is ClientSender Then
+                                                                     DLListViewItem.DownloadProgress = (e.BytesReceived / (1024 * 1024)).ToString("0.000 MB") + "/" + (e.TotalBytesToReceive / (1024 * 1024)).ToString("0.000 MB")
+                                                                     DLListViewItem.ProgressValue = e.ProgressPercentage
+                                                                 End If
+                                                             Next
+
+                                                         End Sub
+
+        AddHandler NewWebClient.DownloadFileCompleted, Sub(sender As Object, e As AsyncCompletedEventArgs)
+                                                           Dim ClientSender As WebClient = CType(sender, WebClient)
+
+                                                           'Update values
+                                                           For Each DownloadItem In DownloadsListView.Items
+                                                               Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                               If DLListViewItem.AssociatedWebClient Is ClientSender Then
+                                                                   DLListViewItem.AppIsDownloading = Visibility.Hidden
+                                                                   DLListViewItem.AllDataLabel = "Completed and ready to use."
+                                                                   DLListViewItem.DownloadProgress = ""
+                                                               End If
+                                                           Next
+
+                                                           'Let the installer know that the PS3 firmware download finished
+                                                           For Each Win In Windows.Application.Current.Windows()
+                                                               If Win.ToString = "OrbisPro.SetupPSVita" Then
+                                                                   CType(Win, SetupPSVita).FirmwareDownloadCompleted = True
+                                                                   Exit For
+                                                               End If
+                                                           Next
+
+                                                           'Send notification when download did finish
+                                                           OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS Vita Firmware", "DL Completed", "/Icons/rpcs3black.png")
+                                                           PlayBackgroundSound(Sounds.Trophy)
+                                                       End Sub
+
     End Sub
 
-    Private Sub DownloadThread1_DownloadFileCompleted(sender As Object, e As AsyncCompletedEventArgs) Handles DownloadThread1.DownloadFileCompleted
-
-        'Get the WebClient that downloaded the file
-        Dim ClientSender As WebClient = CType(sender, WebClient)
-
-        'Update
-        DownloadsList.Item(CInt(ClientSender.QueryString("PS3FW"))).AppIsDownloading = Visibility.Hidden
-        DownloadsList.Item(CInt(ClientSender.QueryString("PS3FW"))).AllDataLabel = "Completed and ready to use."
-        DownloadsList.Item(CInt(ClientSender.QueryString("PS3FW"))).DownloadProgress = ""
-
-        'Let the installer know that the PS3 firmware download finished
-        For Each Win In Windows.Application.Current.Windows()
-            If Win.ToString = "OrbisPro.SetupPS3" Then
-                CType(Win, SetupPS3).FirmwareDownloadCompleted = True
-                Exit For
-            End If
-        Next
-
-        'Send notification when download did finish
-        OrbisNotifications.NotificationPopup(DownloadsCanvas, "Download completed", "PS3 FW", "/Icons/rpcs3black.png")
-    End Sub
-
-    Private Sub DownloadThread2_DownloadProgressChanged(sender As Object, e As DownloadProgressChangedEventArgs) Handles DownloadThread2.DownloadProgressChanged
-        'To be completed
-    End Sub
-
-    Private Sub DownloadThread2_DownloadFileCompleted(sender As Object, e As AsyncCompletedEventArgs) Handles DownloadThread2.DownloadFileCompleted
-        'To be completed
-    End Sub
-
-    Private Sub DownloadThread3_DownloadProgressChanged(sender As Object, e As DownloadProgressChangedEventArgs) Handles DownloadThread3.DownloadProgressChanged
-        'To be completed
-    End Sub
-
-    Private Sub DownloadThread3_DownloadFileCompleted(sender As Object, e As AsyncCompletedEventArgs) Handles DownloadThread3.DownloadFileCompleted
-        'To be completed
-    End Sub
-
-    Private Sub Downloads_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
-
-        GetAttachedControllers()
-
-        'This one was used in a preview
-        '
-        'DownloadsList.Add(New DownloadListViewItem() With {.AppName = "OrbisPro: Version 0.1.X", .AppIcon = New BitmapImage(New Uri("C:\Users\SvenGDK\Desktop\iconsPro\orbisProLogo.png", UriKind.Absolute)),
-        '           .AppIsDownloading = Visibility.Visible, .IsAppSelected = Visibility.Visible,
-        '           .AllDataLabel = "All Data", .AppDataLabel = "Data to Start Application",
-        '           .DownloadProgress = "Preparing", .SecondDownloadProgress = "", .ProgressValue = 0,
-        '           .InstalledOrUpdated = ""})
-
-        DownloadsListView.Focus()
-        DownloadsListView.ItemsSource = DownloadsList
-
-        DownloadCurrentPS3Firmware()
-    End Sub
+#Region "Input"
 
     Private Sub Downloads_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
 
+        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+
         If e.Key = Key.X Then
-            'We're done here. Close the 'Downloader'
-            BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(1))})
 
-            'Activate previous window
-            For Each Win In Windows.Application.Current.Windows()
-                If Win.ToString = "OrbisPro.SetupPS3" Then
-                    CType(Win, SetupPS3).Activate()
-                    CType(Win, SetupPS3).InstallButton.Focus()
-                    Exit For
-                End If
-            Next
-
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
-            BeginAnimation(OpacityProperty, ClosingAnim)
-        ElseIf e.Key = Key.O Then
-            'Cancel the download
-            DownloadThread1.CancelAsync()
-
-            'Return to PS3 setup
-            BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(1))})
-
-            'Activate previous window
-            For Each Win In Windows.Application.Current.Windows()
-                If Win.ToString = "OrbisPro.SetupPS3" Then
-                    CType(Win, SetupPS3).Activate()
-                    CType(Win, SetupPS3).InstallButton.Focus()
-                    Exit For
-                End If
-            Next
-
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
-            BeginAnimation(OpacityProperty, ClosingAnim)
+        ElseIf e.Key = Key.C Then
+            BeginAnimation(OpacityProperty, ClosingAnimation)
+        ElseIf e.Key = Key.A Then
+            If TypeOf FocusedItem Is ListViewItem Then
+                Dim SelectedDownloadItem As DownloadListViewItem = CType(FocusedItem, DownloadListViewItem)
+                Try
+                    SelectedDownloadItem.AssociatedWebClient.CancelAsync()
+                    OrbisNotifications.NotificationPopup(DownloadsCanvas, SelectedDownloadItem.AppName, "Download aborted.", SelectedDownloadItem.AppIcon)
+                    PlayBackgroundSound(Sounds.Trophy)
+                Catch ex As Exception
+                    PauseInput = True
+                    ExceptionDialog("System Error", ex.Message)
+                End Try
+            End If
+        ElseIf e.Key = Key.Up Then
+            MoveUp()
+        ElseIf e.Key = Key.Down Then
+            MoveDown()
         End If
 
     End Sub
 
-    Private Sub CurrentController_StateChanged(sender As Object, e As EventArgs) Handles CurrentController.StateChanged
+    Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
+        While Not CancelToken.IsCancellationRequested
 
-        If CurrentController.A_down Then
-            'We're done here. Close the 'Downloader'
-            BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(1))})
+            Dim AdditionalDelayAmount As Integer
 
-            'Activate previous window
-            For Each Win In Windows.Application.Current.Windows()
-                If Win.ToString = "OrbisPro.SetupPS3" Then
-                    CType(Win, SetupPS3).Activate()
-                    CType(Win, SetupPS3).InstallButton.Focus()
-                    Exit For
+            If Not PauseInput Then
+                Dim MainGamepadState As State = MainController.GetState()
+                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+
+                Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
+                Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
+                Dim MainGamepadButton_X_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.X) <> 0
+                Dim MainGamepadButton_Y_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Y) <> 0
+                Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
+
+                Dim MainGamepadButton_DPad_Up_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadUp) <> 0
+                Dim MainGamepadButton_DPad_Down_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadDown) <> 0
+                Dim MainGamepadButton_DPad_Left_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadLeft) <> 0
+                Dim MainGamepadButton_DPad_Right_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadRight) <> 0
+
+                Dim MainGamepadButton_RightThumbY_Up As Boolean = MainGamepadState.Gamepad.RightThumbY = CShort(32767)
+                Dim MainGamepadButton_RightThumbY_Down As Boolean = MainGamepadState.Gamepad.RightThumbY = CShort(-32768)
+
+                'Get the focused element to select different actions
+                Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+
+                If MainGamepadButton_A_Button_Pressed Then
+
+                ElseIf MainGamepadButton_B_Button_Pressed Then
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                ElseIf MainGamepadButton_Y_Button_Pressed Then
+
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        Dim SelectedDownloadItem As DownloadListViewItem = CType(FocusedItem, DownloadListViewItem)
+                        Try
+                            SelectedDownloadItem.AssociatedWebClient.CancelAsync()
+                            OrbisNotifications.NotificationPopup(DownloadsCanvas, SelectedDownloadItem.AppName, "Download aborted.", SelectedDownloadItem.AppIcon)
+                            PlayBackgroundSound(Sounds.Trophy)
+                        Catch ex As Exception
+                            PauseInput = True
+                            ExceptionDialog("System Error", ex.Message)
+                        End Try
+                    End If
+
+                ElseIf MainGamepadButton_DPad_Up_Pressed Then
+                    MoveUp()
+                ElseIf MainGamepadButton_DPad_Down_Pressed Then
+                    MoveDown()
+                ElseIf MainGamepadButton_RightThumbY_Up Then
+                    ScrollUp()
+                ElseIf MainGamepadButton_RightThumbY_Down Then
+                    ScrollDown()
                 End If
-            Next
 
-            Close()
-        ElseIf CurrentController.B_down Then
-            'Cancel the download
-            DownloadThread1.CancelAsync()
+                AdditionalDelayAmount += 50
+            Else
+                AdditionalDelayAmount += 500
+            End If
 
-            'Return to PS3 setup
-            BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(1))})
+            ' Delay to avoid excessive polling
+            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+        End While
+    End Function
 
-            'Activate previous window
-            For Each Win In Windows.Application.Current.Windows()
-                If Win.ToString = "OrbisPro.SetupPS3" Then
-                    CType(Win, SetupPS3).Activate()
-                    CType(Win, SetupPS3).InstallButton.Focus()
-                    Exit For
-                End If
-            Next
+    Private Sub ChangeButtonLayout()
+        If SharedDeviceModel = DeviceModel.ROGAlly Then
+            BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
 
-            Close()
+            OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_options.png", UriKind.RelativeOrAbsolute))
+            OptionsButton.Width = 48
+
+            ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_y.png", UriKind.RelativeOrAbsolute))
+        End If
+    End Sub
+
+#End Region
+
+    Private Sub DownloadsListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles DownloadsListView.SelectionChanged
+        If DownloadsListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
+            Dim PreviousItem As DownloadListViewItem = CType(e.RemovedItems(0), DownloadListViewItem)
+            Dim SelectedItem As DownloadListViewItem = CType(e.AddedItems(0), DownloadListViewItem)
+
+            SelectedItem.IsAppSelected = Visibility.Visible
+            PreviousItem.IsAppSelected = Visibility.Hidden
+        End If
+    End Sub
+
+    Private Sub MoveUp()
+        PlayBackgroundSound(Sounds.Move)
+
+        Dim SelectedIndex As Integer = DownloadsListView.SelectedIndex
+        Dim NextIndex As Integer = DownloadsListView.SelectedIndex - 1
+
+        If Not NextIndex <= -1 Then
+            DownloadsListView.SelectedIndex -= 1
+        End If
+    End Sub
+
+    Private Sub MoveDown()
+        PlayBackgroundSound(Sounds.Move)
+
+        Dim SelectedIndex As Integer = DownloadsListView.SelectedIndex
+        Dim NextIndex As Integer = DownloadsListView.SelectedIndex + 1
+
+        If Not NextIndex = DownloadsListView.Items.Count Then
+            DownloadsListView.SelectedIndex += 1
+        End If
+    End Sub
+
+    Private Sub ScrollUp()
+        Dim DownloadsListViewScrollViewer As ScrollViewer = FindScrollViewer(DownloadsListView)
+        Dim VerticalOffset As Double = DownloadsListViewScrollViewer.VerticalOffset
+        DownloadsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset - 70)
+    End Sub
+
+    Private Sub ScrollDown()
+        Dim DownloadsListViewScrollViewer As ScrollViewer = FindScrollViewer(DownloadsListView)
+        Dim VerticalOffset As Double = DownloadsListViewScrollViewer.VerticalOffset
+        DownloadsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 70)
+    End Sub
+
+    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
+        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
+            .Top = 0,
+            .Left = 0,
+            .Opacity = 0,
+            .SetupStep = True,
+            .Opener = "Downloads",
+            .MessageTitle = MessageTitle,
+            .MessageDescription = MessageDescription}
+
+        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSystemDialog.Show()
+    End Sub
+
+    Private Sub SetBackground()
+        'Set the background
+        Select Case ConfigFile.IniReadValue("System", "Background")
+            Case "Blue Bubbles"
+                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+            Case "Orange/Red Gradient Waves"
+                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+            Case "PS2 Dots"
+                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Custom"
+                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
+            Case Else
+                BackgroundMedia.Source = Nothing
+        End Select
+
+        'Play the background media if Source is not empty
+        If BackgroundMedia.Source IsNot Nothing Then
+            BackgroundMedia.Play()
         End If
 
+        'Go to first second of the background video and pause it if BackgroundAnimation = False
+        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
+            BackgroundMedia.Position = New TimeSpan(0, 0, 1)
+            BackgroundMedia.Pause()
+        End If
+
+        'Mute BackgroundMedia if BackgroundMusic = False
+        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
+            BackgroundMedia.IsMuted = True
+        End If
     End Sub
 
-    Private Sub Downloads_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        X.StopPolling()
-        CurrentController = Nothing
-    End Sub
-
-    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnim.Completed
-        Close()
+    Private Sub BackgroundMedia_MediaEnded(sender As Object, e As RoutedEventArgs) Handles BackgroundMedia.MediaEnded
+        'Loop the background media
+        BackgroundMedia.Position = TimeSpan.FromSeconds(0)
+        BackgroundMedia.Play()
     End Sub
 
 End Class

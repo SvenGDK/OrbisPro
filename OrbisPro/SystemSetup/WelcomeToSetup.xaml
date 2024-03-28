@@ -5,22 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OrbisPro"
         mc:Ignorable="d"
-        Title="WelcomeToSetup" Height="1080" Width="1920" Background="Black" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None">
+        Title="OrbisPro - Welcome Setup" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
     <Canvas x:Name="WelcomeSetupCanvas">
-        <MediaElement x:Name="BGVid" Height="1080" Width="1920">
-            <MediaElement.Triggers>
-                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <MediaTimeline Source="./Backgrounds/gradient_bg.mp4" Storyboard.TargetName="BGVid" RepeatBehavior="Forever" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </MediaElement.Triggers>
-        </MediaElement>
-        <Label x:Name="WelcomeLabel" Content="Orbis[Pro]" Height="1080" Width="1920" Background="Black" Foreground="White" FontFamily="Humnst777 BT" FontSize="72" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Visibility="Hidden"/>
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <!--#region Default Setup -->
+        <Label x:Name="WelcomeLabel" Content="Orbis[Pro]" Height="1080" Width="1920" Background="Black" Foreground="White" FontFamily="SST Medium" FontSize="72" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Visibility="Hidden"/>
         <Image x:Name="ControllerSetupImage" Canvas.Left="658" Canvas.Top="38" Stretch="Fill" Width="600" Height="1000" Opacity="0" Source="/Icons/boot_controllersetup1.png"/>
-        <TextBlock x:Name="ControllerTextBlock" Canvas.Left="1258" TextWrapping="Wrap" Canvas.Top="38" Height="1000" Width="800" Foreground="White" FontFamily="Humnst777 BT" FontSize="36" Opacity="0">
+        <TextBlock x:Name="ControllerTextBlock" Canvas.Left="1258" TextWrapping="Wrap" Canvas.Top="38" Height="1000" Width="800" Foreground="White" FontFamily="SST Light" FontSize="36" Opacity="0">
             Connect your controller using the USB
             cable, and then press the PS button.
             <LineBreak/>
@@ -39,60 +32,61 @@
         </TextBlock>
         <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" Opacity="0"/>
         <Separator x:Name="TopSeparator" Height="10" Margin="0" Canvas.Top="128" Width="1920" Background="White" Foreground="{x:Null}" Opacity="0"/>
-        <Image x:Name="CrossButton" Height="48" Canvas.Left="104" Canvas.Top="948" Width="48" Opacity="0" Source="/Icons/cross.png"/>
-        <Label x:Name="BackLabel" Content="Enter" Canvas.Left="152" Canvas.Top="948" Height="48" Width="119" FontFamily="Humnst777 BT" Foreground="White" FontSize="34" VerticalContentAlignment="Center" Opacity="0">
+        <Image x:Name="CrossButton" Height="48" Canvas.Left="104" Canvas.Top="948" Width="48" Opacity="0" Source="/Icons/Buttons/ps_cross.png"/>
+        <Label x:Name="BackLabel" Content="Enter" Canvas.Left="152" Canvas.Top="948" Height="48" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" Opacity="0">
             <Label.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Label.Effect>
         </Label>
-        <Label x:Name="MainSetupTitle" Content="Welcome to OrbisPro !" Canvas.Left="102" Canvas.Top="28" Height="95" Width="1808" FontFamily="Humnst777 BT" Foreground="White" FontSize="70" VerticalContentAlignment="Center" Opacity="0">
+        <Label x:Name="MainSetupTitle" Content="Welcome to OrbisPro !" Canvas.Left="102" Canvas.Top="28" Height="95" Width="1808" FontFamily="SST Medium" Foreground="White" FontSize="70" VerticalContentAlignment="Center" Opacity="0">
             <Label.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Label.Effect>
         </Label>
-        <Button x:Name="EnglishButton" Content="English" Canvas.Left="284" Canvas.Top="376" Width="1300" Height="70" FontSize="36" Background="{x:Null}" BorderBrush="#FF00BAFF" Foreground="White" BorderThickness="4" Opacity="0" FocusVisualStyle="{x:Null}">
-            <Button.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Button.Effect>
-        </Button>
-        <Button x:Name="GermanButton" Content="Deutsch" Canvas.Left="284" Canvas.Top="446" Width="1300" Height="70" FontSize="36" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" Opacity="0" FocusVisualStyle="{x:Null}">
-            <Button.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Button.Effect>
-        </Button>
-        <Button x:Name="FrenchButton" Content="Français" Canvas.Left="284" Canvas.Top="516" Width="1300" Height="70" FontSize="36" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" Opacity="0" FocusVisualStyle="{x:Null}">
-            <Button.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Button.Effect>
-        </Button>
+
         <Label x:Name="SetupTitle" Content="Which language do you want to use?" Canvas.Left="284" Canvas.Top="172" Height="60" Width="1303" FontFamily="Humnst777 BT" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Opacity="0">
             <Label.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Label.Effect>
         </Label>
-        <Label x:Name="SecondSetupTitle" Content="Let's begin setting up your OrbisPro Interface." Canvas.Left="284" Canvas.Top="250" Height="60" Width="1300" FontFamily="Humnst777 BT" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Opacity="0">
+        <Label x:Name="SecondSetupTitle" Content="Let's begin setting up your OrbisPro interface." Canvas.Left="284" Canvas.Top="250" Height="60" Width="1300" FontFamily="SST Medium" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Opacity="0">
             <Label.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Label.Effect>
         </Label>
-        <Rectangle x:Name="DarkBox" Height="350" Canvas.Left="284" Canvas.Top="376" Width="1300" Opacity="0.5" Visibility="Hidden">
+        
+        <Rectangle x:Name="DarkBox" Height="350" Canvas.Left="284" Canvas.Top="376" Width="1300" Opacity="0">
             <Rectangle.Fill>
-                <SolidColorBrush Color="Black" Opacity="0.4"/>
+                <SolidColorBrush Color="Black" Opacity="0.5"/>
             </Rectangle.Fill>
         </Rectangle>
         <Label x:Name="SetupEmuLabel" Content="Set Up Emulators" Canvas.Left="444" Canvas.Top="435" Foreground="White" FontSize="36" Width="1070" Opacity="0"/>
-        <Label x:Name="CheckUpdatesLabel" Content="Check for Updates [Not available in Alpha]" Canvas.Left="444" Canvas.Top="516" Foreground="White" FontSize="36" Width="1070" Opacity="0"/>
+        <Label x:Name="CheckUpdatesLabel" Content="Check for Updates" Canvas.Left="444" Canvas.Top="516" Foreground="White" FontSize="36" Width="1070" Opacity="0"/>
         <Label x:Name="DateTimeLabel" Content="Set custom Date and Time [Not available in Alpha]" Canvas.Left="444" Canvas.Top="597" Foreground="White" FontSize="36" Width="1070" Opacity="0"/>
         <Button x:Name="NextButton" Content="Next" Canvas.Left="658" Canvas.Top="820" Width="600" Height="70" FontSize="36" Background="{x:Null}" BorderBrush="#FF00BAFF" Foreground="White" BorderThickness="4" Opacity="0" FocusVisualStyle="{x:Null}">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Image x:Name="CircleButton" Height="48" Canvas.Left="284" Canvas.Top="948" Width="48" Opacity="0" Source="/Icons/circle.png"/>
+        <Image x:Name="CircleButton" Height="48" Canvas.Left="284" Canvas.Top="948" Width="48" Source="/Icons/Buttons/ps_circle.png" Opacity="0"/>
         <Label x:Name="NewBackLabel" Content="Back" Canvas.Left="332" Canvas.Top="948" Height="48" Width="118" FontFamily="Humnst777 BT" Foreground="White" FontSize="34" VerticalContentAlignment="Center" Opacity="0">
             <Label.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Label.Effect>
         </Label>
+        <!--#endregion-->
+
+        <!--#region ROG Setup -->
+        <Rectangle x:Name="ROGDarkBox" Height="400" Canvas.Left="284" Canvas.Top="376" Width="1300" Opacity="0">
+            <Rectangle.Fill>
+                <SolidColorBrush Color="Black" Opacity="0.5"/>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Label x:Name="ROGCheckUpdatesLabel" Content="- Check For Available Updates" Canvas.Left="444" Canvas.Top="423" Foreground="White" FontSize="36" Width="1070" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" FontFamily="SST Light"/>
+        <Label x:Name="ROGCheckGamesLabel" Content="- Check &amp; Add Installed Games" Canvas.Left="444" Canvas.Top="486" Foreground="White" FontSize="36" Width="1070" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" FontFamily="SST Light"/>
+        <Label x:Name="ROGCheckAppsLabel" Content="- Check &amp; Add Installed Applications" Canvas.Left="444" Canvas.Top="549" Foreground="White" FontSize="36" Width="1070" Opacity="0" VerticalAlignment="Top" HorizontalAlignment="Center" FontFamily="SST Light"/>
+        <Label x:Name="ROGCustomizeLabel" Content="- Customize the OrbisPro User Interface" Canvas.Left="444" Canvas.Top="612" Foreground="White" FontSize="36" Width="1070" Opacity="0" VerticalAlignment="Top" HorizontalAlignment="Center" FontFamily="SST Light"/>
+        <Label x:Name="ROGSetupEmuLabel" Content="- Set Up Emulators" Canvas.Left="444" Canvas.Top="675" Foreground="White" FontSize="36" Width="1070" Opacity="0" VerticalAlignment="Top" HorizontalAlignment="Center" FontFamily="SST Light"/>
+        <!--#endregion-->
     </Canvas>
 </Window>

@@ -1,24 +1,24 @@
-﻿Public Class OrbisAudio
+﻿Imports OrbisPro.OrbisUtils
 
-    'Set the config file (currently fixed and should not be changed to prevent bugs)
-    Public Shared ConfigFile As New INI.IniFile(My.Computer.FileSystem.CurrentDirectory + "\Config\Settings.ini")
+Public Class OrbisAudio
 
     'List of possible sound effects
     Public Enum Sounds
-        Start
-        Trophy
-        SelectItem
+        Back
+        CancelOptions
+        Message
         Move
         Notification
-        Back
         Options
-        CancelOptions
+        SelectItem
+        Start
+        Trophy
     End Enum
 
     Public Shared Sub PlayBackgroundSound(Sound As Sounds)
 
         'Get the selected 'Navigation Audio Pack' to play the correct sound effect
-        Dim AudioPack As String = ConfigFile.IniReadValue("Audio Settings", "Navigation Audio Pack")
+        Dim AudioPack As String = ConfigFile.IniReadValue("Audio", "Navigation Audio Pack")
 
         'Determine which sound to play - Some sound effects are still missing ...
         If Sound = Sounds.Start Then
@@ -29,11 +29,26 @@
                 Case "PS2"
 
                 Case "PS3"
-
+                    My.Computer.Audio.Play(My.Resources.ps3_start, AudioPlayMode.Background)
                 Case "PS4"
-                    My.Computer.Audio.Play(My.Resources.start, AudioPlayMode.Background)
+                    My.Computer.Audio.Play(My.Resources.ps4_start, AudioPlayMode.Background)
                 Case "PS5"
                     My.Computer.Audio.Play(My.Resources.ps5_start, AudioPlayMode.Background)
+            End Select
+
+        ElseIf Sound = Sounds.Message Then
+
+            Select Case AudioPack
+                Case "PS1"
+
+                Case "PS2"
+
+                Case "PS3"
+                    My.Computer.Audio.Play(My.Resources.ps3_message, AudioPlayMode.Background)
+                Case "PS4"
+                    My.Computer.Audio.Play(My.Resources.ps4_message, AudioPlayMode.Background)
+                Case "PS5"
+
             End Select
 
         ElseIf Sound = Sounds.Move Then
@@ -44,9 +59,9 @@
                 Case "PS2"
                     My.Computer.Audio.Play(My.Resources.ps2_move, AudioPlayMode.Background)
                 Case "PS3"
-
+                    My.Computer.Audio.Play(My.Resources.ps3_tick, AudioPlayMode.Background)
                 Case "PS4"
-                    My.Computer.Audio.Play(My.Resources.move, AudioPlayMode.Background)
+                    My.Computer.Audio.Play(My.Resources.ps4_move, AudioPlayMode.Background)
                 Case "PS5"
                     My.Computer.Audio.Play(My.Resources.ps5_uimove, AudioPlayMode.Background)
             End Select
@@ -61,7 +76,7 @@
                 Case "PS3"
 
                 Case "PS4"
-                    My.Computer.Audio.Play(My.Resources.notification, AudioPlayMode.Background)
+                    My.Computer.Audio.Play(My.Resources.ps4_notification, AudioPlayMode.Background)
                 Case "PS5"
                     My.Computer.Audio.Play(My.Resources.ps5_notification, AudioPlayMode.Background)
             End Select
@@ -74,9 +89,9 @@
                 Case "PS2"
                     My.Computer.Audio.Play(My.Resources.ps2_select, AudioPlayMode.Background)
                 Case "PS3"
-
+                    My.Computer.Audio.Play(My.Resources.ps3_tick, AudioPlayMode.Background)
                 Case "PS4"
-                    My.Computer.Audio.Play(My.Resources._select, AudioPlayMode.Background)
+                    My.Computer.Audio.Play(My.Resources.ps4_select, AudioPlayMode.Background)
                 Case "PS5"
                     My.Computer.Audio.Play(My.Resources.ps5_uiselect, AudioPlayMode.Background)
             End Select
@@ -89,9 +104,9 @@
                 Case "PS2"
                     My.Computer.Audio.Play(My.Resources.ps2_back, AudioPlayMode.Background)
                 Case "PS3"
-
+                    My.Computer.Audio.Play(My.Resources.ps3_back, AudioPlayMode.Background)
                 Case "PS4"
-                    My.Computer.Audio.Play(My.Resources.back, AudioPlayMode.Background)
+                    My.Computer.Audio.Play(My.Resources.ps4_back, AudioPlayMode.Background)
                 Case "PS5"
                     My.Computer.Audio.Play(My.Resources.ps5_uiback, AudioPlayMode.Background)
             End Select
@@ -104,9 +119,9 @@
                 Case "PS2"
 
                 Case "PS3"
-
+                    My.Computer.Audio.Play(My.Resources.ps3_options, AudioPlayMode.Background)
                 Case "PS4"
-                    My.Computer.Audio.Play(My.Resources.options, AudioPlayMode.Background)
+                    My.Computer.Audio.Play(My.Resources.ps4_options, AudioPlayMode.Background)
                 Case "PS5"
 
             End Select
@@ -121,9 +136,24 @@
                 Case "PS3"
 
                 Case "PS4"
-                    My.Computer.Audio.Play(My.Resources.back2, AudioPlayMode.Background)
+                    My.Computer.Audio.Play(My.Resources.ps4_back2, AudioPlayMode.Background)
                 Case "PS5"
 
+            End Select
+
+        ElseIf Sound = Sounds.Trophy Then
+
+            Select Case AudioPack
+                Case "PS1"
+
+                Case "PS2"
+
+                Case "PS3"
+                    My.Computer.Audio.Play(My.Resources.ps4_trophy, AudioPlayMode.Background)
+                Case "PS4"
+                    My.Computer.Audio.Play(My.Resources.ps4_trophy, AudioPlayMode.Background)
+                Case "PS5"
+                    My.Computer.Audio.Play(My.Resources.ps5_trophy, AudioPlayMode.Background)
             End Select
 
         End If

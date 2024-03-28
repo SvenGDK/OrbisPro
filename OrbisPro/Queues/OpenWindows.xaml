@@ -5,29 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OrbisPro"
         mc:Ignorable="d"
-        Title="OpenWindows" Height="1080" Width="1920" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None" Background="Black" WindowStartupLocation="CenterScreen">
+        Title="OrbisPro - App Switcher" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
     <Canvas>
-        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" IsMuted="True">
-            <MediaElement.Triggers>
-                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <MediaTimeline Storyboard.TargetName="BackgroundMedia" RepeatBehavior="Forever" Source="./Backgrounds/gradient_bg.mp4" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </MediaElement.Triggers>
-        </MediaElement>
-        <Label x:Name="WindowTitle" Content="Opened Applications" Canvas.Left="101" Canvas.Top="43" Height="90" Width="1808" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Label.Effect>
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <TextBlock x:Name="WindowTitle" Text="Application Switcher" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
+            </TextBlock.Effect>
+        </TextBlock>
         <Separator x:Name="TopSeparator" Height="10" Canvas.Top="139" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Image x:Name="CircleButton" Height="48" Canvas.Left="223" Canvas.Top="962" Width="48" Source="/Icons/circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <Image x:Name="CrossButton" Height="48" Canvas.Left="1539" Canvas.Top="962" Width="48" Source="/Icons/cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="944" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <ListView x:Name="OpenWindowsListView" Height="610" Canvas.Left="223" Canvas.Top="331" Width="1564" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" d:ItemsSource="{d:SampleData ItemCount=5}" HorizontalAlignment="Center" VerticalAlignment="Top">
+
+        <TextBlock x:Name="WindowDescriptionTextBlock" Canvas.Left="223" TextWrapping="Wrap" Text="Text" Canvas.Top="170" FontFamily="SST Roman" Foreground="White" FontSize="36" Width="1564" Height="150" TextAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+        <ListView x:Name="OpenWindowsListView" Height="610" Canvas.Left="223" Canvas.Top="331" Width="1564" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" d:ItemsSource="{d:SampleData ItemCount=5}" HorizontalAlignment="Center" VerticalAlignment="Top" ScrollViewer.CanContentScroll="True">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel FocusVisualStyle="{x:Null}"/>
@@ -52,17 +44,22 @@
                             <SolidColorBrush Color="Black" Opacity="0.3"/>
                         </Canvas.Background>
                         <Border x:Name="ItemBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="128" Width="1560" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="{Binding IsItemSelected}" FocusVisualStyle="{x:Null}"/>
-                        <Image x:Name="ItemIco" Width="128" Height="128" Source="{Binding ItemIcon}" FocusVisualStyle="{x:Null}"/>
-                        <TextBlock x:Name="ItemText" Height="50" HorizontalAlignment="Left" Canvas.Left="133" VerticalAlignment="Top" Text="{Binding ItemName}" Canvas.Top="14" FocusVisualStyle="{x:Null}" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="ItemSubText" Height="35" HorizontalAlignment="Center" Canvas.Left="133" VerticalAlignment="Top" Text="{Binding ItemSubDescription}" Canvas.Top="69" FocusVisualStyle="{x:Null}" TextWrapping="Wrap" FontSize="24"/>
+                        <Image x:Name="ItemIco" Width="84" Height="84" Source="{Binding ItemIcon}" FocusVisualStyle="{x:Null}" Canvas.Left="25" Canvas.Top="22" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ItemText" Height="50" HorizontalAlignment="Left" Canvas.Left="133" VerticalAlignment="Top" Text="{Binding ItemName}" Canvas.Top="14" FocusVisualStyle="{x:Null}" />
+                        <TextBlock x:Name="ItemSubText" Height="35" HorizontalAlignment="Center" Canvas.Left="133" VerticalAlignment="Top" Text="{Binding ItemSubDescription}" Canvas.Top="69" FocusVisualStyle="{x:Null}" FontSize="24"/>
                     </Canvas>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <TextBlock x:Name="WindowDescriptionTextBlock" Canvas.Left="223" TextWrapping="Wrap" Text="Text" Canvas.Top="176" FontFamily="SST Roman" Foreground="White" FontSize="36" Width="1564" Height="150" TextAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <Image x:Name="TriangleButton" Height="48" Canvas.Left="1147" Canvas.Top="962" Width="48" Source="/Icons/triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="944" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+        <Image x:Name="ReturnButton" Height="48" Canvas.Left="223" Canvas.Top="962" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="SwitchButton" Height="48" Canvas.Left="1539" Canvas.Top="962" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="ActionButton" Height="48" Canvas.Left="1147" Canvas.Top="962" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="SwitchTextBlock" Canvas.Left="1592" TextWrapping="Wrap" Text="Switch To" Canvas.Top="961" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="CloseTextBlock" Canvas.Left="1200" TextWrapping="Wrap" Text="Close Application" Canvas.Top="961" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="ReturnTextBlock" Canvas.Left="276" TextWrapping="Wrap" Text="Return" Canvas.Top="961" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
     </Canvas>
 </Window>

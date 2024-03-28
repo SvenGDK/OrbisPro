@@ -118,27 +118,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="back" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\back.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="back2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\back2.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="home" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\home.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="logout" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\logout.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="move" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\move.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="notification" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\notification.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="options" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\options.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
   <data name="ps2_back" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ps2_back.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
@@ -150,6 +129,57 @@
   </data>
   <data name="ps2_select" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ps2_select.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps3_back" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps3_back.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps3_message" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps3_message.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps3_options" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps3_options.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps3_start" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps3_start.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps3_tick" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps3_tick.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_back" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_back.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_back2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_back2.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_home" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_home.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_logout" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_logout.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_message" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_message.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_move" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_move.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_notification" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_notification.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_options" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_options.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_select" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_select.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_start" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_start.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_trophy" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_trophy.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ps4_trophy_offline" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\ps4_trophy_offline.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="ps5_boot" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ps5_boot.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
@@ -171,20 +201,5 @@
   </data>
   <data name="ps5_uiselect" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ps5_uiselect.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="start" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\start.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="trophy" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\trophy.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="trophy_offline" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\trophy_offline.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="_error" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\error.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="_select" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\select.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

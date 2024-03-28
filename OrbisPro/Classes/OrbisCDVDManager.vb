@@ -2,26 +2,35 @@
 
 Public Class OrbisCDVDManager
 
+    'Disc variables
+    Public Shared IsDiscInserted As Boolean = False
+    Public Shared DiscDriveName As String
+    Public Shared DiscLabel As String
+    Public Shared DiscContentType As String
+    Public Shared DiscGameID As String = ""
+
     Public Shared GameTitle As String = ""
     Public Shared GameID As String = ""
 
     'Check the content of the disc
     Public Shared Function CheckCDVDContent(Optional DriveName As String = "") As (GameID As String, Platform As String)
-        If File.Exists(DriveName + "\SYSTEM.CNF") Then 'Used on PS1 & PS2 discs
-
-            If File.ReadAllLines(DriveName + "\SYSTEM.CNF")(0).Split("="c)(0).Trim() = "BOOT2" Then 'This is a PS2 disc (always?)
+        If File.Exists(DriveName + "\SYSTEM.CNF") Then
+            'Used on PS1 & PS2 discs
+            If File.ReadAllLines(DriveName + "\SYSTEM.CNF")(0).Split("="c)(0).Trim() = "BOOT2" Then
                 GameID = File.ReadAllLines(DriveName + "\SYSTEM.CNF")(0).Split("="c)(1).Trim().Replace("cdrom0:\", "").Replace(";1", "").Replace(".", "").Replace("_", "-").Trim() 'Return as readable ID
                 Return (GameID, "PS2")
-            ElseIf File.ReadAllLines(DriveName + "\SYSTEM.CNF")(0).Split("="c)(0).Trim() = "BOOT" Then 'This is a PS1 disc (always?)
-                GameID = File.ReadAllLines(DriveName + "\SYSTEM.CNF")(0).Split("="c)(1).Trim().Replace("cdrom:\", "").Replace(";1", "").Replace(".", "").Replace("_", "-").Trim() 'Return as readable ID
+            ElseIf File.ReadAllLines(DriveName + "\SYSTEM.CNF")(0).Split("="c)(0).Trim() = "BOOT" Then
+                GameID = File.ReadAllLines(DriveName + "\SYSTEM.CNF")(0).Split("="c)(1).Trim().Replace("cdrom:\", "").Replace(";1", "").Replace(".", "").Replace("_", "-").Trim()
                 Return (GameID, "PS1")
             Else
                 Return ("", "")
             End If
 
-        ElseIf File.Exists(DriveName + "\PARAM.SFO") Then 'Used on PS3 discs
+        ElseIf File.Exists(DriveName + "\PARAM.SFO") Then
+            'Used on PS3 discs
             Return ("", "")
         Else
+
             'Check other kinds of files
             Dim CheckForCDAFile() As String = Directory.GetFiles(DriveName, "*.cda") 'This can be an audio disc and/or many more - this one currently reports as PC-Engine game
 
@@ -35,7 +44,7 @@ Public Class OrbisCDVDManager
 
     End Function
 
-    'Select the emulator and start the disc
+    'Start the disc
     Public Shared Sub StartCDVD(Platform As String, DiscPath As String)
 
         'Select by reported platform

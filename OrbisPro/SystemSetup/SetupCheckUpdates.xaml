@@ -1,0 +1,43 @@
+﻿<Window x:Class="SetupCheckUpdates"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="OrbisPro - Update Checker" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
+    <Canvas>
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <Separator x:Name="TopSeparator" Height="10" Canvas.Top="128" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+
+        <TextBlock x:Name="SetupTitle" Text="Checking for Updates" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBlock x:Name="TopLabel" Text="Please wait ..." Canvas.Left="284" Canvas.Top="241" Height="64" Width="1304" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Top" TextAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <fa:ImageAwesome x:Name="LoadingIndicator" Icon="CircleOutlineNotch" Spin="True" Height="256" Width="256" Foreground="White" Canvas.Left="808" Canvas.Top="412" SpinDuration="2" />
+
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <TextBlock x:Name="ProgressLabel" Text="0 %" Canvas.Left="284" Canvas.Top="777" Height="64" Width="1304" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="101" Canvas.Top="960" Width="48" Source="/Icons/Buttons/ps_circle.png" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock x:Name="BackTextBlock" Text="Back" Canvas.Left="149" Canvas.Top="962" FontFamily="SST Light" Foreground="White" FontSize="34" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+    </Canvas>
+</Window>

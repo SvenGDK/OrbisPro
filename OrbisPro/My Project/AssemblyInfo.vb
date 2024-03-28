@@ -15,8 +15,8 @@ Imports System.Windows
 <Assembly: AssemblyDescription("Media center and game launcher for Windows in the style of PS4's UI.")>
 <Assembly: AssemblyCompany("SvenGDK")>
 <Assembly: AssemblyProduct("OrbisPro")>
-<Assembly: AssemblyCopyright("Copyright © SvenGDK 2022-2023")>
-<Assembly: AssemblyTrademark("")>
+<Assembly: AssemblyCopyright("Copyright © SvenGDK 2022-2024")>
+<Assembly: AssemblyTrademark("SvenGDK")>
 <Assembly: ComVisible(false)>
 
 'Um mit dem Erstellen lokalisierbarer Anwendungen zu beginnen, legen Sie
@@ -55,5 +55,5 @@ Imports System.Windows
 ' indem Sie "*" wie unten gezeigt eingeben:
 ' <Assembly: AssemblyVersion("1.0.*")>
 
-<Assembly: AssemblyVersion("0.0.1.0")>
-<Assembly: AssemblyFileVersion("0.0.1.0")>
+<Assembly: AssemblyVersion("0.1.0.0")>
+<Assembly: AssemblyFileVersion("0.1.0.0")>

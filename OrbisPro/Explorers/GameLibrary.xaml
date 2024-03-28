@@ -5,29 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OrbisPro"
         mc:Ignorable="d"
-        Title="Game Library" Height="1080" Width="1920" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None" Background="Black">
+        Title="OrbisPro - Library" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
     <Canvas x:Name="GameLibraryCanvas">
-        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" IsMuted="True">
-            <MediaElement.Triggers>
-                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <MediaTimeline Storyboard.TargetName="BackgroundMedia" RepeatBehavior="Forever" Source="./Backgrounds/circles.mp4" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </MediaElement.Triggers>
-        </MediaElement>
-        <Label x:Name="WindowTitle" Content="Library" Canvas.Left="101" Canvas.Top="43" Height="90" Width="1808" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Label.Effect>
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+        <TextBlock x:Name="WindowTitle" Text="Library" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
+            </TextBlock.Effect>
+        </TextBlock>
         <Separator x:Name="TopSeparator" Height="10" Canvas.Top="131" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+
         <Image x:Name="GameLibraryButton" Height="128" Canvas.Left="105" Canvas.Top="149" Width="128" Source="/Icons/quickmenu_controller.png" HorizontalAlignment="Center" VerticalAlignment="Center" Focusable="True" FocusVisualStyle="{x:Null}"/>
         <Image x:Name="GameBackupsButton" Height="100" Canvas.Left="119" Canvas.Top="277" Width="100" Source="/Icons/Folder.png" Opacity="0.5" HorizontalAlignment="Left" VerticalAlignment="Top" Focusable="True" FocusVisualStyle="{x:Null}"/>
-        <Separator x:Name="TopSeparator_Copy" Height="9" Canvas.Top="384" Width="56" Background="White" Foreground="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="141"/>
-       <ListView x:Name="ApplicationLibrary" Height="932" Canvas.Left="253" Canvas.Top="148" Width="1580" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" HorizontalAlignment="Left" VerticalAlignment="Center" d:ItemsSource="{d:SampleData ItemCount=5}">
+        <Separator x:Name="SideSeparator" Height="9" Canvas.Top="384" Width="56" Background="White" Foreground="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="141"/>
+
+        <ListView x:Name="ApplicationLibrary" Height="806" Canvas.Left="253" Canvas.Top="158" Width="1580" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" HorizontalAlignment="Center" VerticalAlignment="Top" d:ItemsSource="{d:SampleData ItemCount=9}" ScrollViewer.CanContentScroll="True">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
                     <WrapPanel FocusVisualStyle="{x:Null}"/>
@@ -51,14 +44,41 @@
                         <Canvas.Background>
                             <SolidColorBrush Color="Black" Opacity="0.5"/>
                         </Canvas.Background>
+                        <Image x:Name="AppIcon" Width="250" Height="250" Source="{Binding AppIcon}" FocusVisualStyle="{x:Null}" Canvas.Top="3" Canvas.Left="3"/>
                         <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="256" Width="516" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="{Binding IsAppSelected}" FocusVisualStyle="{x:Null}"/>
-                        <Image x:Name="AppIcon" Width="256" Height="256" Source="{Binding AppIcon}" FocusVisualStyle="{x:Null}"/>
                         <TextBlock Width="244" Height="236" HorizontalAlignment="Left" Canvas.Left="262" VerticalAlignment="Center" Text="{Binding AppTitle}" Canvas.Top="10" FocusVisualStyle="{x:Null}" TextWrapping="Wrap"/>
                     </Canvas>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <Rectangle x:Name="RightMenu" Height="1080" Canvas.Left="1930" Stroke="White" Width="492" HorizontalAlignment="Left" VerticalAlignment="Top">
+
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="964" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="119" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBlock x:Name="BackTextBlock" Canvas.Left="174" TextWrapping="Wrap" Text="Close" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="ActionButton" Height="48" Canvas.Left="1549" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBlock x:Name="OtherOptionsTextBlock" Canvas.Left="1604" TextWrapping="Wrap" Text="Other Options" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="RemoveButton" Height="48" Canvas.Left="1133" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_square.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBlock x:Name="RemoveTextBlock" Canvas.Left="1188" TextWrapping="Wrap" Text="Remove from Library" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="StartButton" Height="48" Canvas.Left="296" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBlock x:Name="StartTextBlock" Canvas.Left="351" TextWrapping="Wrap" Text="Start" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <Rectangle x:Name="RightMenu" Height="1080" Canvas.Left="1930" Stroke="White" Width="490" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Rectangle.Fill>
                 <LinearGradientBrush EndPoint="1,2" StartPoint="0.5,2" Opacity="0.795">
                     <GradientStop Color="Black"/>
@@ -66,25 +86,26 @@
                 </LinearGradientBrush>
             </Rectangle.Fill>
         </Rectangle>
+        <Button x:Name="MenuMoveCreateFolderButton" Content="Move or Create a new Folder" Canvas.Left="1930" Canvas.Top="426" Width="415" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="White" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="MenuStartAppButton" Content="Start" Canvas.Left="1930" Canvas.Top="496" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
         <Button x:Name="MenuInformationButton" Content="Information" Canvas.Left="1930" Canvas.Top="566" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="MenuStartAppButton" Content="Start Application" Canvas.Left="1930" Canvas.Top="496" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Button x:Name="MenuUninstallButton" Content="Uninstall" Canvas.Left="1930" Canvas.Top="636" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="MenuMoveCreateFolderButton" Content="Move or Create Folder" Canvas.Left="1930" Canvas.Top="426" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="White" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Left" VerticalAlignment="Top">
-            <Button.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Button.Effect>
-        </Button>
-        <Button x:Name="MenuDeleteButton" Content="Delete" Canvas.Left="1930" Canvas.Top="636" Width="368" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
-            <Button.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Button.Effect>
-        </Button>
+
     </Canvas>
 </Window>

@@ -1,0 +1,144 @@
+﻿<Window x:Name="PS3SetupWindow" x:Class="SetupPS3"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="OrbisPro - PS3 Setup" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
+    <Window.Resources>
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" >
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" Width="15" Height="15">
+                                <Grid>
+                                    <Grid Background="{TemplateBinding Foreground}" Margin="1" Visibility="Collapsed" Name="nullBlock"/>
+                                    <Path Stretch="Uniform" Width="15" Height="10" Fill="{TemplateBinding Foreground}" Name="eliCheck" Data="F1 M 9.97498,1.22334L 4.6983,9.09834L 4.52164,9.09834L 0,5.19331L 1.27664,3.52165L 4.255,6.08833L 8.33331,1.52588e-005L 9.97498,1.22334 Z " Visibility="Collapsed"/>
+                                </Grid>
+                            </Border>
+                            <TextBlock Margin="5,0,0,0"  VerticalAlignment="Center" Foreground="White" Text="{TemplateBinding Content}"></TextBlock>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="LightGray" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#FF9C9E9F" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="LightGray" />
+                                <Setter Property="Foreground" Value="Gray" />
+                                <Setter Property="BorderBrush" Value="Gray"/>
+                                <Setter TargetName="eliCheck" Property="Opacity" Value="0.5" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="eliCheck" Property="Visibility" Value="Visible"></Setter>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="{x:Null}">
+                                <Setter TargetName="nullBlock" Property="Visibility" Value="Visible"></Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Canvas x:Name="PS3SetupCanvas">
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <TextBlock x:Name="SetupTitle" Text="Setup PS3" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Separator x:Name="TopSeparator" Height="10" Margin="0" Canvas.Top="128" Width="1920" Background="White" Foreground="{x:Null}"/>
+
+        <TextBlock x:Name="RPCS3InfoLabel" Text="RPCS3 Quickstart" Canvas.Left="776" Canvas.Top="190" FontFamily="SST Light" Foreground="White" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Top" >
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="104" Canvas.Top="951" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <TextBlock x:Name="BackLabel" Text="Back" Canvas.Left="157" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="SelectButton" Height="48" Canvas.Left="1415" Canvas.Top="951" Width="48" Source="/Icons/Buttons/ps_cross.png"/>
+        <TextBlock x:Name="CrossButtonLabel" Text="Select" Canvas.Left="1468" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <CheckBox x:Name="RequirementsReadCheckBox" Content="" Canvas.Left="510" Canvas.Top="390" BorderBrush="White" Foreground="White" FontFamily="SST Light" FontSize="18" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" RenderTransformOrigin="1,1" HorizontalAlignment="Left" VerticalAlignment="Top" IsChecked="False" Background="{x:Null}" >
+            <CheckBox.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleX="2" ScaleY="2"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </CheckBox.RenderTransform>
+            <CheckBox.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </CheckBox.Effect>
+        </CheckBox>
+        <Button x:Name="ReadRequirementsButton" Content="Requirements Read" Canvas.Left="535" Canvas.Top="357" Width="850" Height="65" FontSize="30" Background="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Center" BorderBrush="White" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="DownloadFirmwareButton" Content="Download latest PS3 Firmware" Canvas.Left="535" Canvas.Top="427" Width="850" Height="65" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalAlignment="Left" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="InstallFirmwareButton" Content="Install the PS3 Firmware" Canvas.Left="535" Canvas.Top="497" Width="850" Height="65" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalAlignment="Left" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SelectBackupsButton" Content="Select game backups" Canvas.Left="535" Canvas.Top="567" Width="850" Height="65" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalAlignment="Left" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <CheckBox x:Name="FirmwareDownloadedCheckBox" Content="" Canvas.Left="510" Canvas.Top="460" Background="{x:Null}" BorderBrush="White" Foreground="White" FontFamily="SST Light" FontSize="18" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" RenderTransformOrigin="1,1" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <CheckBox.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleX="2" ScaleY="2"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </CheckBox.RenderTransform>
+            <CheckBox.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </CheckBox.Effect>
+        </CheckBox>
+        <CheckBox x:Name="FirmwareInstalledCheckBox" Content="" Canvas.Left="510" Canvas.Top="530" Background="{x:Null}" BorderBrush="White" Foreground="White" FontFamily="SST Light" FontSize="18" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" RenderTransformOrigin="1,1" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <CheckBox.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleX="2" ScaleY="2"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </CheckBox.RenderTransform>
+            <CheckBox.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </CheckBox.Effect>
+        </CheckBox>
+
+    </Canvas>
+</Window>

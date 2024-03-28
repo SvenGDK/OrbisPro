@@ -1,0 +1,51 @@
+﻿<Window x:Name="EmulatorSetupWindow" x:Class="SetupEmulators"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="OrbisPro - Emulators Setup" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
+    <Canvas x:Name="EmulatorSetupCanvas">
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <TextBlock x:Name="SetupTitle" Text="Setup Emulators" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" >
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Separator x:Name="TopSeparator" Height="10" Margin="0" Canvas.Top="128" Width="1920" Background="White" Foreground="{x:Null}"/>
+
+        <TextBlock x:Name="PSTextBlock" Text="PlayStation Emulators" Canvas.Left="725" Canvas.Top="270" FontFamily="SST Light" Foreground="White" FontSize="48" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Top" >
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Button x:Name="SetupPS3Button" Content="PS3 (rpcs3)" Canvas.Left="308" Canvas.Top="370" Width="1303" Height="70" FontSize="36" Background="{x:Null}" BorderBrush="White" Foreground="White" BorderThickness="4" FontFamily="SST Light" FocusVisualStyle="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+
+        <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="202" Canvas.Top="953" Width="48" Source="/Icons/Buttons/ps_circle.png"/>
+        <TextBlock x:Name="BackLabel" Text="Back" Canvas.Left="250" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="SelectButton" Height="48" Canvas.Left="1448" Canvas.Top="953" Width="48" Source="/Icons/Buttons/ps_cross.png"/>
+        <TextBlock x:Name="CrossButtonLabel" Text="Select" Canvas.Left="1496" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34" >
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Button x:Name="SetupPSVitaButton" Content="PS Vita (vita3k)" Canvas.Left="308" Canvas.Top="445" Width="1304" Height="70" FontSize="36" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+
+    </Canvas>
+</Window>

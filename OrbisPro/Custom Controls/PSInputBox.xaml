@@ -1,0 +1,35 @@
+﻿<UserControl x:Class="PSInputBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:OrbisPro"
+             mc:Ignorable="d" 
+             Width="800" Height="100">
+    <UserControl.Effect>
+        <DropShadowEffect/>
+    </UserControl.Effect>
+    <Grid>
+        <Rectangle Height="35" Stroke="White" Margin="0,0,50,65">
+            <Rectangle.Fill>
+                <SolidColorBrush Color="Black" Opacity="0.5"/>
+            </Rectangle.Fill>
+        </Rectangle>
+        <TextBlock x:Name="TitleTextBlock" HorizontalAlignment="Left" Margin="10,4,0,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" Foreground="White" FontFamily="SST Medium" FontSize="20" Width="735"/>
+        <TextBox x:Name="InputTextBox" Height="50" Foreground="White" FontFamily="SST Ultra Light" FontSize="20" Margin="0,35,0,15" Padding="7,7,0,0" BorderBrush="White">
+            <TextBox.Background>
+                <SolidColorBrush Color="Black" Opacity="0.5"/>
+            </TextBox.Background>
+        </TextBox>
+        <Button x:Name="CloseButton" Content="X" Margin="750,0,0,65" Width="50" Foreground="White" FontFamily="SST" FontSize="24" BorderBrush="White">
+            <Button.Background>
+                <SolidColorBrush Color="#FF484848" Opacity="0.7"/>
+            </Button.Background>
+        </Button>
+        <PasswordBox x:Name="PasswordInputTextBox" Height="50" Foreground="White" FontFamily="SST Ultra Light" FontSize="20" Margin="0,35,0,15" Padding="7,7,0,0" BorderBrush="White" Visibility="Hidden">
+            <PasswordBox.Background>
+                <SolidColorBrush Color="Black" Opacity="0.5"/>
+            </PasswordBox.Background>
+        </PasswordBox>
+    </Grid>
+</UserControl>

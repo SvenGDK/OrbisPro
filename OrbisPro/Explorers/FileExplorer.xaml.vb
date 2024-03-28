@@ -1,36 +1,36 @@
-﻿Imports System.ComponentModel
+﻿Imports OrbisPro.OrbisAnimations
+Imports OrbisPro.OrbisAudio
+Imports OrbisPro.GameStarter
+Imports OrbisPro.OrbisInput
+Imports OrbisPro.OrbisUtils
+Imports System.ComponentModel
 Imports System.IO
-Imports System.Text.RegularExpressions
+Imports System.Threading
 Imports System.Windows.Media.Animation
-Imports OrbisPro.OrbisAnimations
-Imports XInput.Wrapper
+Imports SharpDX.XInput
 
 Public Class FileExplorer
 
+    Public Opener As String
     Public Shared LastPath As String 'Keep track of the last path
     Public LastSelectedIndex As Integer
     Public SelectedItemToCopy As FileBrowserListViewItem
 
-    Dim GameLibraryPath As New INI.IniFile(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.ini")
+    Dim GameLibraryPath As New INI.IniFile(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt")
 
-    Dim WithEvents ClosingAnim As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-    Dim WithEvents CurrentController As X.Gamepad
+    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
-    'Get connected controllers
-    Public Sub GetAttachedControllers()
+    'Controller input
+    Private MainController As Controller
+    Private RemoteController As Controller
+    Private CTS As New CancellationTokenSource()
+    Public PauseInput As Boolean = True
 
-        'If a compatible controller is found set 'CurrentController' to 'X.Gamepad_1'
-        If X.IsAvailable Then
-            CurrentController = X.Gamepad_1
-            X.UpdatesPerSecond = 13 'This is important, otherwise the controller input is too fast
-            X.StartPolling(CurrentController) 'Start listening to controller input
-        End If
-
-    End Sub
+#Region "Window Events"
 
     Private Sub FileExplorer_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
-
-        GetAttachedControllers()
+        'Set background
+        SetBackground()
 
         'Get all drives
         For Each Device In Directory.GetLogicalDrives()
@@ -74,61 +74,128 @@ Public Class FileExplorer
         LastSelectedListViewItem.Focus()
 
         'Convert to DeviceListViewItem to control the item's customized properties
-        Dim LastSelectedItem As DeviceListViewItem = CType(DevicesListView.Items(0).Content, DeviceListViewItem)
+        Dim LastSelectedItem As DeviceListViewItem = CType(LastSelectedListViewItem.Content, DeviceListViewItem)
         LastSelectedItem.IsDeviceSelected = Visibility.Visible 'Show the selection border
-
     End Sub
 
-    Private Sub DevicesListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles DevicesListView.SelectionChanged
+    Private Async Sub FileExplorer_ContentRendered(sender As Object, e As EventArgs) Handles Me.ContentRendered
+        Try
+            'Check for gamepads
+            If GetAndSetGamepads() Then MainController = SharedController1
+            ChangeButtonLayout()
 
-        If DevicesListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
-
-            'Play the 'move' sound effect
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Move)
-
-            'Get the previous and next selected item and convert to DeviceListViewItem
-            Dim PreviousItem As DeviceListViewItem = CType(e.RemovedItems(0).Content, DeviceListViewItem)
-            Dim SelectedItem As DeviceListViewItem = CType(e.AddedItems(0).Content, DeviceListViewItem)
-
-            'Set the selection border visibility
-            SelectedItem.IsDeviceSelected = Visibility.Visible
-            PreviousItem.IsDeviceSelected = Visibility.Hidden
-        End If
-
+            If SharedController1 IsNot Nothing Then Await ReadGamepadInputAsync(CTS.Token)
+        Catch ex As Exception
+            PauseInput = True
+            ExceptionDialog("System Error", ex.Message)
+        End Try
     End Sub
 
-    Private Sub FilesFoldersListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles FilesFoldersListView.SelectionChanged
-        If FilesFoldersListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
-
-            'Play the 'move' sound effect
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Move)
-
-            'Get the previous and next selected item and convert to FileBrowserListViewItem
-            Dim PreviousItem = CType(e.RemovedItems(0).Content, FileBrowserListViewItem)
-            Dim SelectedItem = CType(e.AddedItems(0).Content, FileBrowserListViewItem)
-
-            'Set the selection border visibility
-            SelectedItem.IsFileFolderSelected = Visibility.Visible
-            PreviousItem.IsFileFolderSelected = Visibility.Hidden
-
-            'If the length of 'FileFolderName' (complete path for the most part) is too long then we animate the displayed text
-            If SelectedItem.FileFolderName.Length >= 85 Then
-
-                'Here it gets a bit complicated as we need to access 'FileFolderNameTextBlock' from the custom DataTemplate
-                Dim FileFolderContentPresenter As ContentPresenter = FindVisualChild(Of ContentPresenter)(e.AddedItems(0))
-                Dim FileFolderDataTemplate As DataTemplate = FilesFoldersListView.ItemTemplate
-                Dim SelectedItemDescription As TextBlock = TryCast(FileFolderDataTemplate.FindName("FileFolderNameTextBlock", FileFolderContentPresenter), TextBlock)
-
-                Animate(SelectedItemDescription, Canvas.LeftProperty, 105, -SelectedItemDescription.ActualWidth, New Duration(TimeSpan.FromMilliseconds(10400)), True)
-            End If
-        End If
+    Private Sub FileExplorer_Activated(sender As Object, e As EventArgs) Handles Me.Activated
+        PauseInput = False
     End Sub
+
+    Private Sub FileExplorer_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
+        CTS?.Cancel()
+        MainController = Nothing
+        RemoteController = Nothing
+    End Sub
+
+#End Region
+
+    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
+        PlayBackgroundSound(Sounds.Back)
+
+        'Reactive previous window
+        Select Case Opener
+            Case "FileExplorer"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.FileExplorer" Then
+                        'Re-activate the 'File Explorer'
+                        CType(Win, FileExplorer).Activate()
+                        CType(Win, FileExplorer).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "GameLibrary"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.GameLibrary" Then
+                        'Re-activate the 'File Explorer'
+                        CType(Win, GameLibrary).Activate()
+                        CType(Win, GameLibrary).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "GeneralSettings"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.GeneralSettings" Then
+                        'Re-activate the 'File Explorer'
+                        CType(Win, GeneralSettings).Activate()
+                        CType(Win, GeneralSettings).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "MainWindow"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.MainWindow" Then
+                        CType(Win, MainWindow).Activate()
+                        CType(Win, MainWindow).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "OpenWindows"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.OpenWindows" Then
+                        CType(Win, OpenWindows).Activate()
+                        CType(Win, OpenWindows).PauseInput = False
+                        Exit For
+                    End If
+                Next
+            Case "SetupPS3"
+                For Each Win In Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.SetupPS3" Then
+
+                        'If PS3SetupDownload Then
+                        '    CType(Win, SetupPS3).FirmwareDownloadedCheckBox.IsChecked = True
+                        '    CType(Win, SetupPS3).DownloadFirmwareButton.BorderBrush = Nothing
+                        '    CType(Win, SetupPS3).InstallFirmwareButton.Focus()
+                        'End If
+
+                        CType(Win, SetupPS3).AdditionalPauseDelay = 100
+                        CType(Win, SetupPS3).PauseInput = False
+                        CType(Win, SetupPS3).Activate()
+
+                        Exit For
+                    End If
+                Next
+        End Select
+
+        Close()
+    End Sub
+
+#Region "Animations"
+
+    'This is the main animation while browsing through the folders
+    Private Sub ShowListAnimation()
+        Animate(FilesFoldersListView, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(300)))
+
+        FilesFoldersListView.RenderTransform = New ScaleTransform()
+        FilesFoldersListView.RenderTransformOrigin = New Point(0.5, 0.5)
+
+        FilesFoldersListView.RenderTransform.BeginAnimation(ScaleTransform.ScaleYProperty, New DoubleAnimation(0.5, 1, New Duration(TimeSpan.FromMilliseconds(200))))
+        FilesFoldersListView.RenderTransform.BeginAnimation(ScaleTransform.ScaleXProperty, New DoubleAnimation(0.5, 1, New Duration(TimeSpan.FromMilliseconds(200))))
+
+        FilesFoldersListView.Focus()
+    End Sub
+
+#End Region
+
+#Region "Input"
 
     Private Sub FileExplorer_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-
         If e.Key = Key.X Then
-            GoToFolder()
-        ElseIf e.Key = Key.O Then
+            GoTo_Device_FileFolder_OR_DoSideMenuAction()
+        ElseIf e.Key = Key.C Then
             Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
             If TypeOf FocusedItem Is ListViewItem Then
@@ -137,10 +204,12 @@ Public Class FileExplorer
 
                 If CurrentListView.Name = "FilesFoldersListView" Then
                     'Get the previously selected device
-                    Dim CurrentSelectedDeviceItem As DeviceListViewItem = CType(DevicesListView.SelectedItem.Content, DeviceListViewItem)
+                    Dim SelectedDeviceItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
+                    Dim CurrentSelectedDeviceItem As DeviceListViewItem = CType(SelectedDeviceItem.Content, DeviceListViewItem)
                     Dim NewBrowsePath As String = CurrentSelectedDeviceItem.AccessiblePath
 
-                    Dim CurrentSelectedFileFolderItem As String = CType(FilesFoldersListView.SelectedItem.Content, FileBrowserListViewItem).FileFolderName
+                    Dim SelectedFileFolderItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+                    Dim CurrentSelectedFileFolderItem As String = CType(SelectedFileFolderItem.Content, FileBrowserListViewItem).FileFolderName
                     Dim ParentFolder = Directory.GetParent(CurrentSelectedFileFolderItem).FullName
 
                     'If the previous folder is non-existant return to the device selection
@@ -148,17 +217,15 @@ Public Class FileExplorer
                         ReturnTo()
                     Else
                         'Play the 'return' sound effect
-                        OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
+                        PlayBackgroundSound(Sounds.Back)
 
                         'Return to device selection
-                        Dim SelectedDeviceItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
                         DevicesListView.Focus()
                         SelectedDeviceItem.Focus()
                     End If
                 Else
                     'Close the 'File Explorer'
-                    OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
-                    BeginAnimation(OpacityProperty, ClosingAnim)
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
                 End If
 
             ElseIf TypeOf FocusedItem Is Button Then
@@ -182,33 +249,163 @@ Public Class FileExplorer
                 Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
                 NextSelectedListViewItem.Focus()
 
+            ElseIf TypeOf FocusedItem Is ListView Then
+
+                Dim CurrentListView As ListView = CType(FocusedItem, ListView)
+
+                If CurrentListView.Name = "FilesFoldersListView" Then
+                    If Not String.IsNullOrEmpty(LastPath) Then
+                        ReturnTo()
+                    End If
+                End If
+
             End If
-        ElseIf e.Key = Key.T Then
+
+        ElseIf e.Key = Key.A Then
             CopySelectedItem()
+        ElseIf e.Key = Key.S Then
+            ShowHideSideOptions()
         ElseIf e.Key = Key.Up Then
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Move)
-            GoUp()
+            MoveUp()
         ElseIf e.Key = Key.Down Then
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Move)
-            GoDown()
+            MoveDown()
         End If
-
     End Sub
 
-    'This is the main animation while browsing through the folders -> If TypeOf FocusedItem Is Button
-    Private Sub ShowListAnimation()
-        Animate(FilesFoldersListView, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(300)))
+    Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
+        While Not CancelToken.IsCancellationRequested
 
-        FilesFoldersListView.RenderTransform = New ScaleTransform()
-        FilesFoldersListView.RenderTransformOrigin = New Point(0.5, 0.5)
+            Dim AdditionalDelayAmount As Integer = 0
 
-        FilesFoldersListView.RenderTransform.BeginAnimation(ScaleTransform.ScaleYProperty, New DoubleAnimation(0.5, 1, New Duration(TimeSpan.FromMilliseconds(200))))
-        FilesFoldersListView.RenderTransform.BeginAnimation(ScaleTransform.ScaleXProperty, New DoubleAnimation(0.5, 1, New Duration(TimeSpan.FromMilliseconds(200))))
+            If Not PauseInput Then
+                Dim MainGamepadState As State = MainController.GetState()
+                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-        FilesFoldersListView.Focus()
+                Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
+                Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
+                Dim MainGamepadButton_X_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.X) <> 0
+                Dim MainGamepadButton_Y_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Y) <> 0
+                Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
+
+                Dim MainGamepadButton_DPad_Up_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadUp) <> 0
+                Dim MainGamepadButton_DPad_Down_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadDown) <> 0
+                Dim MainGamepadButton_DPad_Left_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadLeft) <> 0
+                Dim MainGamepadButton_DPad_Right_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadRight) <> 0
+
+                Dim MainGamepadButton_RightThumbY_Up As Boolean = MainGamepadState.Gamepad.RightThumbY = CShort(32767)
+                Dim MainGamepadButton_RightThumbY_Down As Boolean = MainGamepadState.Gamepad.RightThumbY = CShort(-32768)
+
+                If MainGamepadButton_A_Button_Pressed Then
+                    GoTo_Device_FileFolder_OR_DoSideMenuAction()
+                ElseIf MainGamepadButton_B_Button_Pressed Then
+                    Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+
+                    If TypeOf FocusedItem Is ListViewItem Then
+
+                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+
+                        If CurrentListView.Name = "FilesFoldersListView" Then
+                            'Get the previously selected device
+                            Dim SelectedDeviceListViewItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
+                            Dim CurrentSelectedDeviceItem As DeviceListViewItem = CType(SelectedDeviceListViewItem.Content, DeviceListViewItem)
+                            Dim NewBrowsePath As String = CurrentSelectedDeviceItem.AccessiblePath
+
+                            Dim SelectedFileFolderListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+                            Dim CurrentSelectedFileFolderItem As FileBrowserListViewItem = CType(SelectedFileFolderListViewItem.Content, FileBrowserListViewItem)
+                            Dim ParentFolder = Directory.GetParent(CurrentSelectedFileFolderItem.FileFolderName).FullName
+
+                            'If the previous folder is non-existant return to the device selection
+                            If Not ParentFolder = NewBrowsePath Then
+                                ReturnTo()
+                            Else
+                                'Play the 'return' sound effect
+                                PlayBackgroundSound(Sounds.Back)
+
+                                'Return to device selection
+                                Dim SelectedDeviceItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
+                                DevicesListView.Focus()
+                                SelectedDeviceItem.Focus()
+                            End If
+                        Else
+                            'Close the 'File Explorer'
+                            BeginAnimation(OpacityProperty, ClosingAnimation)
+                        End If
+
+                    ElseIf TypeOf FocusedItem Is Button Then
+
+                        'Remove the options side menu
+                        Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                        Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                        If Canvas.GetLeft(SettingButton5) = 1430 Then
+                            Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        End If
+                        If Canvas.GetLeft(SettingButton6) = 1430 Then
+                            Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        End If
+
+                        'Set the focus back
+                        Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
+                        NextSelectedListViewItem.Focus()
+
+                    ElseIf TypeOf FocusedItem Is ListView Then
+
+                        Dim CurrentListView As ListView = CType(FocusedItem, ListView)
+
+                        If CurrentListView.Name = "FilesFoldersListView" Then
+                            If Not String.IsNullOrEmpty(LastPath) Then
+                                ReturnTo()
+                            End If
+                        End If
+
+                    End If
+
+                ElseIf MainGamepadButton_Y_Button_Pressed Then
+                    CopySelectedItem()
+                ElseIf MainGamepadButton_DPad_Up_Pressed Then
+                    MoveUp()
+                ElseIf MainGamepadButton_DPad_Down_Pressed Then
+                    MoveDown()
+                ElseIf MainGamepadButton_Start_Button_Pressed Then
+                    ShowHideSideOptions()
+                ElseIf MainGamepadButton_RightThumbY_Up Then
+                    ScrollUp()
+                ElseIf MainGamepadButton_RightThumbY_Down Then
+                    ScrollDown()
+                End If
+
+                AdditionalDelayAmount += 50
+            Else
+                AdditionalDelayAmount += 500
+            End If
+
+            ' Delay to avoid excessive polling
+            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+        End While
+    End Function
+
+    Private Sub ChangeButtonLayout()
+        If SharedDeviceModel = DeviceModel.ROGAlly Then
+            BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
+
+            OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_options.png", UriKind.RelativeOrAbsolute))
+            OptionsButton.Width = 48
+            Canvas.SetTop(OptionsButton, 955)
+            Canvas.SetLeft(OptionsButton, 385)
+
+            ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_y.png", UriKind.RelativeOrAbsolute))
+            EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_a.png", UriKind.RelativeOrAbsolute))
+        End If
     End Sub
 
-    'Open the next folder - here we filter also the extensions
+#End Region
+
+#Region "Navigation"
+
     Public Sub OpenNewFolder(NewBrowsePath As String)
 
         'First clear the items
@@ -240,39 +437,143 @@ Public Class FileExplorer
 
             Select Case FInfo.Extension
                 Case ".exe"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case ".dll"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
                 Case ".sys"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
                 Case ".tmp"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
                 Case ".ini"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileINI.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
                 Case ".iso"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case ".cue"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case ".jpg"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".jpeg"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case ".png"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case ".txt"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case ".bin"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case ".BIN"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".mp4"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".mpeg"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".mpg"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".flv"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".webm"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".mkv"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".mov"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".avi"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".wmv"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".m4v"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".3gp"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".3g2"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".f4v"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".mts"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".ts"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".m2ts"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".webp"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".bmp"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".tif"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".tiff"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".gif"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".apng"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".heif"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".wav"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".mp3"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".json"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                Case ".rne"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                Case ".dat"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
+                Case ".EXE"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".tps"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                Case ".trm"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                Case ".vdf"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                Case ".dds"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                Case ".md5"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                Case ".ogg"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = True
+                Case ".ogv"
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
                     FExecutable = True
                 Case Else
-                    FExtensionImage = Nothing
+                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                    FExecutable = False
             End Select
 
             FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = FileInFolder,
@@ -285,107 +586,36 @@ Public Class FileExplorer
 
         ShowListAnimation()
 
-        'Focus the first item
-        Dim LastSelectedListViewItem As ListViewItem = FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0)
-        LastSelectedListViewItem.Focus()
+        If FilesFoldersListView.Items.Count > 0 Then
+            'Focus the first item
+            Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+            LastSelectedListViewItem.Focus()
 
-        'Convert to FileBrowserListViewItem to set the border visibility on the first item
-        Dim LastSelectedItem As FileBrowserListViewItem = CType(FilesFoldersListView.Items(0).Content, FileBrowserListViewItem)
-        LastSelectedItem.IsFileFolderSelected = Visibility.Visible
-    End Sub
-
-    Public Sub CopyFile(CopyFrom As String, CopyTo As String, Optional TransferIcon As ImageSource = Nothing)
-
-        'Open a new 'CopyWindow'
-        '{.Top = Top, .Left = Left} prevents the window being display at a different position
-        Dim NewCopyWindow As New CopyWindow() With {.ShowActivated = True, .Top = Top, .Left = Left}
-        NewCopyWindow.CopyDescriptionTextBlock.Text = ""
-        NewCopyWindow.CopyProgressBar.Maximum = 1
-        NewCopyWindow.CopyFrom = CopyFrom
-        NewCopyWindow.CopyTo = CopyTo
-        NewCopyWindow.FileImage.Source = TransferIcon
-
-        Animate(NewCopyWindow, OpacityProperty, 0, 1, New Duration(TimeSpan.FromSeconds(1)))
-        NewCopyWindow.Show()
-
-    End Sub
-
-    Public Function GetAncestorOfType(Of T As FrameworkElement)(child As FrameworkElement) As T
-        Dim parent = VisualTreeHelper.GetParent(child)
-        If parent IsNot Nothing AndAlso Not (TypeOf parent Is T) Then Return GetAncestorOfType(Of T)(CType(parent, FrameworkElement))
-        Return parent
-    End Function
-
-    Private Function FindVisualChild(Of childItem As DependencyObject)(obj As DependencyObject) As childItem
-        For i As Integer = 0 To VisualTreeHelper.GetChildrenCount(obj) - 1
-            Dim child As DependencyObject = VisualTreeHelper.GetChild(obj, i)
-            If child IsNot Nothing AndAlso TypeOf child Is childItem Then
-                Return CType(child, childItem)
-            Else
-                Dim childOfChild As childItem = FindVisualChild(Of childItem)(child)
-                If childOfChild IsNot Nothing Then
-                    Return childOfChild
-                End If
-            End If
-        Next i
-        Return Nothing
-    End Function
-
-    Private Shared Function GetIntOnly(value As String) As Integer
-        Dim returnVal As String = String.Empty
-        Dim collection As MatchCollection = Regex.Matches(value, "\d+")
-        For Each m As Match In collection
-            returnVal += m.ToString()
-        Next
-        Return Convert.ToInt32(returnVal)
-    End Function
-
-    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnim.Completed
-        'Wait for the animation to complete, then actually close the window
-
-        For Each Win In Windows.Application.Current.Windows()
-            If Not Win.ToString = "OrbisPro.MainWindow" Then
-                'If no MainWindow is open, re-create it (after setup)
-                Dim OrbisProMainWindow As New MainWindow() With {.ShowActivated = True, .Top = Top, .Left = Left}
-                Animate(OrbisProMainWindow, OpacityProperty, 0, 1, New Duration(TimeSpan.FromSeconds(1)))
-                OrbisProMainWindow.Show()
-                Exit For 'Exit the loop, otherwise it creates probably more windows
-            Else
-                Exit For
-            End If
-        Next
-
-        Close()
-    End Sub
-
-    Private Sub FileExplorer_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        X.StopPolling()
-        CurrentController = Nothing
-    End Sub
-
-    'Some keys need to be catched in the 'PreviewKeyDown' event
-    Private Sub FileExplorer_PreviewKeyDown(sender As Object, e As KeyEventArgs) Handles Me.PreviewKeyDown
-        If e.Key = Key.Space Then
-            ShowHideSideOptions()
+            'Convert to FileBrowserListViewItem to set the border visibility on the first item
+            Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+            LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+        Else
+            FilesFoldersListView.Focus()
         End If
     End Sub
 
-    'Go to selected folder - contains also code for the options side menu
-    Private Sub GoToFolder()
+    'Open next device, folder or do a side menu action
+    Private Sub GoTo_Device_FileFolder_OR_DoSideMenuAction()
 
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
         If TypeOf FocusedItem Is ListViewItem Then
 
             'Play the 'select' sound effect
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.SelectItem)
+            PlayBackgroundSound(Sounds.SelectItem)
 
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
             'We are in the Devices ListView
             If CurrentListView.Name = "DevicesListView" Then
-                Dim CurrentSelectedItem As DeviceListViewItem = CType(DevicesListView.SelectedItem.Content, DeviceListViewItem)
+                Dim SelectedListViewItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
+                Dim CurrentSelectedItem As DeviceListViewItem = CType(SelectedListViewItem.Content, DeviceListViewItem)
                 Dim NewBrowsePath As String = CurrentSelectedItem.AccessiblePath
 
                 LastPath = NewBrowsePath
@@ -420,31 +650,143 @@ Public Class FileExplorer
                     'Set a custom extension image for 'known' file types
                     Select Case FInfo.Extension
                         Case ".exe"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
                         Case ".dll"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
                         Case ".sys"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
                         Case ".tmp"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
                         Case ".ini"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileINI.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
                         Case ".iso"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".cue"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
                             FExecutable = True
                         Case ".jpg"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".jpeg"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
                             FExecutable = True
                         Case ".png"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
                             FExecutable = True
                         Case ".txt"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".bin"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
                             FExecutable = True
                         Case ".BIN"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".mp4"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".mpeg"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".mpg"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".flv"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".webm"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".mkv"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".mov"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".avi"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".wmv"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".m4v"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".3gp"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".3g2"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".f4v"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".mts"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".ts"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".m2ts"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".webp"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".bmp"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".tif"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".tiff"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".gif"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".apng"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".heif"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".wav"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".mp3"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".json"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                        Case ".rne"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                        Case ".dat"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
+                        Case ".EXE"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".tps"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                        Case ".trm"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                        Case ".vdf"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                        Case ".dds"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                        Case ".md5"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                        Case ".ogg"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
+                        Case ".ogv"
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = True
                         Case Else
-                            FExtensionImage = Nothing
+                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                            FExecutable = False
                     End Select
 
                     FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = FileInFolder,
@@ -462,12 +804,12 @@ Public Class FileExplorer
                 LastSelectedListViewItem.Focus()
 
                 'Convert to FileBrowserListViewItem to set the border visibility on the first item
-                Dim LastSelectedItem As FileBrowserListViewItem = CType(FilesFoldersListView.Items(0).Content, FileBrowserListViewItem)
+                Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
                 LastSelectedItem.IsFileFolderSelected = Visibility.Visible
 
-                'We are in the Files&Folders ListView
             ElseIf CurrentListView.Name = "FilesFoldersListView" Then
-                Dim CurrentSelectedItem As FileBrowserListViewItem = CType(FilesFoldersListView.SelectedItem.Content, FileBrowserListViewItem)
+                Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+                Dim CurrentSelectedItem As FileBrowserListViewItem = CType(SelectedListViewItem.Content, FileBrowserListViewItem)
 
                 If CurrentSelectedItem.Type = "Folder" Then
 
@@ -477,94 +819,66 @@ Public Class FileExplorer
 
                     'Open the new folder
                     OpenNewFolder(NewBrowsePath)
+                ElseIf CurrentSelectedItem.Type = "File" Then
+
+                    Select Case Path.GetExtension(CurrentSelectedItem.FileFolderName)
+                        Case ".mp4", ".mpeg", ".mpg", ".flv", ".webm", ".mkv", ".mov", ".avi", ".wmv", ".m4v", ".3gp", ".3g2", ".f4v", ".mts", ".ts", ".m2ts"
+                            PauseInput = True
+
+                            Dim NewMediaPlayer As New SystemMediaPlayer() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "FileExplorer", .VideoFile = CurrentSelectedItem.FileFolderName}
+                            NewMediaPlayer.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                            NewMediaPlayer.Show()
+                        Case ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif", ".apng", ".heif"
+                            'Future build
+                        Case ".exe"
+                            LaunchGameOrApplication(CurrentSelectedItem)
+                    End Select
+
                 End If
 
             End If
 
         ElseIf TypeOf FocusedItem Is Button Then
+            Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+            Dim CurrentSelectedItem As FileBrowserListViewItem = CType(SelectedListViewItem.Content, FileBrowserListViewItem)
+            Dim SelectedButton As Button = CType(FocusedItem, Button)
 
-            Dim CurrentSelectedItem As FileBrowserListViewItem = CType(FilesFoldersListView.SelectedItem.Content, FileBrowserListViewItem)
-            Dim SelectedButton = CType(FocusedItem, Button)
-            Dim SelectedSetting = SelectedButton.Content.ToString
+            PlayBackgroundSound(Sounds.SelectItem)
 
-            Select Case SelectedSetting
-                Case "Add to game library"
-                    If CurrentSelectedItem.FileFolderName.Contains(".iso") Then
-
-                        Dim PS2GamesCount As Integer = 0
-                        Dim NewGameINIKey As String
-
-                        'Get the games to add our new game after it
-                        For Each Game In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.ini")
-                            If Game.Contains("PS2Game") Then
-                                PS2GamesCount += 1
-                            End If
-                        Next
-
-                        'Add the game to 'GameList.ini'
-                        NewGameINIKey = "PS2Game" + (PS2GamesCount + 1).ToString
-                        GameLibraryPath.IniWriteValue("PS2", NewGameINIKey, CurrentSelectedItem.FileFolderName)
-
-                        'Show system dialog to inform that the game has been successfully added
-                        Dim NewSuccessDialog As New SystemDialog() With {.ShowActivated = True, .Top = Top, .Left = Left}
-                        Animate(NewSuccessDialog, OpacityProperty, 0, 1, New Duration(TimeSpan.FromSeconds(1)))
-                        NewSuccessDialog.SystemDialogTextBlock.Text = "PS2 Game added to Library" + vbCrLf + vbCrLf + CurrentSelectedItem.FileFolderName
-                        NewSuccessDialog.Opener = "FileExplorer"
-                        NewSuccessDialog.Show()
-
-                        X.StopPolling()
-                        CurrentController = Nothing
-                    ElseIf CurrentSelectedItem.FileFolderName.Contains(".cue") Then
-
-                        Dim PS2GamesCount As Integer = 0
-                        Dim NewGameINIKey As String
-
-                        'Get the games to add our new game after it
-                        For Each Game In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.ini")
-                            If Game.Contains("PS1Game") Then
-                                PS2GamesCount += 1
-                            End If
-                        Next
-
-                        'Add the game to 'GameList.ini'
-                        NewGameINIKey = "PS1Game" + (PS2GamesCount + 1).ToString
-                        GameLibraryPath.IniWriteValue("PS1", NewGameINIKey, CurrentSelectedItem.FileFolderName)
-
-                        'Show system dialog to inform that the game has been successfully added
-                        Dim NewSuccessDialog As New SystemDialog() With {.ShowActivated = True, .Top = Top, .Left = Left}
-                        Animate(NewSuccessDialog, OpacityProperty, 0, 1, New Duration(TimeSpan.FromSeconds(1)))
-                        NewSuccessDialog.SystemDialogTextBlock.Text = "PS1 Game added to Library" + vbCrLf + vbCrLf + CurrentSelectedItem.FileFolderName
-                        NewSuccessDialog.Opener = "FileExplorer"
-                        NewSuccessDialog.Show()
-
-                        X.StopPolling()
-                        CurrentController = Nothing
-                    ElseIf CurrentSelectedItem.FileFolderName.Contains("EBOOT.BIN") Then
-
-                        Dim PS2GamesCount As Integer = 0
-                        Dim NewGameINIKey As String
-
-                        'Get the games to add our new game after it
-                        For Each Game In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.ini")
-                            If Game.Contains("PS3Game") Then
-                                PS2GamesCount += 1
-                            End If
-                        Next
-
-                        'Add the game to 'GameList.ini'
-                        NewGameINIKey = "PS3Game" + (PS2GamesCount + 1).ToString
-                        GameLibraryPath.IniWriteValue("PS3", NewGameINIKey, CurrentSelectedItem.FileFolderName)
-
-                        'Show system dialog to inform that the game has been successfully added
-                        Dim NewSuccessDialog As New SystemDialog() With {.ShowActivated = True, .Top = Top, .Left = Left}
-                        Animate(NewSuccessDialog, OpacityProperty, 0, 1, New Duration(TimeSpan.FromSeconds(1)))
-                        NewSuccessDialog.SystemDialogTextBlock.Text = "PS3 Game added to Library" + vbCrLf + vbCrLf + CurrentSelectedItem.FileFolderName
-                        NewSuccessDialog.Opener = "FileExplorer"
-                        NewSuccessDialog.Show()
-
-                        X.StopPolling()
-                        CurrentController = Nothing
+            Select Case SelectedButton.Content.ToString()
+                Case "Add to Game Library"
+                    If AddGameFromFileExplorer(CurrentSelectedItem) Then
+                        OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Added to Game Library", CurrentSelectedItem.FileFolderName, CurrentSelectedItem.FileFolderIcon)
+                    Else
+                        OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Cannot add to Game Library", CurrentSelectedItem.FileFolderName, CurrentSelectedItem.FileFolderIcon)
                     End If
+                Case "Add to Apps Library"
+                    If AddApplicationFromFileExplorer(CurrentSelectedItem) Then
+                        OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Added to App Library", CurrentSelectedItem.FileFolderName, CurrentSelectedItem.FileFolderIcon)
+                    Else
+                        OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Cannot add to App Library", CurrentSelectedItem.FileFolderName, CurrentSelectedItem.FileFolderIcon)
+                    End If
+                Case "Add to Copy List"
+                    SelectedItemToCopy = CurrentSelectedItem
+                    ActionTextBlock.Text = "Paste"
+
+                    'Notify that the item is in the clipboard
+                    OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Added to clipboard", CurrentSelectedItem.FileFolderName, CurrentSelectedItem.FileFolderIcon)
+                Case "Delete"
+                    Dim OldFileFolderName As String = CurrentSelectedItem.FileFolderName
+                    Dim OldFileFolderIcon As BitmapImage = CurrentSelectedItem.FileFolderIcon
+
+                    If DeleteFileOrFolder(CurrentSelectedItem) Then
+                        OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Deleted", OldFileFolderName, OldFileFolderIcon)
+                    Else
+                        OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Could not delete", CurrentSelectedItem.FileFolderName, CurrentSelectedItem.FileFolderIcon)
+                    End If
+                Case "Infos"
+
+                Case "Start"
+                    LaunchGameOrApplication(CurrentSelectedItem)
+                Case "Move"
+
             End Select
 
         End If
@@ -577,13 +891,14 @@ Public Class FileExplorer
         If TypeOf FocusedItem Is ListViewItem Then
 
             'Play the 'return' sound effect
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
+            PlayBackgroundSound(Sounds.Back)
 
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
             If CurrentListView.Name = "FilesFoldersListView" Then
-                Dim CurrentSelectedItem As FileBrowserListViewItem = CType(FilesFoldersListView.SelectedItem.Content, FileBrowserListViewItem)
+                Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+                Dim CurrentSelectedItem As FileBrowserListViewItem = CType(SelectedListViewItem.Content, FileBrowserListViewItem)
                 Dim ParentFolder = Directory.GetParent(CurrentSelectedItem.FileFolderName).FullName
 
                 If Directory.GetParent(ParentFolder) IsNot Nothing Then
@@ -618,33 +933,143 @@ Public Class FileExplorer
 
                         Select Case FInfo.Extension
                             Case ".exe"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
                                 FExecutable = True
                             Case ".dll"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
                             Case ".sys"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
                             Case ".tmp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
                             Case ".ini"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileINI.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
                             Case ".iso"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".cue"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
                                 FExecutable = True
                             Case ".jpg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".jpeg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
                                 FExecutable = True
                             Case ".png"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
                                 FExecutable = True
                             Case ".txt"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".bin"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
                                 FExecutable = True
                             Case ".BIN"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mp4"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mpeg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mpg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".flv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".webm"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mkv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mov"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".avi"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".wmv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".m4v"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".3gp"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".3g2"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".f4v"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mts"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".ts"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".m2ts"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".webp"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".bmp"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".tif"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".tiff"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".gif"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".apng"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".heif"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".wav"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mp3"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".json"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                            Case ".rne"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                            Case ".dat"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
+                            Case ".EXE"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".tps"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                            Case ".trm"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                            Case ".vdf"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                            Case ".dds"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                            Case ".md5"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                            Case ".ogg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".ogv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
                                 FExecutable = True
                             Case Else
-                                FExtensionImage = Nothing
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = False
                         End Select
 
                         FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = FileInFolder,
@@ -660,7 +1085,7 @@ Public Class FileExplorer
                     Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
                     LastSelectedListViewItem.Focus()
 
-                    Dim LastSelectedItem As FileBrowserListViewItem = CType(FilesFoldersListView.Items(0).Content, FileBrowserListViewItem)
+                    Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
                     LastSelectedItem.IsFileFolderSelected = Visibility.Visible
                 End If
 
@@ -669,7 +1094,7 @@ Public Class FileExplorer
         ElseIf TypeOf FocusedItem Is Button Then
 
             'Play the 'return' sound effect
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
+            PlayBackgroundSound(Sounds.Back)
 
             'Remove the options side menu
             Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
@@ -690,63 +1115,199 @@ Public Class FileExplorer
             Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
             NextSelectedListViewItem.Focus()
 
-        End If
-    End Sub
+        ElseIf TypeOf FocusedItem Is ListView Then
 
-    Private Sub CopySelectedItem()
-
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-
-        If TypeOf FocusedItem Is ListViewItem Then
-
-            'Get the ListView of the selected item
-            Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+            Dim CurrentListView As ListView = CType(FocusedItem, ListView)
 
             If CurrentListView.Name = "FilesFoldersListView" Then
 
-                Dim SelectedItem = CType(FilesFoldersListView.SelectedItem.Content, FileBrowserListViewItem)
-                OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.SelectItem)
+                If Not String.IsNullOrEmpty(LastPath) Then
 
-                If CopyLabel.Content.ToString = "Copy" Then
-                    SelectedItemToCopy = SelectedItem
-                    CopyLabel.Content = "Paste"
-                    OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Added to clipboard", SelectedItemToCopy.FileFolderName, SelectedItem.FileFolderIcon.UriSource.OriginalString)
+                    FilesFoldersListView.Items.Clear()
 
-                ElseIf CopyLabel.Content.ToString = "Paste" Then
+                    'List all folders
+                    For Each Folder In Directory.GetDirectories(Directory.GetParent(LastPath).FullName)
 
-                    'Get the directory from file or folder
-                    If SelectedItem.Type = "File" Then
-                        Dim isDir As Boolean = (File.GetAttributes(SelectedItemToCopy.FileFolderName) And FileAttributes.Directory) = FileAttributes.Directory
-
-                        If isDir Then
-                            Dim DInfo As New DirectoryInfo(SelectedItemToCopy.FileFolderName)
-                            Dim DirName As String = DInfo.Name
-                            Dim FInfo As New FileInfo(SelectedItem.FileFolderName)
-
-                            MsgBox(FInfo.DirectoryName + "\" + DirName)
+                        If Directory.Exists(Folder + "\PS3_GAME") Then 'A PS3 game has been found, mark it with a RPCS3 logo
+                            FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
+                           .IsFileFolderSelected = Visibility.Hidden,
+                           .Type = "Folder",
+                           .IsExecutable = True,'Important - To be able to start the game from the 'Options' side menu
+                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
+                           })
                         Else
-                            Dim ClipboardFileInfo As New FileInfo(SelectedItemToCopy.FileFolderName)
-                            Dim FInfo As New FileInfo(SelectedItem.FileFolderName)
-
-                            CopyFile(SelectedItemToCopy.FileFolderName, FInfo.DirectoryName + "\" + ClipboardFileInfo.Name, SelectedItemToCopy.FileFolderIcon)
+                            FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
+                           .IsFileFolderSelected = Visibility.Hidden,
+                           .Type = "Folder",
+                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
+                           })
                         End If
 
-                        'CopyFile(SelectedItemToCopy, FInfo.DirectoryName + "\" + FInfo.Name)
-                    ElseIf SelectedItem.Type = "Folder" Then
-                        Dim isDir As Boolean = (File.GetAttributes(SelectedItemToCopy.FileFolderName) And FileAttributes.Directory) = FileAttributes.Directory
+                    Next
 
-                        If isDir Then
+                    'List all files inside the folder
+                    For Each FileInFolder In Directory.GetFiles(Directory.GetParent(LastPath).FullName)
+                        Dim FInfo As New FileInfo(FileInFolder)
+                        Dim FExtensionImage As BitmapImage
+                        Dim FExecutable As Boolean = False
 
-                        Else
-                            Dim DInfo As New DirectoryInfo(SelectedItem.FileFolderName)
-                            Dim ClipboardFileInfo As New FileInfo(SelectedItemToCopy.FileFolderName)
+                        Select Case FInfo.Extension
+                            Case ".exe"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".dll"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                            Case ".sys"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                            Case ".tmp"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                            Case ".ini"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
+                            Case ".iso"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".cue"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".jpg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".jpeg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".png"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".txt"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".bin"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".BIN"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mp4"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mpeg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mpg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".flv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".webm"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mkv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mov"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".avi"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".wmv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".m4v"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".3gp"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".3g2"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".f4v"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mts"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".ts"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".m2ts"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".webp"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".bmp"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".tif"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".tiff"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".gif"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".apng"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".heif"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".wav"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".mp3"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".json"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                            Case ".rne"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                            Case ".dat"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
+                            Case ".EXE"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".tps"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                            Case ".trm"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                            Case ".vdf"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                            Case ".dds"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                            Case ".md5"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                            Case ".ogg"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case ".ogv"
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = True
+                            Case Else
+                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                                FExecutable = False
+                        End Select
 
-                            CopyFile(SelectedItemToCopy.FileFolderName, DInfo.Parent.FullName + "\" + ClipboardFileInfo.Name, SelectedItemToCopy.FileFolderIcon)
-                        End If
+                        FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = FileInFolder,
+                                                       .IsFileFolderSelected = Visibility.Hidden,
+                                                       .Type = "File",
+                                                       .FileFolderIcon = FExtensionImage,
+                                                       .IsExecutable = FExecutable}
+                                                       })
+                    Next
 
-                    End If
+                    ShowListAnimation()
 
-                    'CopyFile(SelectedItemToCopy, "")
+                    Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+                    LastSelectedListViewItem.Focus()
+
+                    Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+                    LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+
                 End If
 
             End If
@@ -754,13 +1315,15 @@ Public Class FileExplorer
         End If
     End Sub
 
-    Private Sub GoUp()
+    Private Sub MoveUp()
+        PlayBackgroundSound(Sounds.Move)
+
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
         If TypeOf FocusedItem Is Button Then
 
             Dim SelectedButton = CType(FocusedItem, Button)
-            Dim NextSelectedButtonNumber As Integer = GetIntOnly(SelectedButton.Name) - 1
+            Dim NextSelectedButtonNumber As Integer = GetIntegerOnly(SelectedButton.Name) - 1
             Dim NextButton As Button = CType(FileExplorerCanvas.FindName("SettingButton" + NextSelectedButtonNumber.ToString), Button)
 
             If NextButton IsNot Nothing Then
@@ -801,13 +1364,15 @@ Public Class FileExplorer
         End If
     End Sub
 
-    Private Sub GoDown()
+    Private Sub MoveDown()
+        PlayBackgroundSound(Sounds.Move)
+
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
         If TypeOf FocusedItem Is Button Then
 
             Dim SelectedButton = CType(FocusedItem, Button)
-            Dim NextSelectedButtonNumber As Integer = GetIntOnly(SelectedButton.Name) + 1
+            Dim NextSelectedButtonNumber As Integer = GetIntegerOnly(SelectedButton.Name) + 1
             Dim NextButton As Button = CType(FileExplorerCanvas.FindName("SettingButton" + NextSelectedButtonNumber.ToString), Button)
 
             If NextButton IsNot Nothing Then
@@ -851,6 +1416,153 @@ Public Class FileExplorer
         End If
     End Sub
 
+    Private Sub ScrollUp()
+        Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(FilesFoldersListView)
+        Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
+        OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset - 50)
+    End Sub
+
+    Private Sub ScrollDown()
+        Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(FilesFoldersListView)
+        Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
+        OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
+    End Sub
+
+#End Region
+
+#Region "Selection Changes"
+
+    Private Sub DevicesListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles DevicesListView.SelectionChanged
+
+        If DevicesListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
+
+            'Play the 'move' sound effect
+            PlayBackgroundSound(Sounds.Move)
+
+            Dim RemovedItem As ListViewItem = CType(e.RemovedItems(0), ListViewItem)
+            Dim AddedItem As ListViewItem = CType(e.AddedItems(0), ListViewItem)
+
+            'Get the previous and next selected item and convert to DeviceListViewItem
+            Dim PreviousItem As DeviceListViewItem = CType(RemovedItem.Content, DeviceListViewItem)
+            Dim NewSelectedItem As DeviceListViewItem = CType(AddedItem.Content, DeviceListViewItem)
+
+            'Set the selection border visibility
+            NewSelectedItem.IsDeviceSelected = Visibility.Visible
+            PreviousItem.IsDeviceSelected = Visibility.Hidden
+        End If
+
+    End Sub
+
+    Private Sub FilesFoldersListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles FilesFoldersListView.SelectionChanged
+        If FilesFoldersListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
+
+            'Play the 'move' sound effect
+            PlayBackgroundSound(Sounds.Move)
+
+            Dim RemovedItem As ListViewItem = CType(e.RemovedItems(0), ListViewItem)
+            Dim AddedItem As ListViewItem = CType(e.AddedItems(0), ListViewItem)
+
+            'Get the previous and next selected item and convert to FileBrowserListViewItem
+            Dim PreviousItem = CType(RemovedItem.Content, FileBrowserListViewItem)
+            Dim NewSelectedItem = CType(AddedItem.Content, FileBrowserListViewItem)
+
+            'Set the selection border visibility
+            NewSelectedItem.IsFileFolderSelected = Visibility.Visible
+            PreviousItem.IsFileFolderSelected = Visibility.Hidden
+
+            'If the length of 'FileFolderName' (complete path for the most part) is too long then we animate the displayed text
+            If NewSelectedItem.FileFolderName.Length >= 85 Then
+
+                'Here it gets a bit complicated as we need to access 'FileFolderNameTextBlock' from the custom DataTemplate
+                Dim FileFolderContentPresenter As ContentPresenter = FindVisualChild(Of ContentPresenter)(AddedItem)
+                Dim FileFolderDataTemplate As DataTemplate = FilesFoldersListView.ItemTemplate
+                Dim SelectedItemDescription As TextBlock = TryCast(FileFolderDataTemplate.FindName("FileFolderNameTextBlock", FileFolderContentPresenter), TextBlock)
+
+                Animate(SelectedItemDescription, Canvas.LeftProperty, 105, -SelectedItemDescription.ActualWidth, New Duration(TimeSpan.FromMilliseconds(10400)), True)
+            End If
+
+            If NewSelectedItem.Type = "File" Then
+                Dim SelectedFileExtension As String = Path.GetExtension(NewSelectedItem.FileFolderName)
+
+                Select Case SelectedFileExtension
+                    Case ".mp4", ".mpeg", ".mpg", ".flv", ".webm", ".mkv", ".mov", ".avi", ".wmv", ".m4v", ".3gp", ".3g2", ".f4v", ".mts", ".ts", ".m2ts"
+                        CrossButtonLabel.Text = "Play Video"
+                    Case ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif", ".apng", ".heif"
+                        CrossButtonLabel.Text = "Show Image"
+                    Case ".exe"
+                        CrossButtonLabel.Text = "Run"
+                    Case Else
+                        'More in future builds
+                        CrossButtonLabel.Text = "Enter"
+                End Select
+            Else
+                CrossButtonLabel.Text = "Enter"
+            End If
+        End If
+    End Sub
+
+#End Region
+
+    Public Sub CopyFile(CopyFrom As String, CopyTo As String, Optional TransferIcon As ImageSource = Nothing)
+        Dim NewCopyWindow As New CopyWindow() With {.ShowActivated = True, .Top = Top, .Left = Left}
+        NewCopyWindow.CopyDescriptionTextBlock.Text = ""
+        NewCopyWindow.CopyProgressBar.Maximum = 1
+        NewCopyWindow.CopyFrom = CopyFrom
+        NewCopyWindow.CopyTo = CopyTo
+        NewCopyWindow.FileImage.Source = TransferIcon
+
+        Animate(NewCopyWindow, OpacityProperty, 0, 1, New Duration(TimeSpan.FromSeconds(1)))
+        NewCopyWindow.Show()
+    End Sub
+
+    Private Sub CopySelectedItem()
+
+        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+
+        If TypeOf FocusedItem Is ListViewItem Then
+
+            'Get the ListView of the selected item
+            Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+
+            If CurrentListView.Name = "FilesFoldersListView" Then
+                Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+                Dim SelectedItem = CType(SelectedListViewItem.Content, FileBrowserListViewItem)
+
+                PlayBackgroundSound(Sounds.SelectItem)
+
+                If ActionTextBlock.Text = "Copy" Then
+
+                    SelectedItemToCopy = SelectedItem
+                    ActionTextBlock.Text = "Paste"
+
+                    'Notify that the item is in the clipboard
+                    OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Added to clipboard", SelectedItemToCopy.FileFolderName, SelectedItem.FileFolderIcon.UriSource.OriginalString)
+
+                ElseIf ActionTextBlock.Text = "Paste" Then
+
+                    'Check if the selected item is a file or folder
+                    If SelectedItem.Type = "File" Then
+
+                        Dim ClipboardFileInfo As New FileInfo(SelectedItemToCopy.FileFolderName)
+                        Dim SelectedItemFileInfo As New FileInfo(SelectedItem.FileFolderName)
+
+                        'If the selected item is a file then get it's DirectoryName and paste the file in the same directory
+                        CopyFile(SelectedItemToCopy.FileFolderName, SelectedItemFileInfo.DirectoryName + "\" + ClipboardFileInfo.Name, SelectedItemToCopy.FileFolderIcon)
+                    ElseIf SelectedItem.Type = "Folder" Then
+
+                        Dim DInfo As New DirectoryInfo(SelectedItem.FileFolderName)
+                        Dim ClipboardFileInfo As New FileInfo(SelectedItemToCopy.FileFolderName)
+
+                        CopyFile(SelectedItemToCopy.FileFolderName, DInfo.Parent.FullName + "\" + ClipboardFileInfo.Name, SelectedItemToCopy.FileFolderIcon)
+                    End If
+
+                End If
+
+            End If
+
+        End If
+    End Sub
+
     Private Sub ShowHideSideOptions()
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
         If TypeOf FocusedItem Is ListViewItem Then
@@ -862,25 +1574,27 @@ Public Class FileExplorer
             If CurrentListView.Name = "DevicesListView" Then
 
             ElseIf CurrentListView.Name = "FilesFoldersListView" Then
-                'Play the 'select' sound effect
-                OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.SelectItem)
+                'We are in the Files & Folders ListView
+                PlayBackgroundSound(Sounds.SelectItem)
 
-                Dim SelectedItem As FileBrowserListViewItem = CType(FilesFoldersListView.SelectedItem.Content, FileBrowserListViewItem)
+                Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+                Dim SelectedItem As FileBrowserListViewItem = CType(SelectedListViewItem.Content, FileBrowserListViewItem)
 
-                'Display the options side menu
+                'Show side menu options
                 If Canvas.GetLeft(RightMenu) = 1925 Then
                     Animate(RightMenu, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
 
                     Select Case SelectedItem.Type
                         Case "File"
 
-                            'If the file is executable in OrbisPro add the 'Start' and 'Add to game library' options
                             If SelectedItem.IsExecutable Then
+                                'If the file is executable then add the 'Start' and 'Add to game library' options
                                 SettingButton1.Content = "Start"
-                                SettingButton2.Content = "Add to copy list"
-                                SettingButton3.Content = "Add to game library"
-                                SettingButton4.Content = "Delete"
-                                SettingButton5.Content = "Infos"
+                                SettingButton2.Content = "Add to Copy List"
+                                SettingButton3.Content = "Add to Game Library"
+                                SettingButton4.Content = "Add to Apps Library"
+                                SettingButton5.Content = "Delete"
+                                SettingButton6.Content = "Infos"
 
                                 'Show the buttons
                                 Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
@@ -888,8 +1602,10 @@ Public Class FileExplorer
                                 Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                                 Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                                 Animate(SettingButton5, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                                Animate(SettingButton6, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                             Else
-                                SettingButton1.Content = "Add to copy list"
+                                'If the file is not executable then add default options
+                                SettingButton1.Content = "Add to Copy List"
                                 SettingButton2.Content = "Move"
                                 SettingButton3.Content = "Delete"
                                 SettingButton4.Content = "Infos"
@@ -900,25 +1616,28 @@ Public Class FileExplorer
                                 Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                             End If
 
+                            'Focus the first option
                             SettingButton1.Focus()
 
                         Case "Folder"
 
-                            'If the folder is executable in OrbisPro (like for PS3 games) add the 'Start' and 'Add to game library' options
+                            'If the folder is executable (like PS3 game backups) add the 'Start' and 'Add to game library' options
                             If SelectedItem.IsExecutable Then
                                 SettingButton1.Content = "Start"
-                                SettingButton2.Content = "Add to copy list"
-                                SettingButton3.Content = "Add to game library"
-                                SettingButton4.Content = "Delete"
-                                SettingButton5.Content = "Infos"
+                                SettingButton2.Content = "Add to Copy List"
+                                SettingButton3.Content = "Add to Game Library"
+                                SettingButton4.Content = "Add to Apps Library"
+                                SettingButton5.Content = "Delete"
+                                SettingButton6.Content = "Infos"
 
                                 Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                                 Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                                 Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                                 Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                                 Animate(SettingButton5, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                                Animate(SettingButton6, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
                             Else
-                                SettingButton1.Content = "Add to copy list"
+                                SettingButton1.Content = "Add to Copy List"
                                 SettingButton2.Content = "Move"
                                 SettingButton3.Content = "Delete"
                                 SettingButton4.Content = "Infos"
@@ -941,6 +1660,7 @@ Public Class FileExplorer
                     Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
                     Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
+                    'Remove SettingButton5 & SettingButton 6 if they were shown
                     If Canvas.GetLeft(SettingButton5) = 1430 Then
                         Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
                     End If
@@ -952,83 +1672,207 @@ Public Class FileExplorer
                     Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
                     NextSelectedListViewItem.Focus()
                 End If
+
+            End If
+        ElseIf TypeOf FocusedItem Is Button Then
+            'Remove the options side menu
+            Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+            Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+            Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+            Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+            Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+            'Remove SettingButton5 & SettingButton 6 if they were shown
+            If Canvas.GetLeft(SettingButton5) = 1430 Then
+                Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+            End If
+            If Canvas.GetLeft(SettingButton6) = 1430 Then
+                Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
             End If
 
+            'Set the focus back
+            Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
+            NextSelectedListViewItem.Focus()
         End If
     End Sub
 
-    Private Sub CurrentController_StateChanged(sender As Object, e As EventArgs) Handles CurrentController.StateChanged
+    Private Function AddGameFromFileExplorer(SelectedFileBrowserListViewItem As FileBrowserListViewItem) As Boolean
+        Dim IsDirectory As Boolean = (File.GetAttributes(SelectedFileBrowserListViewItem.FileFolderName) And FileAttributes.Directory) = FileAttributes.Directory
 
-        If CurrentController.A_up Then
-            GoToFolder()
-        ElseIf CurrentController.B_up Then
-            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+        If Not IsDirectory AndAlso SupportedGameExtension(SelectedFileBrowserListViewItem.FileFolderName) Then
+            Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(SelectedFileBrowserListViewItem.FileFolderName)
+            Dim FileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(SelectedFileBrowserListViewItem.FileFolderName)
+            Dim NewTitle As String = ""
 
-            If TypeOf FocusedItem Is ListViewItem Then
-
-                Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
-
-                If CurrentListView.Name = "FilesFoldersListView" Then
-                    'Get the previously selected device
-                    Dim CurrentSelectedDeviceItem As DeviceListViewItem = CType(DevicesListView.SelectedItem.Content, DeviceListViewItem)
-                    Dim NewBrowsePath As String = CurrentSelectedDeviceItem.AccessiblePath
-
-                    Dim CurrentSelectedFileFolderItem As FileBrowserListViewItem = CType(FilesFoldersListView.SelectedItem.Content, FileBrowserListViewItem)
-                    Dim ParentFolder = Directory.GetParent(CurrentSelectedFileFolderItem.FileFolderName).FullName
-
-                    'If the previous folder is non-existant return to the device selection
-                    If Not ParentFolder = NewBrowsePath Then
-                        ReturnTo()
-                    Else
-                        'Play the 'return' sound effect
-                        OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
-
-                        'Return to device selection
-                        Dim SelectedDeviceItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
-                        DevicesListView.Focus()
-                        SelectedDeviceItem.Focus()
-                    End If
-                Else
-                    'Close the 'File Explorer'
-                    OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Back)
-                    BeginAnimation(OpacityProperty, ClosingAnim)
-                End If
-
-            ElseIf TypeOf FocusedItem Is Button Then
-
-                'Remove the options side menu
-                Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-
-                Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-
-                If Canvas.GetLeft(SettingButton5) = 1430 Then
-                    Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                End If
-                If Canvas.GetLeft(SettingButton6) = 1430 Then
-                    Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                End If
-
-                'Set the focus back
-                Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
-                NextSelectedListViewItem.Focus()
-
+            'Set the title
+            If Not String.IsNullOrEmpty(FileVersionInfo.ProductName) Then
+                NewTitle = FileVersionInfo.ProductName
+            Else
+                NewTitle = FileNameWithoutExtension
             End If
 
-        ElseIf CurrentController.Y_up Then
-            CopySelectedItem()
-        ElseIf CurrentController.Dpad_Up_up Then
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Move)
-            GoUp()
-        ElseIf CurrentController.Dpad_Down_up Then
-            OrbisAudio.PlayBackgroundSound(OrbisAudio.Sounds.Move)
-            GoDown()
-        ElseIf CurrentController.Start_up Then
-            ShowHideSideOptions()
+            'Add to GameList
+            Using SW As New StreamWriter(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt", True)
+                SW.WriteLine("PC;" + NewTitle + ";" + SelectedFileBrowserListViewItem.FileFolderName + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
+                SW.Close()
+            End Using
+
+            'Reload the Home menu
+            For Each Win In Windows.Application.Current.Windows()
+                If Win.ToString = "OrbisPro.MainWindow" Then
+                    CType(Win, MainWindow).ReloadHome()
+                    CType(Win, MainWindow).PauseInput = True
+                    Activate()
+                    Exit For
+                End If
+            Next
+
+            Return True
+        Else
+            Return False
+        End If
+    End Function
+
+    Private Function AddApplicationFromFileExplorer(SelectedFileBrowserListViewItem As FileBrowserListViewItem) As Boolean
+        Dim IsDirectory As Boolean = (File.GetAttributes(SelectedFileBrowserListViewItem.FileFolderName) And FileAttributes.Directory) = FileAttributes.Directory
+
+        If Not IsDirectory AndAlso Path.GetExtension(SelectedFileBrowserListViewItem.FileFolderName) = ".exe" Then
+            Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(SelectedFileBrowserListViewItem.FileFolderName)
+            Dim FileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(SelectedFileBrowserListViewItem.FileFolderName)
+            Dim NewTitle As String = ""
+
+            'Set the title
+            If Not String.IsNullOrEmpty(FileVersionInfo.ProductName) Then
+                NewTitle = FileVersionInfo.ProductName
+            Else
+                NewTitle = FileNameWithoutExtension
+            End If
+
+            'Add to AppsList
+            Using SW As New StreamWriter(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt", True)
+                SW.WriteLine("App=" + NewTitle + ";" + SelectedFileBrowserListViewItem.FileFolderName + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
+                SW.Close()
+            End Using
+
+            'Reload the Home menu
+            For Each Win In Windows.Application.Current.Windows()
+                If Win.ToString = "OrbisPro.MainWindow" Then
+                    CType(Win, MainWindow).ReloadHome()
+                    CType(Win, MainWindow).PauseInput = True
+                    Activate()
+                    Exit For
+                End If
+            Next
+
+            Return True
+        Else
+            Return False
+        End If
+    End Function
+
+    Private Function DeleteFileOrFolder(SelectedFileBrowserListViewItem As FileBrowserListViewItem) As Boolean
+        If SelectedFileBrowserListViewItem IsNot Nothing Then
+            Dim IsDirectory As Boolean = (File.GetAttributes(SelectedFileBrowserListViewItem.FileFolderName) And FileAttributes.Directory) = FileAttributes.Directory
+            If IsDirectory Then
+                Directory.Delete(SelectedFileBrowserListViewItem.FileFolderName, True)
+                FilesFoldersListView.Items.Remove(FilesFoldersListView.SelectedItem)
+                SelectNextListViewItem()
+                Return True
+            Else
+                File.Delete(SelectedFileBrowserListViewItem.FileFolderName)
+                FilesFoldersListView.Items.Remove(FilesFoldersListView.SelectedItem)
+                SelectNextListViewItem()
+                Return True
+            End If
+        Else
+            Return False
         End If
 
+        FilesFoldersListView.Items.Refresh()
+    End Function
+
+    Private Sub SelectNextListViewItem()
+        Dim TotalListViewItems As Integer = FilesFoldersListView.Items.Count
+        Dim CurrentIndex As Integer = FilesFoldersListView.SelectedIndex
+
+        If CurrentIndex + 1 <= TotalListViewItems Then
+            'Simply select the next item in the collection
+            FilesFoldersListView.SelectedIndex = CurrentIndex + 1
+        Else
+            'Check if there any items in the collection and select the previous item
+            If TotalListViewItems > 0 AndAlso CurrentIndex - 1 < TotalListViewItems Then
+                FilesFoldersListView.SelectedIndex = CurrentIndex - 1
+            End If
+        End If
+    End Sub
+
+    Private Sub LaunchGameOrApplication(SelectedFile As FileBrowserListViewItem)
+        'Play 'start' sound effect
+        PlayBackgroundSound(Sounds.SelectItem)
+
+        'Start the game
+        For Each Win In Windows.Application.Current.Windows()
+            If Win.ToString = "OrbisPro.MainWindow" Then
+                CType(Win, MainWindow).StartedGameExecutable = SelectedFile.FileFolderName
+                Exit For
+            End If
+        Next
+
+        StartGame(SelectedFile.FileFolderName)
+        BeginAnimation(OpacityProperty, ClosingAnimation)
+    End Sub
+
+    Private Sub SetBackground()
+        'Set the background
+        Select Case ConfigFile.IniReadValue("System", "Background")
+            Case "Blue Bubbles"
+                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+            Case "Orange/Red Gradient Waves"
+                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+            Case "PS2 Dots"
+                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Custom"
+                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
+            Case Else
+                BackgroundMedia.Source = Nothing
+        End Select
+
+        'Play the background media if Source is not empty
+        If BackgroundMedia.Source IsNot Nothing Then
+            BackgroundMedia.Play()
+        End If
+
+        'Go to first second of the background video and pause it if BackgroundAnimation = False
+        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
+            BackgroundMedia.Position = New TimeSpan(0, 0, 1)
+            BackgroundMedia.Pause()
+        End If
+
+        'Mute BackgroundMedia if BackgroundMusic = False
+        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
+            BackgroundMedia.IsMuted = True
+        End If
+    End Sub
+
+    Private Sub BackgroundMedia_MediaEnded(sender As Object, e As RoutedEventArgs) Handles BackgroundMedia.MediaEnded
+        'Loop the background media
+        BackgroundMedia.Position = TimeSpan.FromSeconds(0)
+        BackgroundMedia.Play()
+    End Sub
+
+    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
+        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
+            .Top = 0,
+            .Left = 0,
+            .Opacity = 0,
+            .SetupStep = True,
+            .Opener = "FileExplorer",
+            .MessageTitle = MessageTitle,
+            .MessageDescription = MessageDescription}
+
+        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSystemDialog.Show()
     End Sub
 
 End Class

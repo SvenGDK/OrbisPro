@@ -6,38 +6,48 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:local="clr-namespace:OrbisPro"
         mc:Ignorable="d"
-        Title="WebBrowser" Height="1080" Width="1920" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None" Background="Black">
+        Title="OrbisPro - WebBrowser" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
     <Canvas>
-        <MediaElement x:Name="BGVid" Height="1080" Width="1920">
-            <MediaElement.Triggers>
-                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <MediaTimeline Source="./Backgrounds/gradient_bg.mp4" Storyboard.TargetName="BGVid" RepeatBehavior="Forever" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </MediaElement.Triggers>
-        </MediaElement>
-        <Label x:Name="SetupTitle" Content="Web Browser" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center" Height="90" Canvas.Left="101" Canvas.Top="43" Width="1808">
-            <Label.Effect>
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+        <TextBlock x:Name="SetupTitle" Text="Web Browser" FontFamily="SST Light" Foreground="White" FontSize="60" Canvas.Left="101" Canvas.Top="43" >
+            <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
+            </TextBlock.Effect>
+        </TextBlock>
         <Separator x:Name="BottomSeparator" Background="White" Foreground="{x:Null}" Height="10" Canvas.Top="938" Width="1920"/>
         <Separator x:Name="TopSeparator" Background="White" Foreground="{x:Null}" Height="10" Canvas.Top="128" Width="1920"/>
-        <TextBox x:Name="WebNavigationBarTextBox" TextWrapping="Wrap" Width="1202" Height="50" Foreground="White" FontFamily="SST Light" FontSize="24" HorizontalAlignment="Left" Canvas.Left="101" Canvas.Top="230" VerticalAlignment="Top" VerticalContentAlignment="Center">
+        <TextBox x:Name="WebNavigationBarTextBox" Width="1202" Height="50" Foreground="White" FontFamily="SST Light" FontSize="24" HorizontalAlignment="Left" Canvas.Left="101" Canvas.Top="230" VerticalAlignment="Top" VerticalContentAlignment="Center">
             <TextBox.Background>
                 <SolidColorBrush Color="Black" Opacity="0.5"/>
             </TextBox.Background>
         </TextBox>
-        <TextBox x:Name="WebSearchTextBox" TextWrapping="Wrap" Width="496" Height="50" Foreground="White" FontFamily="SST Light" FontSize="24" HorizontalAlignment="Left" Canvas.Left="1323" Canvas.Top="230" VerticalAlignment="Top" VerticalContentAlignment="Center">
+        <TextBox x:Name="WebSearchTextBox" Width="496" Height="50" Foreground="White" FontFamily="SST Light" FontSize="24" HorizontalAlignment="Left" Canvas.Left="1323" Canvas.Top="230" VerticalAlignment="Top" VerticalContentAlignment="Center">
             <TextBox.Background>
                 <SolidColorBrush Color="Black" Opacity="0.5"/>
             </TextBox.Background>
         </TextBox>
-        <TextBlock x:Name="WebPageTitleTextBlock" TextWrapping="Wrap" Text="Twitter" Foreground="White" FontSize="36" HorizontalAlignment="Left" Canvas.Left="170" Canvas.Top="169" VerticalAlignment="Center" Width="1133"/>
-        <Image x:Name="FaviconImage" Height="64" Width="64" HorizontalAlignment="Left" Canvas.Left="101" Canvas.Top="161" VerticalAlignment="Top"/>
-        <wv2:WebView2 Name="InternalBrowser" Source="https://twitter.com/SvenGDK" Width="1718" Height="633" Canvas.Left="101" Canvas.Top="302" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock x:Name="WebPageTitleTextBlock" Text="Title" Foreground="White" FontSize="36" HorizontalAlignment="Left" Canvas.Left="165" Canvas.Top="169" VerticalAlignment="Center" Width="1135" FontFamily="SST Ultra Light"/>
+        <Image x:Name="FaviconImage" Height="48" Width="48" HorizontalAlignment="Center" Canvas.Left="101" Canvas.Top="169" VerticalAlignment="Top"/>
+        <wv2:WebView2 Name="InternalBrowser" Source="https://twitter.com/SvenGDK" Width="1718" Height="620" Canvas.Left="101" Canvas.Top="302" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="101" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock x:Name="BackTextBlock" Canvas.Left="156" TextWrapping="Wrap" Text="Close" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="FocusButton" Height="48" Canvas.Left="1468" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBlock x:Name="FocusTextBlock" Canvas.Left="1523" TextWrapping="Wrap" Text="Focus Address Bar" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="NavigateButton" Height="48" Canvas.Left="274" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBlock x:Name="NavigateTextBlock" Canvas.Left="329" TextWrapping="Wrap" Text="Navigate" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBlock x:Name="WebPageTitleTextBlock_Copy" Text="Search with Google" Foreground="White" FontSize="36" Canvas.Left="1323" Canvas.Top="169" Width="496" FontFamily="SST Ultra Light" HorizontalAlignment="Left" VerticalAlignment="Center"/>
     </Canvas>
 </Window>

@@ -5,39 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OrbisPro"
         mc:Ignorable="d"
-        Title="FileExplorer" Height="1080" Width="1920" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None" Background="Black">
+        Title="OrbisPro - File Explorer" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
     <Canvas x:Name="FileExplorerCanvas">
-        <!-- Background -->
-        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" IsMuted="True">
-            <MediaElement.Triggers>
-                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <MediaTimeline Storyboard.TargetName="BackgroundMedia" RepeatBehavior="Forever" Source="./Backgrounds/gradient_bg.mp4" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </MediaElement.Triggers>
-        </MediaElement>
-        <Label x:Name="WindowTitle" Content="File Browser" Canvas.Left="101" Canvas.Top="43" Height="90" Width="1808" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Label.Effect>
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <TextBlock x:Name="WindowTitle" Text="File Browser" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
+            </TextBlock.Effect>
+        </TextBlock>
         <Separator x:Name="TopSeparator" Height="10" Canvas.Top="135" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Image x:Name="CircleButton" Height="48" Canvas.Left="254" Canvas.Top="960" Width="48" Source="/Icons/circle.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Label x:Name="BackLabel" Content="Back" Canvas.Left="302" Canvas.Top="957" Height="55" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Label.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
-        <Image x:Name="CrossButton" Height="48" Canvas.Left="101" Canvas.Top="960" Width="48" Source="/Icons/cross.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Label x:Name="CrossButtonLabel" Content="Enter" Canvas.Left="149" Canvas.Top="957" Height="55" Width="100" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Label.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
-        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="940" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
         <!-- This custom ListView lists files and folders -->
         <ListView x:Name="FilesFoldersListView" Height="785" Canvas.Left="302" Canvas.Top="152" Width="1564" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" d:ItemsSource="{d:SampleData ItemCount=5}" HorizontalAlignment="Left" VerticalAlignment="Center">
             <ListView.ItemsPanel>
@@ -48,6 +27,7 @@
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}">
                     <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type ListViewItem}">
@@ -70,18 +50,7 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <Image x:Name="CircleButton_Copy" Height="48" Canvas.Left="1320" Canvas.Top="960" Width="48" Source="/Icons/triangle.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Label x:Name="CopyLabel" Content="Copy" Canvas.Left="1368" Canvas.Top="957" Height="55" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center">
-            <Label.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
-        <Image x:Name="CircleButton_Copy1"  Canvas.Left="1492" Canvas.Top="967" Width="75" Height="35" Source="/Icons/options.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-        <Label x:Name="BackLabel_Copy1" Content="More Options" Canvas.Left="1572" Canvas.Top="957" Height="55" Width="235" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center">
-            <Label.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
+
         <!-- This custom ListView lists available device/folder paths -->
         <ListView x:Name="DevicesListView" Height="785" Canvas.Left="101" Canvas.Top="152" Width="128" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" d:ItemsSource="{d:SampleData ItemCount=5}" HorizontalAlignment="Center" VerticalAlignment="Top">
             <ListView.ItemsPanel>
@@ -92,6 +61,7 @@
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}">
                     <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type ListViewItem}">
@@ -103,7 +73,7 @@
             </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <Canvas Height="135" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}" Margin="0,0,0,3">
+                    <Canvas Height="135" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}" Margin="0,0,0,5">
                         <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="135" VerticalAlignment="Top" Visibility="{Binding IsDeviceSelected}" FocusVisualStyle="{x:Null}" Width="125"/>
                         <Image x:Name="AppIcon" Width="72" Height="72" Source="{Binding DeviceIcon}" FocusVisualStyle="{x:Null}" HorizontalAlignment="Left" Canvas.Left="27" VerticalAlignment="Center" Canvas.Top="10"/>
                         <TextBlock Width="105" Height="42" Canvas.Left="10" VerticalAlignment="Top" Text="{Binding DeviceName}" Canvas.Top="87" FocusVisualStyle="{x:Null}" TextAlignment="Center" FontSize="30"/>
@@ -111,6 +81,7 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+
         <!-- This is the menu that shows possible actions on the files and folders (this will be changed to a ListView too - position and count is currently fixed)-->
         <Rectangle x:Name="RightMenu" Height="1080" Canvas.Left="1925" Stroke="White" Width="495" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Rectangle.Fill>
@@ -120,35 +91,62 @@
                 </LinearGradientBrush>
             </Rectangle.Fill>
         </Rectangle>
-        <Button x:Name="SettingButton3" Content="Setting3" Canvas.Left="1925" Canvas.Top="431" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Button x:Name="SettingButton3" Content="Setting3" FocusVisualStyle="{x:Null}" Canvas.Left="1925" Canvas.Top="431" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton2" Content="Setting2" Canvas.Left="1925" Canvas.Top="361" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Button x:Name="SettingButton2" Content="Setting2" FocusVisualStyle="{x:Null}" Canvas.Left="1925" Canvas.Top="361" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton1" Content="Setting1" Canvas.Left="1925" Canvas.Top="291" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="White" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Left" VerticalAlignment="Center">
+        <Button x:Name="SettingButton1" Content="Setting1" FocusVisualStyle="{x:Null}" Canvas.Left="1925" Canvas.Top="291" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="White" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Left" VerticalAlignment="Center">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton4" Content="Setting4" Canvas.Left="1925" Canvas.Top="501" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Button x:Name="SettingButton4" Content="Setting4" FocusVisualStyle="{x:Null}" Canvas.Left="1925" Canvas.Top="501" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton5" Content="Setting5" Canvas.Left="1925" Canvas.Top="571" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Button x:Name="SettingButton5" Content="Setting5" FocusVisualStyle="{x:Null}" Canvas.Left="1925" Canvas.Top="571" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton6" Content="Setting6" Canvas.Left="1925" Canvas.Top="641" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Button x:Name="SettingButton6" Content="Setting6" FocusVisualStyle="{x:Null}" Canvas.Left="1925" Canvas.Top="641" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
+
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="940" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="EnterButton" Height="48" Canvas.Left="101" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <TextBlock x:Name="CrossButtonLabel" Text="Enter" Canvas.Left="149" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="339" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBlock x:Name="BackLabel" Text="Back" Canvas.Left="387" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="ActionButton" Height="48" Canvas.Left="1319" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBlock x:Name="ActionTextBlock" Text="Copy" Canvas.Left="1367" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="OptionsButton"  Canvas.Left="1538" Canvas.Top="962" Width="75" Height="35" Source="/Icons/Buttons/ps_options.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBlock x:Name="OptionsTextBlock" Text="More Options" Canvas.Left="1618" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
     </Canvas>
 </Window>

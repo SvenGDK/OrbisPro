@@ -5,19 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OrbisPro"
         mc:Ignorable="d"
-        Title="Downloads" Height="1080" Width="1920" ResizeMode="NoResize" ShowInTaskbar="False" WindowStyle="None" Background="Black">
+        Title="OrbisPro - Downloads" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
     <Canvas x:Name="DownloadsCanvas">
-        <MediaElement x:Name="BGVid" Height="1080" Width="1920">
-            <MediaElement.Triggers>
-                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <MediaTimeline Source="./Backgrounds/gradient_bg.mp4" Storyboard.TargetName="BGVid" RepeatBehavior="Forever" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </MediaElement.Triggers>
-        </MediaElement>
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <TextBlock x:Name="SetupTitle" Text="Downloads" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Separator x:Name="TopSeparator" Height="10" Margin="0" Canvas.Top="131" Width="1920" Background="White" Foreground="{x:Null}"/>
+        
         <ListView x:Name="DownloadsListView" Height="790" Canvas.Left="252" Canvas.Top="143" Width="1415" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single">
             <ListView.ItemTemplate>
                 <DataTemplate>
@@ -64,36 +63,25 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        <Label x:Name="SetupTitle" Content="Downloads" Canvas.Left="101" Canvas.Top="43" Height="90" Width="1808" FontFamily="SST Light" Foreground="White" FontSize="60" VerticalContentAlignment="Center">
-            <Label.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
+        
         <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="941" Width="1920" Background="White" Foreground="{x:Null}"/>
-        <Separator x:Name="TopSeparator" Height="10" Margin="0" Canvas.Top="131" Width="1920" Background="White" Foreground="{x:Null}"/>
-        <Image x:Name="CrossButton" Height="48" Canvas.Left="104" Canvas.Top="948" Width="48" Source="/Icons/cross.png"/>
-        <Label x:Name="SelectLabel" Content="Back" Canvas.Left="152" Canvas.Top="948" Height="48" Width="141" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center">
-            <Label.Effect>
+        <Image x:Name="BackButton" Canvas.Left="101" Canvas.Top="956" Width="48" Height="48" Source="/Icons/Buttons/ps_circle.png"/>
+        <TextBlock x:Name="BackLabel" Text="Return" Canvas.Left="149" Canvas.Top="956" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
-        <Image x:Name="CircleButton" Canvas.Left="298" Canvas.Top="948" Width="48" Height="48" Source="/Icons/circle.png"/>
-        <Label x:Name="BackLabel" Content="Cancel" Canvas.Left="346" Canvas.Top="948" Height="48" Width="121" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Label.Effect>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="ActionButton" Height="48" Canvas.Left="1184" Canvas.Top="956" Width="48" Source="/Icons/Buttons/ps_triangle.png"/>
+        <TextBlock x:Name="DeleteLabel" Text="Cancel &amp; Delete" Canvas.Left="1233" Canvas.Top="956" FontFamily="SST Light" Foreground="White" FontSize="34">
+            <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
-        <Image x:Name="TriangleButton" Height="48" Canvas.Left="472" Canvas.Top="948" Width="48" Source="/Icons/triangle.png" Visibility="Hidden"/>
-        <Label x:Name="DeleteLabel" Content="Delete" Canvas.Left="521" Canvas.Top="948" Height="48" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" Visibility="Hidden">
-            <Label.Effect>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="OptionsButton" Canvas.Left="1519" Canvas.Top="965" Width="75" Height="35" Source="/Icons/Buttons/ps_options.png"/>
+        <TextBlock x:Name="OptionsLabel" Text="Options Menu" Canvas.Left="1599" Canvas.Top="956" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
-        <Image x:Name="OptionsButton" Canvas.Left="673" Canvas.Top="955" Width="75" Height="35" Source="/Icons/options.png" Visibility="Hidden"/>
-        <Label x:Name="OptionsLabel" Content="Menu 'Options'" Canvas.Left="748" Canvas.Top="948" Height="55" Width="255" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Hidden">
-            <Label.Effect>
-                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
-            </Label.Effect>
-        </Label>
+            </TextBlock.Effect>
+        </TextBlock>
     </Canvas>
 </Window>
