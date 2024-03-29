@@ -9,11 +9,11 @@ Media center and game launcher for Windows in the style of PS4's UI.<br>
 OrbisPro is on a BETA stage and some bugs may occur while running the application.<br>
 Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/wiki/First-Run
 
-# Recommended Requirements
+## Requirements
 - CPU: AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
 - GPU: AMD RX 400 / NVIDIA GTX 900 or newer (With Vulkan API support)
-  - Current display limitation: Full HD (1920x1080) screen resolution with 100% scaling.
-- RAM: 8 GB Dual Channel (2x4 GB) RAM
+  - Current display limitation: Full HD (1920x1080) screen resolution at 100% scaling.
+- RAM: 8 GB Dual Channel (2x4 GB)
 - OS: Windows 10 or 11 x64
 
 ## Current Available Core Features
@@ -86,3 +86,15 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - Account Management Settings
   - Change the Username
   
+## ROG Ally Notes
+- Beta 0.1 Bug: Setup video does not start (black screen) just press the A button to continue
+- Control Mode needs to be set to "Gamepad"
+
+## Used Libraries
+- [DiscUtils](https://github.com/discutils/discutils)
+- [Font-Awesome-WPF](https://github.com/charri/Font-Awesome-WPF)
+- [InTheHand.Net.Bluetooth](https://github.com/inthehand/32feet/)
+- [LibHook](https://www.nuget.org/packages/LibHook)
+- [LibVLCSharp](https://code.videolan.org/videolan/LibVLCSharp)
+- [Newtonsoft.Json](https://www.newtonsoft.com/json)
+- [SharpDX](https://github.com/sharpdx/SharpDX)
