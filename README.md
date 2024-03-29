@@ -94,7 +94,6 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - [DiscUtils](https://github.com/discutils/discutils)
 - [Font-Awesome-WPF](https://github.com/charri/Font-Awesome-WPF)
 - [InTheHand.Net.Bluetooth](https://github.com/inthehand/32feet/)
-- [LibHook](https://www.nuget.org/packages/LibHook)
 - [LibVLCSharp](https://code.videolan.org/videolan/LibVLCSharp)
 - [Managed Native Wifi](https://github.com/emoacht/ManagedNativeWifi)
 - [Newtonsoft.Json](https://www.newtonsoft.com/json)
