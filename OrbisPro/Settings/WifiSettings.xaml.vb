@@ -13,7 +13,7 @@ Imports System.Windows.Media.Animation
 Public Class WifiSettings
 
     Public Opener As String = ""
-    Private WithEvents GlobalKeyboardHook As New KeyboardHook()
+    Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     Private PasswordInputBox As New PSInputBox("WiFi Password :", True)
@@ -38,9 +38,6 @@ Public Class WifiSettings
         Canvas.SetLeft(PasswordInputBox, 1925)
         Canvas.SetTop(PasswordInputBox, 1085)
         WifiSettingsCanvas.Children.Add(PasswordInputBox)
-
-        'Hook the ENTER/RETURN key for password confirmation
-        GlobalKeyboardHook.Attach()
 
         'Check if WiFi is connected
         ConnectedWifi = GetConnectedWiFiNetworkSSID()
@@ -73,7 +70,6 @@ Public Class WifiSettings
     End Sub
 
     Private Sub WifiSettings_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        GlobalKeyboardHook.Detach()
         CTS?.Cancel()
         MainController = Nothing
         RemoteController = Nothing
@@ -100,7 +96,7 @@ Public Class WifiSettings
 
 #Region "Input"
 
-    Private Sub WifiSettings_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+    Private Async Sub WifiSettings_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
         If PauseInput = False Then
             If e.Key = Key.A Then
@@ -113,63 +109,83 @@ Public Class WifiSettings
                     WiFiNetworkListViewIndex = WiFiNetworksListView.SelectedIndex
                     Dim SelectedWiFiNetwork As WiFiNetworkListViewItem = CType(WiFiNetworksListView.SelectedItem, WiFiNetworkListViewItem)
 
-                    If SelectedWiFiNetwork.IsWiFiSaved = False AndAlso SelectedWiFiNetwork.IsWiFiConnected = False Then
-                        'Create a WiFi network profile and connect to it
-                        WiFiNetworkToHandle = SelectedWiFiNetwork
+                    If ConnectTextBlock.Text = "Connect" Then
+                        If SelectedWiFiNetwork.IsWiFiSaved = False AndAlso SelectedWiFiNetwork.IsWiFiConnected = False Then
+                            WiFiNetworkToHandle = SelectedWiFiNetwork
 
-                        'Check if the WiFi network is secured
-                        If SelectedWiFiNetwork.IsWiFiSecured Then
+                            'Check if the WiFi network is secured
+                            If SelectedWiFiNetwork.IsWiFiSecured Then
 
-                            'Show a password input field
-                            Animate(PasswordInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
-                            Animate(PasswordInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
-                            Animate(PasswordInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                                'Show a password input field
+                                Animate(PasswordInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
+                                Animate(PasswordInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
+                                Animate(PasswordInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                            'Pause the window keyboard input and focus the password input field
-                            PauseInput = True
-                            PasswordInputBox.PasswordInputTextBox.Clear()
-                            PasswordInputBox.PasswordInputTextBox.Focus()
-                            ShowVirtualKeyboard()
+                                'Pause the window keyboard input and focus the password input field
+                                PauseInput = True
+                                PasswordInputBox.PasswordInputTextBox.Clear()
+                                PasswordInputBox.PasswordInputTextBox.Focus()
+                                ShowVirtualKeyboard()
 
-                        Else
+                            Else
 
-                            'Create a new WiFi network profile XML
-                            Dim WiFiNetworkNameAsHex As String = GetHexString(SelectedWiFiNetwork.WiFiSSID)
-                            Dim NewOpenWiFiProfile As String = CreateOpenWiFiProfile(SelectedWiFiNetwork.WiFiSSID, WiFiNetworkNameAsHex, "ESS", "auto", "open", "none", "false")
-                            Dim XMLContent As String = File.ReadAllText(NewOpenWiFiProfile)
+                                'Create a new open WiFi network profile XML
+                                Dim WiFiNetworkNameAsHex As String = GetHexString(SelectedWiFiNetwork.WiFiSSID)
+                                Dim NewOpenWiFiProfile As String = CreateOpenWiFiProfile(SelectedWiFiNetwork.WiFiSSID, WiFiNetworkNameAsHex, "ESS", "auto", "open", "none", "false")
+                                Dim XMLContent As String = File.ReadAllText(NewOpenWiFiProfile)
 
-                            'Add (or overwrite) the WiFi profile and connect to it
-                            If NativeWifi.SetProfile(SelectedWiFiNetwork.WiFiInterface.Id, ProfileType.AllUser, XMLContent, Nothing, True) Then
+                                'Add (or overwrite) the WiFi profile and connect to it
+                                If NativeWifi.SetProfile(SelectedWiFiNetwork.WiFiInterface.Id, ProfileType.AllUser, XMLContent, Nothing, True) Then
 
-                                If NativeWifi.ConnectNetwork(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID, SelectedWiFiNetwork.WiFiBssType) Then
+                                    If NativeWifi.ConnectNetwork(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID, SelectedWiFiNetwork.WiFiBssType) Then
 
-                                    'Change selected WiFiNetworkListViewItem properties
-                                    SelectedWiFiNetwork.IsWiFiConnected = True
-                                    SelectedWiFiNetwork.IsWiFiSaved = True
-                                    ConnectTextBlock.Text = "Disconnect"
+                                        'Change selected WiFiNetworkListViewItem properties
+                                        SelectedWiFiNetwork.IsWiFiConnected = True
+                                        SelectedWiFiNetwork.IsWiFiSaved = True
+                                        ConnectTextBlock.Text = "Disconnect"
 
-                                    OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
+                                        OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
 
-                                    'Set the focus back on the previously selected WiFiNetworkListViewItem
-                                    Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
-                                    Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
-                                    If LastSelectedItem IsNot Nothing Then
-                                        LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
-                                        LastSelectedListViewItem.Focus()
+                                        'Set the focus back on the previously selected WiFiNetworkListViewItem
+                                        Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
+                                        Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
+                                        If LastSelectedItem IsNot Nothing Then
+                                            LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
+                                            LastSelectedListViewItem.Focus()
+                                        End If
+
+                                    Else
+                                        PauseInput = True
+                                        ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi network could be unstable.")
                                     End If
 
                                 Else
                                     PauseInput = True
-                                    ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi network could be unstable.")
+                                    ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi profile could be corrupted.")
                                 End If
 
-                            Else
-                                PauseInput = True
-                                ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi profile could be corrupted.")
                             End If
 
                         End If
+                    Else
+                        If SelectedWiFiNetwork.IsWiFiConnected = True Then
+                            'Delete associated profile
+                            NativeWifi.DeleteProfile(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID)
 
+                            'Disconnect from SelectedWiFiNetwork
+                            If Await DisconnectWiFiNetworkAsync(SelectedWiFiNetwork) Then
+                                'Change selected WiFiNetworkListViewItem properties
+                                SelectedWiFiNetwork.IsWiFiConnected = False
+                                ConnectTextBlock.Text = "Connect"
+
+                                OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect succeeded.", "/Icons/Wifi/WiFiNotification.png")
+                            Else
+                                SelectedWiFiNetwork.IsWiFiConnected = False
+                                ConnectTextBlock.Text = "Connect"
+
+                                OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect did not succeed.", "/Icons/Wifi/WiFiNotification.png")
+                            End If
+                        End If
                     End If
 
                 End If
@@ -196,58 +212,58 @@ Public Class WifiSettings
         End If
     End Sub
 
-    Private Async Sub GlobalKeyboardHook_KeyDown(sender As Object, e As KeyPressEventArgs) Handles GlobalKeyboardHook.KeyDown
+    Private Async Sub NewGlobalKeyboardHook_KeyDown(Key As Forms.Keys) Handles NewGlobalKeyboardHook.KeyDown
         If PauseInput Then
             'Only receive the key when Me.KeyDown is paused
-            If e.Key = VirtualKeyEnum.VK_RETURN Then
+            Select Case Key
+                Case Forms.Keys.Return, Forms.Keys.Enter
+                    'Remove the password input field
+                    Animate(PasswordInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PasswordInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PasswordInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                'Remove the password input field
-                Animate(PasswordInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PasswordInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PasswordInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+                    'Connect to the WiFi network using the password
+                    If WiFiNetworkToHandle IsNot Nothing Then
+                        PauseInput = False
+                        If Await ConnectToNewWiFiNetworkAsync(WiFiNetworkToHandle, PasswordInputBox.PasswordInputTextBox.Password) Then
 
-                'Connect to the WiFi network using the password
-                If WiFiNetworkToHandle IsNot Nothing Then
-                    PauseInput = False
-                    If Await ConnectToNewWiFiNetworkAsync(WiFiNetworkToHandle, PasswordInputBox.PasswordInputTextBox.Password) Then
+                            'Change selected WiFiNetworkListViewItem properties
+                            WiFiNetworkToHandle.IsWiFiConnected = True
+                            WiFiNetworkToHandle.IsWiFiSaved = True
+                            ConnectTextBlock.Text = "Disconnect"
 
-                        'Change selected WiFiNetworkListViewItem properties
-                        WiFiNetworkToHandle.IsWiFiConnected = True
-                        WiFiNetworkToHandle.IsWiFiSaved = True
-                        ConnectTextBlock.Text = "Disconnect"
+                            OrbisNotifications.NotificationPopup(WifiSettingsCanvas, WiFiNetworkToHandle.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
 
-                        OrbisNotifications.NotificationPopup(WifiSettingsCanvas, WiFiNetworkToHandle.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
+                            'Set the focus back on the previously selected WiFiNetworkListViewItem
+                            Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
+                            Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
+                            If LastSelectedItem IsNot Nothing Then
+                                LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
+                                LastSelectedListViewItem.Focus()
+                            End If
 
-                        'Set the focus back on the previously selected WiFiNetworkListViewItem
-                        Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
-                        Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
-                        If LastSelectedItem IsNot Nothing Then
-                            LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
-                            LastSelectedListViewItem.Focus()
+                        Else
+                            PauseInput = True
+                            ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. Please check your password.")
                         End If
-
-                    Else
-                        PauseInput = True
-                        ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. Please check your password.")
                     End If
-                End If
 
-                PauseInput = False
-            ElseIf e.Key = VirtualKeyEnum.VK_ESCAPE Then
-                'Remove the password input field
-                Animate(PasswordInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PasswordInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PasswordInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+                    PauseInput = False
+                Case Forms.Keys.Escape
+                    'Remove the password input field
+                    Animate(PasswordInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PasswordInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PasswordInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                'Set the focus back on the previously selected WiFiNetworkListViewItem
-                Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
-                Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
-                If LastSelectedItem IsNot Nothing Then
-                    LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
-                    LastSelectedListViewItem.Focus()
-                End If
-                PauseInput = False
-            End If
+                    'Set the focus back on the previously selected WiFiNetworkListViewItem
+                    Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
+                    Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
+                    If LastSelectedItem IsNot Nothing Then
+                        LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
+                        LastSelectedListViewItem.Focus()
+                    End If
+                    PauseInput = False
+            End Select
         End If
     End Sub
 
@@ -302,63 +318,83 @@ Public Class WifiSettings
                         WiFiNetworkListViewIndex = WiFiNetworksListView.SelectedIndex
                         Dim SelectedWiFiNetwork As WiFiNetworkListViewItem = CType(WiFiNetworksListView.SelectedItem, WiFiNetworkListViewItem)
 
-                        If SelectedWiFiNetwork.IsWiFiSaved = False AndAlso SelectedWiFiNetwork.IsWiFiConnected = False Then
-                            'Create a WiFi network profile and connect to it
-                            WiFiNetworkToHandle = SelectedWiFiNetwork
+                        If ConnectTextBlock.Text = "Connect" Then
+                            If SelectedWiFiNetwork.IsWiFiSaved = False AndAlso SelectedWiFiNetwork.IsWiFiConnected = False Then
+                                WiFiNetworkToHandle = SelectedWiFiNetwork
 
-                            'Check if the WiFi network is secured
-                            If SelectedWiFiNetwork.IsWiFiSecured Then
+                                'Check if the WiFi network is secured
+                                If SelectedWiFiNetwork.IsWiFiSecured Then
 
-                                'Show a password input field
-                                Animate(PasswordInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
-                                Animate(PasswordInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
-                                Animate(PasswordInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    'Show a password input field
+                                    Animate(PasswordInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    Animate(PasswordInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    Animate(PasswordInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                                'Pause the window keyboard input and focus the password input field
-                                PauseInput = True
-                                PasswordInputBox.PasswordInputTextBox.Clear()
-                                PasswordInputBox.PasswordInputTextBox.Focus()
-                                ShowVirtualKeyboard()
+                                    'Pause the window keyboard input and focus the password input field
+                                    PauseInput = True
+                                    PasswordInputBox.PasswordInputTextBox.Clear()
+                                    PasswordInputBox.PasswordInputTextBox.Focus()
+                                    ShowVirtualKeyboard()
 
-                            Else
+                                Else
 
-                                'Create a new WiFi network profile XML
-                                Dim WiFiNetworkNameAsHex As String = GetHexString(SelectedWiFiNetwork.WiFiSSID)
-                                Dim NewOpenWiFiProfile As String = CreateOpenWiFiProfile(SelectedWiFiNetwork.WiFiSSID, WiFiNetworkNameAsHex, "ESS", "auto", "open", "none", "false")
-                                Dim XMLContent As String = File.ReadAllText(NewOpenWiFiProfile)
+                                    'Create a new open WiFi network profile XML
+                                    Dim WiFiNetworkNameAsHex As String = GetHexString(SelectedWiFiNetwork.WiFiSSID)
+                                    Dim NewOpenWiFiProfile As String = CreateOpenWiFiProfile(SelectedWiFiNetwork.WiFiSSID, WiFiNetworkNameAsHex, "ESS", "auto", "open", "none", "false")
+                                    Dim XMLContent As String = File.ReadAllText(NewOpenWiFiProfile)
 
-                                'Add (or overwrite) the WiFi profile and connect to it
-                                If NativeWifi.SetProfile(SelectedWiFiNetwork.WiFiInterface.Id, ProfileType.AllUser, XMLContent, Nothing, True) Then
+                                    'Add (or overwrite) the WiFi profile and connect to it
+                                    If NativeWifi.SetProfile(SelectedWiFiNetwork.WiFiInterface.Id, ProfileType.AllUser, XMLContent, Nothing, True) Then
 
-                                    If NativeWifi.ConnectNetwork(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID, SelectedWiFiNetwork.WiFiBssType) Then
+                                        If NativeWifi.ConnectNetwork(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID, SelectedWiFiNetwork.WiFiBssType) Then
 
-                                        'Change selected WiFiNetworkListViewItem properties
-                                        SelectedWiFiNetwork.IsWiFiConnected = True
-                                        SelectedWiFiNetwork.IsWiFiSaved = True
-                                        ConnectTextBlock.Text = "Disconnect"
+                                            'Change selected WiFiNetworkListViewItem properties
+                                            SelectedWiFiNetwork.IsWiFiConnected = True
+                                            SelectedWiFiNetwork.IsWiFiSaved = True
+                                            ConnectTextBlock.Text = "Disconnect"
 
-                                        OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
+                                            OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
 
-                                        'Set the focus back on the previously selected WiFiNetworkListViewItem
-                                        Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
-                                        Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
-                                        If LastSelectedItem IsNot Nothing Then
-                                            LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
-                                            LastSelectedListViewItem.Focus()
+                                            'Set the focus back on the previously selected WiFiNetworkListViewItem
+                                            Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
+                                            Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
+                                            If LastSelectedItem IsNot Nothing Then
+                                                LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
+                                                LastSelectedListViewItem.Focus()
+                                            End If
+
+                                        Else
+                                            PauseInput = True
+                                            ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi network could be unstable.")
                                         End If
 
                                     Else
                                         PauseInput = True
-                                        ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi network could be unstable.")
+                                        ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi profile could be corrupted.")
                                     End If
 
-                                Else
-                                    PauseInput = True
-                                    ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi profile could be corrupted.")
                                 End If
 
                             End If
+                        Else
+                            If SelectedWiFiNetwork.IsWiFiConnected = True Then
+                                'Delete associated profile
+                                NativeWifi.DeleteProfile(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID)
 
+                                'Disconnect from SelectedWiFiNetwork
+                                If Await DisconnectWiFiNetworkAsync(SelectedWiFiNetwork) Then
+                                    'Change selected WiFiNetworkListViewItem properties
+                                    SelectedWiFiNetwork.IsWiFiConnected = False
+                                    ConnectTextBlock.Text = "Connect"
+
+                                    OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect succeeded.", "/Icons/Wifi/WiFiNotification.png")
+                                Else
+                                    SelectedWiFiNetwork.IsWiFiConnected = False
+                                    ConnectTextBlock.Text = "Connect"
+
+                                    OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect did not succeed.", "/Icons/Wifi/WiFiNotification.png")
+                                End If
+                            End If
                         End If
 
                     End If
@@ -560,6 +596,14 @@ Public Class WifiSettings
             Else
                 Return False
             End If
+        Else
+            Return False
+        End If
+    End Function
+
+    Private Async Function DisconnectWiFiNetworkAsync(WiFiNetwork As WiFiNetworkListViewItem) As Task(Of Boolean)
+        If WiFiNetwork IsNot Nothing Then
+            Return Await NativeWifi.DisconnectNetworkAsync(WiFiNetwork.WiFiInterface.Id, New TimeSpan(0, 0, 10))
         Else
             Return False
         End If

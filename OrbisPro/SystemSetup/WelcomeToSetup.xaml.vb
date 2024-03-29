@@ -158,6 +158,7 @@ Public Class WelcomeToSetup
 
     Private Sub SetupAllyPart1()
         BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\rog.mp4", UriKind.Absolute)
+        BackgroundMedia.Play()
     End Sub
 
     Private Sub SetupAllyPart2()

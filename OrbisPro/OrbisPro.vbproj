@@ -119,6 +119,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Classes\OrbisBluetooth.vb" />
+    <Compile Include="Classes\OrbisKeyboardHook.vb" />
     <Compile Include="Classes\OrbisNetwork.vb" />
     <Compile Include="Classes\OrbisPowerUtils.vb" />
     <Compile Include="Classes\ProcessUtils.vb" />
@@ -319,7 +320,6 @@
     <Import Include="System.Windows.Media" />
     <Import Include="System.Windows.Media.Imaging" />
     <Import Include="System.Windows.Navigation" />
-    <Import Include="Winnster.Interop.LibHook" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Custom Controls\MessagePopup.xaml.vb">
@@ -507,9 +507,6 @@
     </PackageReference>
     <PackageReference Include="InTheHand.Net.Bluetooth">
       <Version>4.1.43</Version>
-    </PackageReference>
-    <PackageReference Include="LibHook">
-      <Version>2014.1.22.9</Version>
     </PackageReference>
     <PackageReference Include="LibVLCSharp.WPF">
       <Version>3.8.2</Version>

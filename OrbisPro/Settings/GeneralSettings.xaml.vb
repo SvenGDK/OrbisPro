@@ -17,7 +17,7 @@ Public Class GeneralSettings
 
     Public Opener As String = ""
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-    Private WithEvents GlobalKeyboardHook As New KeyboardHook()
+    Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
 
     'Keep last selection index
     Private LastGeneralSettingsIndex As Integer
@@ -54,9 +54,6 @@ Public Class GeneralSettings
         Canvas.SetLeft(NewInputBox, 1925)
         Canvas.SetTop(NewInputBox, 1085)
         SettingsCanvas.Children.Add(NewInputBox)
-
-        'Hook the ENTER/RETURN key for password confirmation
-        GlobalKeyboardHook.Attach()
 
         'Show the main settings first
         LoadGeneralSettings()
@@ -3467,46 +3464,44 @@ Public Class GeneralSettings
         End If
     End Sub
 
-    Private Sub GlobalKeyboardHook_KeyDown(sender As Object, e As KeyPressEventArgs) Handles GlobalKeyboardHook.KeyDown
+    Private Sub NewGlobalKeyboardHook_KeyDown(Key As Forms.Keys) Handles NewGlobalKeyboardHook.KeyDown
         If PauseInput Then
-            'Only receive the key when Me.KeyDown is paused
-            If e.Key = VirtualKeyEnum.VK_RETURN Then
+            Select Case Key
+                Case Forms.Keys.Return, Forms.Keys.Enter
+                    If SettingToChange IsNot Nothing Then
+                        ChangeStringValue(SettingToChange, NewInputBox.InputTextBox.Text)
+                    End If
 
-                If SettingToChange IsNot Nothing Then
-                    ChangeStringValue(SettingToChange, NewInputBox.InputTextBox.Text)
-                End If
+                    'Remove the input field
+                    Animate(NewInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(NewInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(NewInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                'Remove the input field
-                Animate(NewInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(NewInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(NewInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Dim LastSelectedListViewItem As ListViewItem = TryCast(GeneralSettingsListView.ItemContainerGenerator.ContainerFromIndex(GeneralSettingsListView.SelectedIndex), ListViewItem)
+                    Dim LastSelectedItem As SettingsListViewItem = TryCast(LastSelectedListViewItem.Content, SettingsListViewItem)
 
-                Dim LastSelectedListViewItem As ListViewItem = TryCast(GeneralSettingsListView.ItemContainerGenerator.ContainerFromIndex(GeneralSettingsListView.SelectedIndex), ListViewItem)
-                Dim LastSelectedItem As SettingsListViewItem = TryCast(LastSelectedListViewItem.Content, SettingsListViewItem)
+                    If LastSelectedItem IsNot Nothing Then
+                        LastSelectedItem.IsSettingSelected = Visibility.Visible
+                        LastSelectedListViewItem.Focus()
+                    End If
 
-                If LastSelectedItem IsNot Nothing Then
-                    LastSelectedItem.IsSettingSelected = Visibility.Visible
-                    LastSelectedListViewItem.Focus()
-                End If
+                    PauseInput = False
+                Case Forms.Keys.Escape
+                    'Remove the input field
+                    Animate(NewInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(NewInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(NewInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                PauseInput = False
-            ElseIf e.Key = VirtualKeyEnum.VK_ESCAPE Then
+                    Dim LastSelectedListViewItem As ListViewItem = TryCast(GeneralSettingsListView.ItemContainerGenerator.ContainerFromIndex(GeneralSettingsListView.SelectedIndex), ListViewItem)
+                    Dim LastSelectedItem As SettingsListViewItem = TryCast(LastSelectedListViewItem.Content, SettingsListViewItem)
 
-                'Remove the input field
-                Animate(NewInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(NewInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(NewInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+                    If LastSelectedItem IsNot Nothing Then
+                        LastSelectedItem.IsSettingSelected = Visibility.Visible
+                        LastSelectedListViewItem.Focus()
+                    End If
 
-                Dim LastSelectedListViewItem As ListViewItem = TryCast(GeneralSettingsListView.ItemContainerGenerator.ContainerFromIndex(GeneralSettingsListView.SelectedIndex), ListViewItem)
-                Dim LastSelectedItem As SettingsListViewItem = TryCast(LastSelectedListViewItem.Content, SettingsListViewItem)
-
-                If LastSelectedItem IsNot Nothing Then
-                    LastSelectedItem.IsSettingSelected = Visibility.Visible
-                    LastSelectedListViewItem.Focus()
-                End If
-
-                PauseInput = False
-            End If
+                    PauseInput = False
+            End Select
         End If
     End Sub
 

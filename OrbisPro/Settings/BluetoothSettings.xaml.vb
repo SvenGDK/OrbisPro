@@ -16,7 +16,7 @@ Public Class BluetoothSettings
 
     Public Opener As String = ""
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-    Private WithEvents GlobalKeyboardHook As New KeyboardHook()
+    Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
     Private WithEvents BluetoothWorker As New BackgroundWorker() With {.WorkerReportsProgress = True}
     Private BluetoothWorkerAction As String
@@ -47,9 +47,6 @@ Public Class BluetoothSettings
         Canvas.SetLeft(PINInputBox, 1925)
         Canvas.SetTop(PINInputBox, 1085)
         BTSettingsCanvas.Children.Add(PINInputBox)
-
-        'Hook the ENTER/RETURN key for PIN confirmation
-        GlobalKeyboardHook.Attach()
     End Sub
 
     Private Async Sub BluetoothSettings_ContentRendered(sender As Object, e As EventArgs) Handles Me.ContentRendered
@@ -72,7 +69,6 @@ Public Class BluetoothSettings
     End Sub
 
     Private Sub BluetoothSettings_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        GlobalKeyboardHook.Detach()
         CTS?.Cancel()
         MainController = Nothing
         RemoteController = Nothing
@@ -166,22 +162,37 @@ Public Class BluetoothSettings
         End If
     End Sub
 
-    Private Sub GlobalKeyboardHook_KeyDown(sender As Object, e As KeyPressEventArgs) Handles GlobalKeyboardHook.KeyDown
+    Private Sub NewGlobalKeyboardHook_KeyDown(Key As Forms.Keys) Handles NewGlobalKeyboardHook.KeyDown
         If PauseInput Then
-            'Only receive the key when Me.KeyDown is paused
-            If e.Key = VirtualKeyEnum.VK_RETURN Then
+            Select Case Key
+                Case Forms.Keys.Return, Forms.Keys.Enter
+                    'Remove the PIN input field
+                    Animate(PINInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PINInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PINInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                'Remove the PIN input field
-                Animate(PINInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PINInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PINInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+                    If DeviceToHandle IsNot Nothing Then
+                        PauseInput = False
 
-                If DeviceToHandle IsNot Nothing Then
+                        PairPIN = PINInputBox.InputTextBox.Text
+                        BluetoothWorkerAction = "Pair"
+                        BluetoothWorker.RunWorkerAsync("Pair")
+
+                        'Set the focus back on the previously selected BTDeviceOrServiceListViewItem
+                        Dim LastSelectedListViewItem As ListViewItem = TryCast(BluetoothDevicesListView.ItemContainerGenerator.ContainerFromIndex(BluetoothDevicesListView.SelectedIndex), ListViewItem)
+                        Dim LastSelectedItem As BTDeviceOrServiceListViewItem = TryCast(LastSelectedListViewItem.Content, BTDeviceOrServiceListViewItem)
+                        If LastSelectedItem IsNot Nothing Then
+                            LastSelectedItem.IsDeviceSelected = Visibility.Visible
+                            LastSelectedListViewItem.Focus()
+                        End If
+                    End If
+
                     PauseInput = False
-
-                    PairPIN = PINInputBox.InputTextBox.Text
-                    BluetoothWorkerAction = "Pair"
-                    BluetoothWorker.RunWorkerAsync("Pair")
+                Case Forms.Keys.Escape
+                    'Remove the PIN input field
+                    Animate(PINInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PINInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(PINInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
                     'Set the focus back on the previously selected BTDeviceOrServiceListViewItem
                     Dim LastSelectedListViewItem As ListViewItem = TryCast(BluetoothDevicesListView.ItemContainerGenerator.ContainerFromIndex(BluetoothDevicesListView.SelectedIndex), ListViewItem)
@@ -190,24 +201,8 @@ Public Class BluetoothSettings
                         LastSelectedItem.IsDeviceSelected = Visibility.Visible
                         LastSelectedListViewItem.Focus()
                     End If
-                End If
-
-                PauseInput = False
-            ElseIf e.Key = VirtualKeyEnum.VK_ESCAPE Then
-                'Remove the PIN input field
-                Animate(PINInputBox, Canvas.TopProperty, 400, 1085, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PINInputBox, Canvas.LeftProperty, 500, 1925, New Duration(TimeSpan.FromMilliseconds(500)))
-                Animate(PINInputBox, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
-
-                'Set the focus back on the previously selected BTDeviceOrServiceListViewItem
-                Dim LastSelectedListViewItem As ListViewItem = TryCast(BluetoothDevicesListView.ItemContainerGenerator.ContainerFromIndex(BluetoothDevicesListView.SelectedIndex), ListViewItem)
-                Dim LastSelectedItem As BTDeviceOrServiceListViewItem = TryCast(LastSelectedListViewItem.Content, BTDeviceOrServiceListViewItem)
-                If LastSelectedItem IsNot Nothing Then
-                    LastSelectedItem.IsDeviceSelected = Visibility.Visible
-                    LastSelectedListViewItem.Focus()
-                End If
-                PauseInput = False
-            End If
+                    PauseInput = False
+            End Select
         End If
     End Sub
 

@@ -21,7 +21,8 @@ Class MainWindow
     Private WithEvents SystemTimer As DispatcherTimer
 
     'Hook the 'Home' key
-    Private WithEvents GlobalKeyboardHook As New KeyboardHook()
+    'Private WithEvents GlobalKeyboardHook As New KeyboardHook()
+    Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
 
     'Our background webbrowser to retrieve some game infos (covers, cd image, description, ...)
     Private WithEvents PSXDatacenterBrowser As New WebBrowser()
@@ -119,12 +120,9 @@ Class MainWindow
     End Sub
 
     Private Async Sub MainWindow_ContentRendered(sender As Object, e As EventArgs) Handles Me.ContentRendered
-        'Add a global keyboard hook for the 'Home' key
         Try
             'Check for gamepads
             If GetAndSetGamepads() Then MainController = SharedController1
-
-            GlobalKeyboardHook.Attach()
             If SharedController1 IsNot Nothing Then Await ReadGamepadInputAsync(CTS.Token)
         Catch ex As Exception
             PauseInput = True
@@ -137,7 +135,6 @@ Class MainWindow
     End Sub
 
     Private Sub MainWindow_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
-        GlobalKeyboardHook.Detach()
         CTS?.Cancel()
         MainController = Nothing
         RemoteController = Nothing
@@ -922,36 +919,35 @@ Class MainWindow
     End Sub
 
     'Get Home keyboard input
-    Private Sub GlobalKeyboardHook_KeyDown(sender As Object, e As Winnster.Interop.LibHook.KeyPressEventArgs) Handles GlobalKeyboardHook.KeyDown
-        If e.Key = VirtualKeyEnum.VK_HOME Then
+    Private Sub NewGlobalKeyboardHook_KeyDown(Key As Keys) Handles NewGlobalKeyboardHook.KeyDown
+        Select Case Key
+            Case Keys.Home
+                If PauseInput Then
+                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count = 0 Then
+                        Try
+                            'Suspend the running game process
+                            PauseProcessThread(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                        Catch ex As Exception
+                            PauseInput = True
+                            ExceptionDialog("System Error", ex.Message)
+                        End Try
+                    End If
 
-            If PauseInput Then
-                If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count = 0 Then
-                    Try
-                        'Suspend the running game process
-                        PauseProcessThread(Path.GetFileNameWithoutExtension(StartedGameExecutable))
-                    Catch ex As Exception
+                    'ShowProcess("OrbisPro") 'Re-activate OrbisPro and bring to front
+                    ReturnAnimation()
+                    Activate()
+                    Topmost = True
+                    Topmost = False
+                    Activate()
+                Else
+                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count > 0 Then
+                        'Resume the game process and bring it to the front
                         PauseInput = True
-                        ExceptionDialog("System Error", ex.Message)
-                    End Try
+                        ResumeProcessThreads()
+                        ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                    End If
                 End If
-
-                'ShowProcess("OrbisPro") 'Re-activate OrbisPro and bring to front
-                ReturnAnimation()
-                Activate()
-                Topmost = True
-                Topmost = False
-                Activate()
-            Else
-                If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count > 0 Then
-                    'Resume the game process and bring it to the front
-                    PauseInput = True
-                    ResumeProcessThreads()
-                    ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
-                End If
-            End If
-
-        End If
+        End Select
     End Sub
 
     'Gamepad input
@@ -971,6 +967,9 @@ Class MainWindow
                 Dim MainGamepadButton_Back_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Back) <> 0
                 Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
 
+                Dim MainGamepadButton_L_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.LeftShoulder) <> 0
+                Dim MainGamepadButton_R_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.RightShoulder) <> 0
+
                 Dim MainGamepadButton_DPad_Up_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadUp) <> 0
                 Dim MainGamepadButton_DPad_Down_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadDown) <> 0
                 Dim MainGamepadButton_DPad_Left_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadLeft) <> 0
@@ -979,7 +978,7 @@ Class MainWindow
                 'Get the focused element to select different actions
                 Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
-                If MainGamepadButton_Back_Button_Pressed And MainGamepadButton_Start_Button_Pressed Then
+                If MainGamepadButton_Back_Button_Pressed AndAlso MainGamepadButton_Start_Button_Pressed Then
 
                     If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count > 0 Then
                         'Resume the game process and bring it to the front
@@ -991,6 +990,15 @@ Class MainWindow
                     'Do not leave the buttons in a pressed state
                     MainGamepadButton_Back_Button_Pressed = False
                     MainGamepadButton_Start_Button_Pressed = False
+                End If
+
+                If MainGamepadButton_L_Button_Pressed AndAlso MainGamepadButton_R_Button_Pressed Then
+
+                    ReloadHome()
+
+                    'Do not leave the buttons in a pressed state
+                    MainGamepadButton_L_Button_Pressed = False
+                    MainGamepadButton_R_Button_Pressed = False
                 End If
 
                 If MainGamepadButton_A_Button_Pressed Then
