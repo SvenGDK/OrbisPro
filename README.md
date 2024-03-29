@@ -96,5 +96,6 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - [InTheHand.Net.Bluetooth](https://github.com/inthehand/32feet/)
 - [LibHook](https://www.nuget.org/packages/LibHook)
 - [LibVLCSharp](https://code.videolan.org/videolan/LibVLCSharp)
+- [Managed Native Wifi](https://github.com/emoacht/ManagedNativeWifi)
 - [Newtonsoft.Json](https://www.newtonsoft.com/json)
 - [SharpDX](https://github.com/sharpdx/SharpDX)
