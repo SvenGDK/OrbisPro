@@ -87,7 +87,6 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
   - Change the Username
   
 ## ROG Ally Notes
-- Beta 0.1 Bug: Setup video does not start (black screen) just press the A button to continue
 - Control Mode needs to be set to "Gamepad"
 
 ## Used Libraries
