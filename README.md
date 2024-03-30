@@ -86,6 +86,10 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - Account Management Settings
   - Change the Username
   
+## Font Note
+OrbisPro will use the SST font family ONLY if installed.<br>
+It is NOT included in the repository nor in the final archive.
+
 ## ROG Ally Notes
 - Control Mode needs to be set to "Gamepad"
 
