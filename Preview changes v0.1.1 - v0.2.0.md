@@ -14,6 +14,7 @@ In order to use OrbisPro after this update you will need the [.NET Desktop Runti
   - Prevent animating to next App until last animation is done
   - Prevent also input to move to the next App until last animation is done
   - Those (minimal) delays should no more mess up the interface
+- Memory usage of OrbisPro will now be reduced when starting a game or application
  
 ## Other Changes
 - Keyboard input fixes
