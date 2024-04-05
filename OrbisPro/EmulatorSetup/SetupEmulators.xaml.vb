@@ -8,12 +8,13 @@ Imports SharpDX.XInput
 
 Public Class SetupEmulators
 
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Private LastKeyboardKey As Key
     Public Opener As String = ""
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -57,7 +58,7 @@ Public Class SetupEmulators
 
         Select Case Opener
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         CType(Win, GeneralSettings).Activate()
                         CType(Win, GeneralSettings).PauseInput = False
@@ -92,29 +93,39 @@ Public Class SetupEmulators
 #Region "Input"
 
     Private Sub SetupEmulators_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If e.Key = Key.X Then
-            If SetupPS3Button.IsFocused Then
-                OpenPS3Setup()
-            ElseIf SetupPSVitaButton.IsFocused Then
-                OpenPSVitaSetup()
-            End If
-        ElseIf e.Key = Key.C Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
-        ElseIf e.Key = Key.Up Then
-            MoveUp()
-        ElseIf e.Key = Key.Down Then
-            MoveDown()
+        If Not e.Key = LastKeyboardKey Then
+            Select Case e.Key
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                Case Key.X
+                    If SetupPS3Button.IsFocused Then
+                        OpenPS3Setup()
+                    ElseIf SetupPSVitaButton.IsFocused Then
+                        OpenPSVitaSetup()
+                    End If
+                Case Key.Up
+                    MoveUp()
+                Case Key.Down
+                    MoveDown()
+            End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SetupEmulators_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -141,13 +152,12 @@ Public Class SetupEmulators
                     MoveDown()
                 End If
 
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -204,11 +214,11 @@ Public Class SetupEmulators
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -229,6 +239,25 @@ Public Class SetupEmulators
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(EmulatorSetupWindow, EmulatorSetupCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(EmulatorSetupWindow, EmulatorSetupCanvas)
+            End If
         End If
     End Sub
 

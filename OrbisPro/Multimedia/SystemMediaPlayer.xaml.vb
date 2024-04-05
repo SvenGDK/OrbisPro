@@ -15,11 +15,13 @@ Public Class SystemMediaPlayer
     Private WithEvents NewLibVLC As LibVLC
     Private WithEvents NewMediaPlayer As MediaPlayer
 
+    Private LastKeyboardKey As Key
     Public Opener As String = ""
     Public VideoFile As String = String.Empty
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -61,7 +63,7 @@ Public Class SystemMediaPlayer
 
         Select Case Opener
             Case "Downloads"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.Downloads" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, Downloads).Activate()
@@ -70,7 +72,7 @@ Public Class SystemMediaPlayer
                     End If
                 Next
             Case "FileExplorer"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
@@ -79,7 +81,7 @@ Public Class SystemMediaPlayer
                     End If
                 Next
             Case "MainWindow"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
                         CType(Win, MainWindow).PauseInput = False
@@ -93,7 +95,7 @@ Public Class SystemMediaPlayer
 
     Private Sub MediaPlayerVideoView_Loaded(sender As Object, e As RoutedEventArgs) Handles MediaPlayerVideoView.Loaded
         'Init LibVLC after MediaPlayerVideoView is loaded
-        NewLibVLC = New LibVLC(False)
+        NewLibVLC = New LibVLC(False, Nothing)
         NewMediaPlayer = New MediaPlayer(NewLibVLC)
         'Set the MediaPlayer
         MediaPlayerVideoView.MediaPlayer = NewMediaPlayer
@@ -113,30 +115,40 @@ Public Class SystemMediaPlayer
 #Region "Input"
 
     Private Sub SystemMediaPlayer_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If e.Key = Key.X Then
-            PauseMedia()
-        ElseIf e.Key = Key.C Then
-            StopMedia()
-        ElseIf e.Key = Key.A Then
-            PauseMedia()
-        ElseIf e.Key = Key.Left Then
-            RewindMedia(10000)
-        ElseIf e.Key = Key.Right Then
-            FastForwardMedia(10000)
-        ElseIf e.Key = Key.Escape Then
-            StopMedia()
-            BeginAnimation(OpacityProperty, ClosingAnimation)
+        If Not e.Key = LastKeyboardKey Then
+            Select Case e.Key
+                Case Key.A
+                    PauseMedia()
+                Case Key.C
+                    StopMedia()
+                Case Key.X
+                    PauseMedia()
+                Case Key.Left
+                    RewindMedia(10000)
+                Case Key.Right
+                    FastForwardMedia(10000)
+                Case Key.Escape
+                    StopMedia()
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+            End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SystemMediaPlayer_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -170,20 +182,19 @@ Public Class SystemMediaPlayer
 
                 End If
 
-                AdditionalDelayAmount += 45
-            Else
-                AdditionalDelayAmount += 100
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             'Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
 #End Region
 
     Private Sub PlayNewVideoFile(InputVideoFile As String)
-        Using NewMedia = New Media(NewLibVLC, New Uri(InputVideoFile, UriKind.RelativeOrAbsolute))
+        Using NewMedia = New Media(NewLibVLC, New Uri(InputVideoFile, UriKind.RelativeOrAbsolute), Nothing)
             MediaPlayerVideoView.MediaPlayer.Play(NewMedia)
         End Using
     End Sub

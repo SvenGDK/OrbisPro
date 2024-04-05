@@ -2,15 +2,79 @@
 
 Public Class OrbisCDVDManager
 
-    'Disc variables
-    Public Shared IsDiscInserted As Boolean = False
-    Public Shared DiscDriveName As String
-    Public Shared DiscLabel As String
-    Public Shared DiscContentType As String
-    Public Shared DiscGameID As String = ""
+    Public Shared ReadOnly PS1TitleSeparator As String() = New String() {"Official Title "}
+    Public Shared ReadOnly PS2TitleSeparator As String() = New String() {"OFFICIAL TITLE "}
 
-    Public Shared GameTitle As String = ""
-    Public Shared GameID As String = ""
+    Private Shared _IsDiscInserted As Boolean = False
+    Private Shared _DiscDriveName As String
+    Private Shared _DiscLabel As String
+    Private Shared _DiscContentType As String
+    Private Shared _DiscGameID As String = ""
+    Private Shared _GameTitle As String = ""
+    Private Shared _GameID As String = ""
+
+    Public Shared Property IsDiscInserted As Boolean
+        Get
+            Return _IsDiscInserted
+        End Get
+        Set(Value As Boolean)
+            _IsDiscInserted = Value
+        End Set
+    End Property
+
+    Public Shared Property DiscDriveName As String
+        Get
+            Return _DiscDriveName
+        End Get
+        Set(Value As String)
+            _DiscDriveName = Value
+        End Set
+    End Property
+
+    Public Shared Property DiscLabel As String
+        Get
+            Return _DiscLabel
+        End Get
+        Set(Value As String)
+            _DiscLabel = Value
+        End Set
+    End Property
+
+    Public Shared Property DiscContentType As String
+        Get
+            Return _DiscContentType
+        End Get
+        Set(Value As String)
+            _DiscContentType = Value
+        End Set
+    End Property
+
+    Public Shared Property DiscGameID As String
+        Get
+            Return _DiscGameID
+        End Get
+        Set(Value As String)
+            _DiscGameID = Value
+        End Set
+    End Property
+
+    Public Shared Property GameTitle As String
+        Get
+            Return _GameTitle
+        End Get
+        Set(Value As String)
+            _GameTitle = Value
+        End Set
+    End Property
+
+    Public Shared Property GameID As String
+        Get
+            Return _GameID
+        End Get
+        Set(Value As String)
+            _GameID = Value
+        End Set
+    End Property
 
     'Check the content of the disc
     Public Shared Function CheckCDVDContent(Optional DriveName As String = "") As (GameID As String, Platform As String)
@@ -52,36 +116,39 @@ Public Class OrbisCDVDManager
             Case "PS1"
 
                 'OrbisPro currently uses ePSXe as PS1 emulator as it supports disc booting in CLI
-                Dim Emu As String = My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe"
+                Dim Emu As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe"
                 Dim EmuArgs As String = "-nogui"
 
                 Using EmuLauncher As New Process()
                     EmuLauncher.StartInfo.FileName = Emu
                     EmuLauncher.StartInfo.Arguments = EmuArgs
+                    EmuLauncher.StartInfo.WorkingDirectory = Path.GetDirectoryName(Emu)
                     EmuLauncher.Start()
                 End Using
 
             Case "PS2"
 
                 'Boot PCSX2 and use the portable mode
-                Dim Emu As String = My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                Dim Emu As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
                 Dim EmuArgs As String = "--nogui --usecd --fullboot --portable"
 
                 Using EmuLauncher As New Process()
                     EmuLauncher.StartInfo.FileName = Emu
                     EmuLauncher.StartInfo.Arguments = EmuArgs
+                    EmuLauncher.StartInfo.WorkingDirectory = Path.GetDirectoryName(Emu)
                     EmuLauncher.Start()
                 End Using
 
             Case "PCE"
 
                 'Mednafen seems to be the only emulator that supports physical discs (0.9.37.1)
-                Dim Emu As String = My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\mednafen\mednafen.exe"
+                Dim Emu As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\mednafen\mednafen.exe"
                 Dim EmuArgs As String = "-physcd " + DiscPath.Replace("\", "")
 
                 Using EmuLauncher As New Process()
                     EmuLauncher.StartInfo.FileName = Emu
                     EmuLauncher.StartInfo.Arguments = EmuArgs
+                    EmuLauncher.StartInfo.WorkingDirectory = Path.GetDirectoryName(Emu)
                     EmuLauncher.Start()
                 End Using
 

@@ -4,7 +4,7 @@ Imports System.Windows.Forms
 Public Class OrbisKeyboardHook
 
     <DllImport("user32.dll")>
-    Public Shared Function SetWindowsHookEx(idHook As Integer, lpfn As CallBack, hMod As IntPtr, dwThreadId As Integer) As IntPtr
+    Private Shared Function SetWindowsHookEx(idHook As Integer, lpfn As CallBack, hMod As IntPtr, dwThreadId As Integer) As IntPtr
     End Function
 
     <DllImport("user32.dll")>
@@ -33,7 +33,7 @@ Public Class OrbisKeyboardHook
 
     Public Delegate Function CallBack(nCode As Integer, wParam As IntPtr, lParam As IntPtr) As Integer
     Private Delegate Function KBDLLHookProc(nCode As Integer, wParam As IntPtr, lParam As IntPtr) As Integer
-    Private HHookID As IntPtr = IntPtr.Zero
+    Private ReadOnly HHookID As IntPtr = IntPtr.Zero
 
     Public Shared Event KeyDown(Key As Keys)
     Public Shared Event KeyUp(Key As Keys)

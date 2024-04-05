@@ -1,6 +1,85 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <ProjectView>ProjectFiles</ProjectView>
-  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <ApplicationDefinition Update="Application.xaml">
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Classes\NetworkAdapter.vb">
+      <SubType>Component</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Custom Controls\MessagePopup.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Custom Controls\PSInputBox.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="EmulatorSetup\SetupEmulators.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="EmulatorSetup\SetupPS3.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="EmulatorSetup\SetupPSVita.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Explorers\FileExplorer.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Explorers\GameLibrary.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Explorers\SystemWebBrowser.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="MainWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Multimedia\SystemImageViewer.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Multimedia\SystemMediaPlayer.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Queues\CopyWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Queues\Downloads.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Queues\OpenWindows.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Settings\BluetoothSettings.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Settings\GeneralSettings.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Settings\WifiSettings.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SystemDialog.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SystemSetup\SetupApps.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SystemSetup\SetupCheckUpdates.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SystemSetup\SetupCustomize.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SystemSetup\SetupGames.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SystemSetup\WelcomeToSetup.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
 </Project>

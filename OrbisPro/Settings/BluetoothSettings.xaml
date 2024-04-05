@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:OrbisPro"
-        xmlns:fa="http://schemas.fontawesome.io/icons/" x:Class="BluetoothSettings"
+        xmlns:local="clr-namespace:OrbisPro" x:Name="BTSettingsWindow"
+    x:Class="BluetoothSettings"
         mc:Ignorable="d"
         Title="OrbisPro - Bluetooth Settings" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
         KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
@@ -59,11 +59,6 @@
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <fa:ImageAwesome x:Name="ScanningIndicator" Icon="Refresh" Spin="True" Height="48" Width="48" Canvas.Left="635" Canvas.Top="170" SpinDuration="2" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center" >
-            <fa:ImageAwesome.Effect>
-                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
-            </fa:ImageAwesome.Effect>
-        </fa:ImageAwesome>
 
         <ListView x:Name="BluetoothDevicesListView" d:ItemsSource="{d:SampleData ItemCount=5}" Height="650" Canvas.Left="100" Canvas.Top="242" Width="1710" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" ScrollViewer.CanContentScroll="True" HorizontalAlignment="Center" VerticalAlignment="Top">
             <ListView.RenderTransform>

@@ -2,6 +2,8 @@
 Imports OrbisPro.OrbisAudio
 Imports OrbisPro.OrbisCDVDManager
 Imports OrbisPro.OrbisInput
+Imports OrbisPro.OrbisNetwork
+Imports OrbisPro.OrbisPowerUtils
 Imports OrbisPro.OrbisStructures
 Imports OrbisPro.OrbisUtils
 Imports OrbisPro.ProcessUtils
@@ -15,13 +17,14 @@ Imports System.Windows.Media.Animation
 Imports System.Windows.Threading
 Imports System.Threading
 
+
 Class MainWindow
 
     'Used to show the current time
-    Private WithEvents SystemTimer As DispatcherTimer
+    Private WithEvents ClockTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 5)}
+    Private WithEvents SystemTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 45)}
 
     'Hook the 'Home' key
-    'Private WithEvents GlobalKeyboardHook As New KeyboardHook()
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
 
     'Our background webbrowser to retrieve some game infos (covers, cd image, description, ...)
@@ -33,13 +36,19 @@ Class MainWindow
     Public CurrentMenu As String
     Public HomeAppsCount As Integer = 0
     Private IsDeviceInterface As Boolean = False
-
-    Private LastKey As Key
+    Private LastKeyboardKey As Key
     Public LastFocusedApp As Image
     Public StartedGameExecutable As String
+    Private DidAnimate As Boolean = False
+
+    'Animations
+    Dim WithEvents LastHomeAnimation As New DoubleAnimation With {.From = 175, .To = 410, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
+    Dim WithEvents LastHomeRestoreAnimation As New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
+    Dim WithEvents LastUIMoveAnimation As New DoubleAnimation With {.From = 410, .To = 200, .Duration = New Duration(TimeSpan.FromMilliseconds(100)), .AutoReverse = True}
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -48,28 +57,27 @@ Class MainWindow
 
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
 
-        If Not String.IsNullOrEmpty(OrbisUser) Then
-            UsernameLabel.Text = OrbisUser
+        If Not String.IsNullOrEmpty(ConfigFile.IniReadValue("System", "Username")) Then
+            UsernameTextBlock.Text = MainConfigFile.IniReadValue("System", "Username")
         End If
 
         'Set background color & video (if set)
-        OrbisGrid.Background = New SolidColorBrush(Colors.Black)
+        MainCanvas.Background = New SolidColorBrush(Colors.Black)
         SetBackground()
 
         'Version Banner
-        NotificationsBanner.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
+        NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
 
         'Clock
         SystemClock.Text = Date.Now.ToString("HH:mm")
-        SystemTimer = New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 5)} 'Update every 5 seconds
-        SystemTimer.Start()
+        ClockTimer.Start()
 
         HomeAnimation()
 
         'Add default and custom applications
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                If Not LineWithApp.Split("="c)(1).Split(";"c).Count = 3 Then
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
+            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
+                If Not LineWithApp.Split("="c)(1).Split(";"c).Length = 3 Then
                     If LineWithApp.StartsWith("App") Then
                         If App1.Tag Is Nothing Then
                             App1.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
@@ -99,8 +107,8 @@ Class MainWindow
         End If
 
         'Add games
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt") Then
-            For Each Game In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt")
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt") Then
+            For Each Game In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt")
                 If Game.StartsWith("PS1Game") Then
                     AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
                 ElseIf Game.StartsWith("PS2Game") Then
@@ -124,6 +132,7 @@ Class MainWindow
             'Check for gamepads
             If GetAndSetGamepads() Then MainController = SharedController1
             If SharedController1 IsNot Nothing Then Await ReadGamepadInputAsync(CTS.Token)
+            SystemTimer.Start()
         Catch ex As Exception
             PauseInput = True
             ExceptionDialog("System Error", ex.Message)
@@ -286,9 +295,9 @@ Class MainWindow
 
     Private Sub PopupDeviceNotification(NotificationTitle As String, NotificationMessage As String, Optional IsDisc As Boolean = False)
         If IsDisc Then
-            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, NotificationTitle, NotificationMessage, "/Icons/Media-CD-icon.png"))
+            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, NotificationTitle, NotificationMessage, "/Icons/Media-CD-icon.png"))
         Else
-            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, NotificationTitle, NotificationMessage, "/Icons/usb-icon.png"))
+            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, NotificationTitle, NotificationMessage, "/Icons/usb-icon.png"))
         End If
     End Sub
 
@@ -342,7 +351,7 @@ Class MainWindow
 
             'The game id is a bit harder to retrieve and we got almost no infos about the disc ... it's compatible anyway so add it as default disc on the main menu
             'DiscContentType is the var here that chooses the right emulator afterwards
-            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, DriveLetter, "PC-Engine CD-ROM ready.", "/Icons/Media-CD-icon.png"))
+            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, DriveLetter, "PC-Engine CD-ROM ready.", "/Icons/Media-CD-icon.png"))
             Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = DriveLetter,
                                                            .AppIconPath = "/Icons/Media-CD-icon.png",
                                                            .AppExecutable = "Start Disc",
@@ -363,7 +372,7 @@ Class MainWindow
 
     'The animation when entering Home
     Private Sub HomeAnimation()
-        Dim AnimDuration = New Duration(TimeSpan.FromMilliseconds(400))
+        Dim AnimDuration = New Duration(TimeSpan.FromMilliseconds(500))
 
         PlayBackgroundSound(Sounds.Start)
 
@@ -401,7 +410,7 @@ Class MainWindow
 
         Animate(SelectedAppBorder, Canvas.LeftProperty, 456, 280, AnimDuration)
         Animate(SelectedAppBorder, WidthProperty, 175, 340, AnimDuration)
-        Animate(SelectedAppBorder, HeightProperty, 175, 410, AnimDuration)
+        SelectedAppBorder.BeginAnimation(HeightProperty, LastHomeAnimation)
 
         AppTitle.Visibility = Visibility.Visible
         AppStartLabel.Visibility = Visibility.Visible
@@ -409,52 +418,58 @@ Class MainWindow
 
     'The animation when returning to Home
     Public Sub ReturnAnimation()
-
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
-        BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        SetBackground()
+
+        NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
+        ClockTimer.Start()
+        SystemTimer.Start()
+
+        If Dispatcher.CheckAccess() Then
+            BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        Else
+            Dispatcher.BeginInvoke(Sub() BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}))
+        End If
 
         If TypeOf FocusedItem Is Image Then
             Dim SelectedApp As Image = CType(FocusManager.GetFocusedElement(Me), Image)
-
-            Dim PositionDuration = New Duration(TimeSpan.FromSeconds(1))
-            Dim LongShowHideDuration = New Duration(TimeSpan.FromSeconds(1))
+            Dim AnimDuration = New Duration(TimeSpan.FromMilliseconds(500))
 
             'Top elements
-            Animate(PlusBanner, Canvas.TopProperty, -78, 78, PositionDuration)
-            Animate(NotificationsBannerB, Canvas.TopProperty, -78, 78, PositionDuration)
-            Animate(NotificationsBanner, Canvas.TopProperty, -78, 78, PositionDuration)
-            Animate(FriendsBanner, Canvas.TopProperty, -78, 78, PositionDuration)
-            Animate(OnlineBanner, Canvas.TopProperty, -78, 78, PositionDuration)
-            Animate(UsernameLabel, Canvas.TopProperty, -78, 78, PositionDuration)
-            Animate(TrophyBanner, Canvas.TopProperty, -78, 78, PositionDuration)
-            Animate(SystemClock, Canvas.TopProperty, -78, 78, PositionDuration)
+            Animate(NotificationImage, Canvas.TopProperty, -78, 78, AnimDuration)
+            Animate(NotificationBannerTextBlock, Canvas.TopProperty, -78, 78, AnimDuration)
+            Animate(FriendsBannerImage, Canvas.TopProperty, -78, 78, AnimDuration)
+            Animate(OnlineIndicatorImage, Canvas.TopProperty, -78, 78, AnimDuration)
+            Animate(UsernameTextBlock, Canvas.TopProperty, -78, 78, AnimDuration)
+            Animate(WiFiIndicatorImage, Canvas.TopProperty, -78, 78, AnimDuration)
+            Animate(BatteryIndicatorImage, Canvas.TopProperty, -78, 78, AnimDuration)
+            Animate(SystemClock, Canvas.TopProperty, -78, 78, AnimDuration)
 
-            For Each App In OrbisGrid.Children
+            For Each App In MainCanvas.Children
                 If TypeOf App Is Image Then
                     Dim AppImage As Image = CType(App, Image)
                     If AppImage.Name.StartsWith("App") And AppImage.Name IsNot SelectedApp.Name Then
-                        Animate(AppImage, OpacityProperty, 0, 1, PositionDuration)
-                        Animate(AppImage, WidthProperty, 330, 200, PositionDuration)
-                        Animate(AppImage, HeightProperty, 330, 200, PositionDuration)
+                        Animate(AppImage, OpacityProperty, 0, 1, AnimDuration)
+                        Animate(AppImage, WidthProperty, 330, 200, AnimDuration)
+                        Animate(AppImage, HeightProperty, 330, 200, AnimDuration)
                     ElseIf AppImage.Name Is SelectedApp.Name Then
-                        Animate(AppImage, OpacityProperty, 0, 1, LongShowHideDuration)
-                        Animate(AppImage, WidthProperty, 660, 330, LongShowHideDuration)
-                        Animate(AppImage, HeightProperty, 660, 330, LongShowHideDuration)
+                        Animate(AppImage, OpacityProperty, 0, 1, AnimDuration)
+                        Animate(AppImage, WidthProperty, 660, 330, AnimDuration)
+                        Animate(AppImage, HeightProperty, 660, 330, AnimDuration)
                     End If
                 End If
             Next
 
-            Animate(BackgroundMedia, OpacityProperty, 0, 1, LongShowHideDuration)
-            Animate(AppTitle, OpacityProperty, 0, 1, LongShowHideDuration)
-            Animate(AppStartLabel, OpacityProperty, 0, 1, LongShowHideDuration)
+            Animate(BackgroundMedia, OpacityProperty, 0, 1, AnimDuration)
+            Animate(AppTitle, OpacityProperty, 0, 1, AnimDuration)
+            Animate(AppStartLabel, OpacityProperty, 0, 1, AnimDuration)
 
-            Animate(SelectedAppBorder, OpacityProperty, 0, 1, PositionDuration)
+            SelectedAppBorder.BeginAnimation(OpacityProperty, LastHomeRestoreAnimation)
             SelectedAppBorder.Visibility = Visibility.Visible
         Else
             LastFocusedApp?.Focus()
         End If
-
     End Sub
 
     'Animation when starting a game
@@ -471,17 +486,17 @@ Class MainWindow
         PlayBackgroundSound(Sounds.SelectItem)
 
         'Animate top elements
-        Animate(PlusBanner, Canvas.TopProperty, 78, -78, PositionDuration)
-        Animate(NotificationsBannerB, Canvas.TopProperty, 78, -78, PositionDuration)
-        Animate(NotificationsBanner, Canvas.TopProperty, 78, -78, PositionDuration)
-        Animate(FriendsBanner, Canvas.TopProperty, 78, -78, PositionDuration)
-        Animate(OnlineBanner, Canvas.TopProperty, 78, -78, PositionDuration)
-        Animate(UsernameLabel, Canvas.TopProperty, 78, -78, PositionDuration)
-        Animate(TrophyBanner, Canvas.TopProperty, 78, -78, PositionDuration)
+        Animate(NotificationImage, Canvas.TopProperty, 78, -78, PositionDuration)
+        Animate(NotificationBannerTextBlock, Canvas.TopProperty, 78, -78, PositionDuration)
+        Animate(FriendsBannerImage, Canvas.TopProperty, 78, -78, PositionDuration)
+        Animate(OnlineIndicatorImage, Canvas.TopProperty, 78, -78, PositionDuration)
+        Animate(UsernameTextBlock, Canvas.TopProperty, 78, -78, PositionDuration)
+        Animate(WiFiIndicatorImage, Canvas.TopProperty, 78, -78, PositionDuration)
+        Animate(BatteryIndicatorImage, Canvas.TopProperty, 78, -78, PositionDuration)
         Animate(SystemClock, Canvas.TopProperty, 78, -78, PositionDuration)
 
         'Animate apps on the main menu
-        For Each App In OrbisGrid.Children
+        For Each App In MainCanvas.Children
             If TypeOf App Is Image Then
                 Dim AppImage As Image = CType(App, Image)
                 If AppImage.Name.StartsWith("App") And AppImage.Name IsNot SelectedApp.Name Then
@@ -507,6 +522,7 @@ Class MainWindow
 
         'Start the game
         StartedGameExecutable = GameInfos.AppPath
+        ReduceUsage()
         GameStarter.StartGame(GameInfos.AppPath)
     End Sub
 
@@ -571,7 +587,7 @@ Class MainWindow
         Dim App1Position As Double = Canvas.GetLeft(App1)
 
         'Move every app
-        For Each App In OrbisGrid.Children
+        For Each App In MainCanvas.Children
             If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
                 Dim TheApp As Image = CType(App, Image)
                 'Exlude App1 (the DiscApp will always be shown after App1 atm)
@@ -616,7 +632,7 @@ Class MainWindow
         End If
 
         'Move every app
-        For Each App In OrbisGrid.Children
+        For Each App In MainCanvas.Children
             If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
                 Dim TheApp As Image = CType(App, Image)
                 'Exlude App1
@@ -636,7 +652,7 @@ Class MainWindow
             App1.Focus()
 
             'Move every app back to the origin position 
-            For Each App In OrbisGrid.Children
+            For Each App In MainCanvas.Children
                 If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
                     Dim TheApp As Image = CType(App, Image)
                     Animate(TheApp, Canvas.LeftProperty, Canvas.GetLeft(TheApp), Canvas.GetLeft(TheApp) + 210, AnimDuration)
@@ -651,7 +667,7 @@ Class MainWindow
             Animate(AppStartLabel, Canvas.LeftProperty, Canvas.GetLeft(AppStartLabel), Canvas.GetLeft(AppStartLabel) - 210, AnimDuration)
         ElseIf Not FocusedImage.Name = "App1" And FocusedImage.Name = "DiscApp" Then
             'Move every app from the right back to the left
-            For Each App In OrbisGrid.Children
+            For Each App In MainCanvas.Children
                 If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
                     Dim TheApp As Image = CType(App, Image)
                     'Exlude App1
@@ -674,22 +690,35 @@ Class MainWindow
         DiscApp.Visibility = Visibility.Hidden
     End Sub
 
+    Private Sub LastUIMoveAnimation_Completed(sender As Object, e As EventArgs) Handles LastUIMoveAnimation.Completed
+        DidAnimate = True
+    End Sub
+
+    Private Sub LastHomeAnimation_Completed(sender As Object, e As EventArgs) Handles LastHomeAnimation.Completed
+        DidAnimate = True
+    End Sub
+
+    Private Sub LastHomeRestoreAnimation_Completed(sender As Object, e As EventArgs) Handles LastHomeRestoreAnimation.Completed
+        DidAnimate = True
+    End Sub
+
 #Region "UI Browsing"
 
     Private Sub MoveAppsRight(SelectedApp As Image, NextApp As Image)
 
-        Dim MoveDuration = New Duration(TimeSpan.FromMilliseconds(80))
+        Dim MoveDuration = New Duration(TimeSpan.FromMilliseconds(100))
         PlayBackgroundSound(Sounds.Move)
 
-        For Each App In OrbisGrid.Children
+        For Each App In MainCanvas.Children
 
             If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
 
                 Dim TheApp As Image = CType(App, Image)
 
-                'If the app is not the selected one and also not the next one, move + 210
+                'If the app is not the selected one and also not the next one, move - 210
                 If TheApp.Name IsNot SelectedApp.Name AndAlso TheApp.Name IsNot NextApp.Name Then
-                    Animate(TheApp, Canvas.LeftProperty, Canvas.GetLeft(TheApp), Canvas.GetLeft(TheApp) - 210, MoveDuration)
+                    Dim NewAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(TheApp), .To = Canvas.GetLeft(TheApp) - 210, .Duration = MoveDuration}
+                    Dispatcher.BeginInvoke(Sub() TheApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
                 End If
 
             ElseIf TypeOf App Is Image AndAlso CType(App, Image).Name = "DiscApp" Then
@@ -697,9 +726,10 @@ Class MainWindow
                 Dim TheDiscApp As Image = CType(App, Image)
 
                 If IsDiscInserted Then
-                    'If the disc app is not the selected one and also not the next one, move + 210
+                    'If the disc app is not the selected one and also not the next one, move - 210
                     If TheDiscApp.Name IsNot SelectedApp.Name AndAlso TheDiscApp.Name IsNot NextApp.Name Then
-                        Animate(TheDiscApp, Canvas.LeftProperty, Canvas.GetLeft(TheDiscApp), Canvas.GetLeft(TheDiscApp) - 210, MoveDuration)
+                        Dim NewAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(TheDiscApp), .To = Canvas.GetLeft(TheDiscApp) - 210, .Duration = MoveDuration}
+                        Dispatcher.BeginInvoke(Sub() TheDiscApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
                     End If
                 End If
 
@@ -707,19 +737,28 @@ Class MainWindow
 
         Next
 
-        'The next application's animation
-        Animate(NextApp, Canvas.LeftProperty, Canvas.GetLeft(NextApp), Canvas.GetLeft(NextApp) - 345, MoveDuration)
-        Animate(NextApp, WidthProperty, 200, 330, MoveDuration)
-        Animate(NextApp, HeightProperty, 200, 330, MoveDuration)
+        Dim NextAppLeftAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(NextApp), .To = Canvas.GetLeft(NextApp) - 345, .Duration = MoveDuration}
+        Dim NextAppWidthAnimation As New DoubleAnimation With {.From = 200, .To = 330, .Duration = MoveDuration}
+        Dim NextAppHeightAnimation As New DoubleAnimation With {.From = 200, .To = 330, .Duration = MoveDuration}
 
-        'The selected application's animation
-        Animate(SelectedApp, Canvas.LeftProperty, Canvas.GetLeft(SelectedApp), Canvas.GetLeft(SelectedApp) - 210, MoveDuration)
-        Animate(SelectedApp, WidthProperty, 330, 200, MoveDuration)
-        Animate(SelectedApp, HeightProperty, 330, 200, MoveDuration)
+        Dim SelectedAppLeftAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(SelectedApp), .To = Canvas.GetLeft(SelectedApp) - 210, .Duration = MoveDuration}
+        Dim SelectedAppWidthAnimation As New DoubleAnimation With {.From = 330, .To = 200, .Duration = MoveDuration}
+        Dim SelectedAppHeightAnimation As New DoubleAnimation With {.From = 330, .To = 200, .Duration = MoveDuration}
 
-        'Selection border animation (reverts)
-        Animate(SelectedAppBorder, Canvas.LeftProperty, Canvas.GetLeft(SelectedAppBorder), Canvas.GetLeft(SelectedAppBorder) + 60, MoveDuration, True)
-        Animate(SelectedAppBorder, HeightProperty, 410, 200, MoveDuration, True)
+        Dim SelectedAppBorderLeftAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(SelectedAppBorder), .To = Canvas.GetLeft(SelectedAppBorder) + 60, .Duration = MoveDuration, .AutoReverse = True}
+
+        Dispatcher.BeginInvoke(Sub()
+                                   NextApp.BeginAnimation(Canvas.LeftProperty, NextAppLeftAnimation)
+                                   NextApp.BeginAnimation(WidthProperty, NextAppWidthAnimation)
+                                   NextApp.BeginAnimation(HeightProperty, NextAppHeightAnimation)
+
+                                   SelectedApp.BeginAnimation(Canvas.LeftProperty, SelectedAppLeftAnimation)
+                                   SelectedApp.BeginAnimation(WidthProperty, SelectedAppWidthAnimation)
+                                   SelectedApp.BeginAnimation(HeightProperty, SelectedAppHeightAnimation)
+
+                                   SelectedAppBorder.BeginAnimation(Canvas.LeftProperty, SelectedAppBorderLeftAnimation)
+                                   SelectedAppBorder.BeginAnimation(HeightProperty, LastUIMoveAnimation)
+                               End Sub)
 
         'Set the selected application title and start label shown on the main menu and focus the app
         AppTitle.Text = CType(NextApp.Tag, AppDetails).AppTitle
@@ -730,10 +769,10 @@ Class MainWindow
 
     Private Sub MoveAppsLeft(SelectedApp As Image, NextApp As Image)
 
-        Dim MoveDuration = New Duration(TimeSpan.FromMilliseconds(80))
+        Dim MoveDuration = New Duration(TimeSpan.FromMilliseconds(100))
         PlayBackgroundSound(Sounds.Move)
 
-        For Each App In OrbisGrid.Children
+        For Each App In MainCanvas.Children
 
             If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
 
@@ -741,7 +780,8 @@ Class MainWindow
 
                 'If the app is not the selected one and also not the next one, move + 210
                 If TheApp.Name IsNot SelectedApp.Name AndAlso TheApp.Name IsNot NextApp.Name Then
-                    Animate(TheApp, Canvas.LeftProperty, Canvas.GetLeft(TheApp), Canvas.GetLeft(TheApp) + 210, MoveDuration)
+                    Dim NewAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(TheApp), .To = Canvas.GetLeft(TheApp) + 210, .Duration = MoveDuration}
+                    Dispatcher.BeginInvoke(Sub() TheApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
                 End If
 
             ElseIf TypeOf App Is Image AndAlso CType(App, Image).Name = "DiscApp" Then
@@ -751,7 +791,8 @@ Class MainWindow
                 If IsDiscInserted Then
                     'If the disc app is not the selected one and also not the next one, move + 210
                     If TheDiscApp.Name IsNot SelectedApp.Name AndAlso TheDiscApp.Name IsNot NextApp.Name Then
-                        Animate(TheDiscApp, Canvas.LeftProperty, Canvas.GetLeft(TheDiscApp), Canvas.GetLeft(TheDiscApp) + 210, MoveDuration)
+                        Dim NewAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(TheDiscApp), .To = Canvas.GetLeft(TheDiscApp) + 210, .Duration = MoveDuration}
+                        Dispatcher.BeginInvoke(Sub() TheDiscApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
                     End If
                 End If
 
@@ -759,16 +800,28 @@ Class MainWindow
 
         Next
 
-        Animate(NextApp, Canvas.LeftProperty, Canvas.GetLeft(NextApp), Canvas.GetLeft(NextApp) + 210, MoveDuration)
-        Animate(NextApp, WidthProperty, 200, 330, MoveDuration)
-        Animate(NextApp, HeightProperty, 200, 330, MoveDuration)
+        Dim NextAppLeftAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(NextApp), .To = Canvas.GetLeft(NextApp) + 210, .Duration = MoveDuration}
+        Dim NextAppWidthAnimation As New DoubleAnimation With {.From = 200, .To = 330, .Duration = MoveDuration}
+        Dim NextAppHeightAnimation As New DoubleAnimation With {.From = 200, .To = 330, .Duration = MoveDuration}
 
-        Animate(SelectedApp, Canvas.LeftProperty, Canvas.GetLeft(SelectedApp), Canvas.GetLeft(SelectedApp) + 345, MoveDuration)
-        Animate(SelectedApp, WidthProperty, 330, 200, MoveDuration)
-        Animate(SelectedApp, HeightProperty, 330, 200, MoveDuration)
+        Dim SelectedAppLeftAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(SelectedApp), .To = Canvas.GetLeft(SelectedApp) + 345, .Duration = MoveDuration}
+        Dim SelectedAppWidthAnimation As New DoubleAnimation With {.From = 330, .To = 200, .Duration = MoveDuration}
+        Dim SelectedAppHeightAnimation As New DoubleAnimation With {.From = 330, .To = 200, .Duration = MoveDuration}
 
-        Animate(SelectedAppBorder, Canvas.LeftProperty, Canvas.GetLeft(SelectedAppBorder), Canvas.GetLeft(SelectedAppBorder) - 130, MoveDuration, True)
-        Animate(SelectedAppBorder, HeightProperty, 410, 200, MoveDuration, True)
+        Dim SelectedAppBorderLeftAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(SelectedAppBorder), .To = Canvas.GetLeft(SelectedAppBorder) - 130, .Duration = MoveDuration, .AutoReverse = True}
+
+        Dispatcher.BeginInvoke(Sub()
+                                   NextApp.BeginAnimation(Canvas.LeftProperty, NextAppLeftAnimation)
+                                   NextApp.BeginAnimation(WidthProperty, NextAppWidthAnimation)
+                                   NextApp.BeginAnimation(HeightProperty, NextAppHeightAnimation)
+
+                                   SelectedApp.BeginAnimation(Canvas.LeftProperty, SelectedAppLeftAnimation)
+                                   SelectedApp.BeginAnimation(WidthProperty, SelectedAppWidthAnimation)
+                                   SelectedApp.BeginAnimation(HeightProperty, SelectedAppHeightAnimation)
+
+                                   SelectedAppBorder.BeginAnimation(Canvas.LeftProperty, SelectedAppBorderLeftAnimation)
+                                   SelectedAppBorder.BeginAnimation(HeightProperty, LastUIMoveAnimation)
+                               End Sub)
 
         AppTitle.Text = CType(NextApp.Tag, AppDetails).AppTitle
         AppStartLabel.Text = CType(NextApp.Tag, AppDetails).AppExecutable
@@ -784,224 +837,23 @@ Class MainWindow
 
     'Keyboard input
     Private Sub MainWindow_KeyDown(sender As Object, e As Input.KeyEventArgs) Handles Me.KeyDown
-
-        If Not e.Key = LastKey Then
-
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False AndAlso DidAnimate Then
             Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
-            If e.Key = Key.X Then
-                If TypeOf FocusedItem Is Image Then
+            Select Case e.Key
+                Case Key.O
+                    PlayBackgroundSound(Sounds.Options)
+                    PauseInput = True
 
-                    If String.IsNullOrEmpty(StartedGameExecutable) Then
-                        Dim FocusedApp As Image = TryCast(FocusedItem, Image)
-                        Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppPath
+                    Dim OpenWindowsManager As New OpenWindows() With {.Top = 0, .Left = 0, .ShowActivated = True, .Opacity = 0, .Opener = "MainWindow"}
 
-                        PauseInput = True
-
-                        If String.IsNullOrEmpty(FocusedAppPath) Then
-                            SimpleAppStartAnimation(FocusedApp)
-                        Else
-                            StartGameAnimation(FocusedApp)
-                        End If
-                    Else
-                        Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png"))
+                    If Not String.IsNullOrEmpty(StartedGameExecutable) Then
+                        OpenWindowsManager.OtherProcess = StartedGameExecutable
                     End If
 
-                End If
-            ElseIf e.Key = Key.O Then
-                PlayBackgroundSound(Sounds.Options)
-                PauseInput = True
-
-                Dim OpenWindowsManager As New OpenWindows() With {.Top = 0, .Left = 0, .ShowActivated = True, .Opacity = 0, .Opener = "MainWindow"}
-
-                If Not String.IsNullOrEmpty(StartedGameExecutable) Then
-                    OpenWindowsManager.OtherProcess = StartedGameExecutable
-                End If
-
-                OpenWindowsManager.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-                OpenWindowsManager.Show()
-            ElseIf e.Key = Key.Left Then
-                If TypeOf FocusedItem Is Image Then
-                    Dim SelectedApp As Image = TryCast(FocusedItem, Image)
-                    Dim NextAppImage As Image
-
-                    If App2.IsFocused And IsDiscInserted Then
-                        NextAppImage = CType(OrbisGrid.FindName("DiscApp"), Image)
-                    ElseIf DiscApp.IsFocused Then
-                        NextAppImage = CType(OrbisGrid.FindName("App1"), Image)
-                    Else
-                        Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
-                        If OrbisGrid.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                            NextAppImage = CType(OrbisGrid.FindName("App" + SelectedAppNumber.ToString), Image)
-                        Else
-                            NextAppImage = Nothing
-                        End If
-                    End If
-
-                    'Do not move if there's no next app
-                    If NextAppImage IsNot Nothing Then
-                        MoveAppsLeft(SelectedApp, NextAppImage)
-
-                        Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-
-                        'Change background animation
-                        If ConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation") = "true" Then
-                            If Path.GetExtension(NextAppDetails.AppPath) = ".exe" Then
-                                If Not String.IsNullOrEmpty(CheckForExistingBackgroundAsset(NextAppDetails.AppPath)) Then
-                                    Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
-                                    BackgroundImage.Source = New BitmapImage(New Uri(CheckForExistingBackgroundAsset(NextAppDetails.AppPath), UriKind.RelativeOrAbsolute))
-                                    Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                End If
-                            Else
-                                If BackgroundMedia.Opacity = 0 Then
-                                    BackgroundImage.Source = Nothing
-                                    Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                End If
-                            End If
-                        End If
-                    End If
-
-                End If
-            ElseIf e.Key = Key.Right Then
-                If TypeOf FocusedItem Is Image Then
-                    Dim SelectedApp As Image = TryCast(FocusedItem, Image)
-                    Dim NextAppImage As Image
-
-                    If App1.IsFocused And IsDiscInserted Then
-                        NextAppImage = CType(OrbisGrid.FindName("DiscApp"), Image)
-                    ElseIf DiscApp.IsFocused Then
-                        NextAppImage = CType(OrbisGrid.FindName("App2"), Image)
-                    Else
-                        Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
-                        If OrbisGrid.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                            NextAppImage = CType(OrbisGrid.FindName("App" + SelectedAppNumber.ToString), Image)
-                        Else
-                            NextAppImage = Nothing
-                        End If
-                    End If
-
-                    If NextAppImage IsNot Nothing Then
-                        MoveAppsRight(SelectedApp, NextAppImage)
-
-                        Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-
-                        If ConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation") = "true" Then
-                            'Change background animation
-                            If Path.GetExtension(NextAppDetails.AppPath) = ".exe" Then
-                                If Not String.IsNullOrEmpty(CheckForExistingBackgroundAsset(NextAppDetails.AppPath)) Then
-                                    Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
-                                    BackgroundImage.Source = New BitmapImage(New Uri(CheckForExistingBackgroundAsset(NextAppDetails.AppPath), UriKind.RelativeOrAbsolute))
-                                    Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                End If
-                            Else
-                                If BackgroundMedia.Opacity = 0 Then
-                                    BackgroundImage.Source = Nothing
-                                    Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                End If
-                            End If
-                        End If
-                    End If
-
-                End If
-            ElseIf e.Key = Key.F1 Then
-                ReloadHome()
-            End If
-        Else
-            e.Handled = True
-        End If
-
-        LastKey = e.Key
-
-    End Sub
-
-    Private Sub MainWindow_KeyUp(sender As Object, e As Input.KeyEventArgs) Handles Me.KeyUp
-        LastKey = Nothing
-    End Sub
-
-    'Get Home keyboard input
-    Private Sub NewGlobalKeyboardHook_KeyDown(Key As Keys) Handles NewGlobalKeyboardHook.KeyDown
-        Select Case Key
-            Case Keys.Home
-                If PauseInput Then
-                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count = 0 Then
-                        Try
-                            'Suspend the running game process
-                            PauseProcessThread(Path.GetFileNameWithoutExtension(StartedGameExecutable))
-                        Catch ex As Exception
-                            PauseInput = True
-                            ExceptionDialog("System Error", ex.Message)
-                        End Try
-                    End If
-
-                    'ShowProcess("OrbisPro") 'Re-activate OrbisPro and bring to front
-                    ReturnAnimation()
-                    Activate()
-                    Topmost = True
-                    Topmost = False
-                    Activate()
-                Else
-                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count > 0 Then
-                        'Resume the game process and bring it to the front
-                        PauseInput = True
-                        ResumeProcessThreads()
-                        ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
-                    End If
-                End If
-        End Select
-    End Sub
-
-    'Gamepad input
-    Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
-        While Not CancelToken.IsCancellationRequested
-
-            Dim MainGamepadState As State = MainController.GetState()
-            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
-            Dim AdditionalDelayAmount As Integer = 0
-
-            If Not PauseInput Then
-
-                Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
-                Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
-                Dim MainGamepadButton_X_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.X) <> 0
-                Dim MainGamepadButton_Y_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Y) <> 0
-                Dim MainGamepadButton_Back_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Back) <> 0
-                Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
-
-                Dim MainGamepadButton_L_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.LeftShoulder) <> 0
-                Dim MainGamepadButton_R_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.RightShoulder) <> 0
-
-                Dim MainGamepadButton_DPad_Up_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadUp) <> 0
-                Dim MainGamepadButton_DPad_Down_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadDown) <> 0
-                Dim MainGamepadButton_DPad_Left_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadLeft) <> 0
-                Dim MainGamepadButton_DPad_Right_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadRight) <> 0
-
-                'Get the focused element to select different actions
-                Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-
-                If MainGamepadButton_Back_Button_Pressed AndAlso MainGamepadButton_Start_Button_Pressed Then
-
-                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count > 0 Then
-                        'Resume the game process and bring it to the front
-                        PauseInput = True
-                        ResumeProcessThreads()
-                        ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
-                    End If
-
-                    'Do not leave the buttons in a pressed state
-                    MainGamepadButton_Back_Button_Pressed = False
-                    MainGamepadButton_Start_Button_Pressed = False
-                End If
-
-                If MainGamepadButton_L_Button_Pressed AndAlso MainGamepadButton_R_Button_Pressed Then
-
-                    ReloadHome()
-
-                    'Do not leave the buttons in a pressed state
-                    MainGamepadButton_L_Button_Pressed = False
-                    MainGamepadButton_R_Button_Pressed = False
-                End If
-
-                If MainGamepadButton_A_Button_Pressed Then
+                    OpenWindowsManager.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                    OpenWindowsManager.Show()
+                Case Key.X
                     If TypeOf FocusedItem Is Image Then
 
                         If String.IsNullOrEmpty(StartedGameExecutable) Then
@@ -1015,31 +867,24 @@ Class MainWindow
                             Else
                                 StartGameAnimation(FocusedApp)
                             End If
-
-                            LastFocusedApp = FocusedApp
                         Else
-                            Await Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png"))
-                            AdditionalDelayAmount += 25
+                            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png"))
                         End If
 
                     End If
-                ElseIf MainGamepadButton_B_Button_Pressed Then
-
-                ElseIf MainGamepadButton_Y_Button_Pressed Then
-
-                ElseIf MainGamepadButton_DPad_Left_Pressed Then
+                Case Key.Left
                     If TypeOf FocusedItem Is Image Then
                         Dim SelectedApp As Image = TryCast(FocusedItem, Image)
                         Dim NextAppImage As Image
 
                         If App2.IsFocused And IsDiscInserted Then
-                            NextAppImage = CType(OrbisGrid.FindName("DiscApp"), Image)
+                            NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
                         ElseIf DiscApp.IsFocused Then
-                            NextAppImage = CType(OrbisGrid.FindName("App1"), Image)
+                            NextAppImage = CType(MainCanvas.FindName("App1"), Image)
                         Else
                             Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
-                            If OrbisGrid.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                                NextAppImage = CType(OrbisGrid.FindName("App" + SelectedAppNumber.ToString), Image)
+                            If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
                             Else
                                 NextAppImage = Nothing
                             End If
@@ -1047,133 +892,412 @@ Class MainWindow
 
                         'Do not move if there's no next app
                         If NextAppImage IsNot Nothing Then
-                            MoveAppsLeft(SelectedApp, NextAppImage)
+                            DidAnimate = False
 
                             Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-
-                            'Change background animation
-                            If ConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation") = "true" Then
-                                If Path.GetExtension(NextAppDetails.AppPath) = ".exe" Then
-                                    If Not String.IsNullOrEmpty(CheckForExistingBackgroundAsset(NextAppDetails.AppPath)) Then
-                                        AdditionalDelayAmount += 25
-                                        Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
-                                        BackgroundImage.Source = New BitmapImage(New Uri(CheckForExistingBackgroundAsset(NextAppDetails.AppPath), UriKind.RelativeOrAbsolute))
-                                        Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                    End If
-                                Else
-                                    If BackgroundMedia.Opacity = 0 Then
-                                        AdditionalDelayAmount += 25
-                                        BackgroundImage.Source = Nothing
-                                        Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                    End If
-                                End If
-                            End If
-
+                            ChangeBackgroundImage(NextAppDetails.AppPath)
+                            MoveAppsLeft(SelectedApp, NextAppImage)
                         End If
-
                     End If
-                ElseIf MainGamepadButton_DPad_Right_Pressed Then
+                Case Key.Right
                     If TypeOf FocusedItem Is Image Then
                         Dim SelectedApp As Image = TryCast(FocusedItem, Image)
                         Dim NextAppImage As Image
 
                         If App1.IsFocused And IsDiscInserted Then
-                            NextAppImage = CType(OrbisGrid.FindName("DiscApp"), Image)
+                            NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
                         ElseIf DiscApp.IsFocused Then
-                            NextAppImage = CType(OrbisGrid.FindName("App2"), Image)
+                            NextAppImage = CType(MainCanvas.FindName("App2"), Image)
                         Else
                             Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
-                            If OrbisGrid.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                                NextAppImage = CType(OrbisGrid.FindName("App" + SelectedAppNumber.ToString), Image)
+                            If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
                             Else
                                 NextAppImage = Nothing
                             End If
                         End If
 
                         If NextAppImage IsNot Nothing Then
-                            MoveAppsRight(SelectedApp, NextAppImage)
+                            DidAnimate = False
 
                             Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-
-                            'Change background animation
-                            If ConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation") = "true" Then
-                                If Path.GetExtension(NextAppDetails.AppPath) = ".exe" Then
-                                    If Not String.IsNullOrEmpty(CheckForExistingBackgroundAsset(NextAppDetails.AppPath)) Then
-                                        AdditionalDelayAmount += 25
-                                        Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
-                                        BackgroundImage.Source = New BitmapImage(New Uri(CheckForExistingBackgroundAsset(NextAppDetails.AppPath), UriKind.RelativeOrAbsolute))
-                                        Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                    End If
-                                Else
-                                    If BackgroundMedia.Opacity = 0 Then
-                                        AdditionalDelayAmount += 25
-                                        BackgroundImage.Source = Nothing
-                                        Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                                    End If
-                                End If
-                            End If
-
+                            ChangeBackgroundImage(NextAppDetails.AppPath)
+                            MoveAppsRight(SelectedApp, NextAppImage)
                         End If
-
                     End If
-                ElseIf MainGamepadButton_DPad_Up_Pressed Then
+                Case Key.F1
+                    ReloadHome()
+                Case Key.F2
+                    MasterVolumeDown() 'Testing
+                Case Key.F3
+                    MasterVolumeUp() 'Testing
+            End Select
 
-                ElseIf MainGamepadButton_DPad_Down_Pressed Then
+            LastKeyboardKey = e.Key
+        Else
+            LastKeyboardKey = e.Key
+            e.Handled = True
+        End If
+    End Sub
 
-                ElseIf MainGamepadButton_Back_Button_Pressed Then
-                    PlayBackgroundSound(Sounds.Options)
-                    PauseInput = True
+    Private Sub MainWindow_KeyUp(sender As Object, e As Input.KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
+    End Sub
 
-                    Dim OpenWindowsManager As New OpenWindows() With {.Top = 0, .Left = 0, .ShowActivated = True, .Opacity = 0, .Opener = "MainWindow"}
-
-                    If Not String.IsNullOrEmpty(StartedGameExecutable) Then
-                        OpenWindowsManager.OtherProcess = StartedGameExecutable
-                    End If
-
-                    OpenWindowsManager.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-                    OpenWindowsManager.Show()
-                ElseIf MainGamepadButton_Start_Button_Pressed Then
-
-                End If
-
-                AdditionalDelayAmount += 40
-            Else
-
-                Dim MainGamepadButton_Back_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Back) <> 0
-                Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
-
-                If MainGamepadButton_Back_Button_Pressed And MainGamepadButton_Start_Button_Pressed Then
-
-                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso SuspendedThreads.Count = 0 Then
+    'Get Home keyboard input
+    Private Sub NewGlobalKeyboardHook_KeyDown(Key As Keys) Handles NewGlobalKeyboardHook.KeyDown
+        Select Case Key
+            Case Keys.Home
+                If PauseInput Then
+                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso ActiveProcess IsNot Nothing Then
                         Try
                             'Suspend the running game process
-                            PauseProcessThread(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                            PauseProcessThreads(Path.GetFileNameWithoutExtension(StartedGameExecutable))
                         Catch ex As Exception
                             PauseInput = True
                             ExceptionDialog("System Error", ex.Message)
                         End Try
+
+                        WindowState = WindowState.Normal
+                        Topmost = True
+                        DidAnimate = False
+                        ReturnAnimation()
+                        Activate()
+                        Topmost = False
+                    End If
+                Else
+                    If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso ActiveProcess IsNot Nothing Then
+                        'Resume the game process and bring it to the front
+                        PauseInput = True
+                        ReduceUsage()
+                        ResumeProcessThreads()
+                        ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                    End If
+                End If
+        End Select
+    End Sub
+
+    'Gamepad input
+    Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
+        While Not CancelToken.IsCancellationRequested
+
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+
+            If MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber AndAlso DidAnimate Then
+                If Not PauseInput Then
+
+                    Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
+                    Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
+                    Dim MainGamepadButton_X_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.X) <> 0
+                    Dim MainGamepadButton_Y_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Y) <> 0
+                    Dim MainGamepadButton_Back_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Back) <> 0
+                    Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
+
+                    Dim MainGamepadButton_L_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.LeftShoulder) <> 0
+                    Dim MainGamepadButton_R_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.RightShoulder) <> 0
+
+                    Dim MainGamepadButton_DPad_Up_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadUp) <> 0
+                    Dim MainGamepadButton_DPad_Down_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadDown) <> 0
+                    Dim MainGamepadButton_DPad_Left_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadLeft) <> 0
+                    Dim MainGamepadButton_DPad_Right_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadRight) <> 0
+
+                    'Get the focused element to select different actions
+                    Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+
+                    If MainGamepadButton_Back_Button_Pressed AndAlso MainGamepadButton_Start_Button_Pressed Then
+
+                        If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso ActiveProcess IsNot Nothing Then
+                            'Resume the game process and bring it to the front
+                            PauseInput = True
+                            ReduceUsage()
+                            ResumeProcessThreads()
+                            ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                        End If
+
+                        'Do not leave the buttons in a pressed state
+                        MainGamepadButton_Back_Button_Pressed = False
+                        MainGamepadButton_Start_Button_Pressed = False
                     End If
 
-                    'ShowProcess("OrbisPro") 'Re-activate OrbisPro and bring to front
-                    ReturnAnimation()
-                    Activate()
-                    Topmost = True
-                    Topmost = False
-                    Activate()
+                    If MainGamepadButton_L_Button_Pressed AndAlso MainGamepadButton_R_Button_Pressed Then
 
-                    'Do not leave the buttons in a pressed state
-                    MainGamepadButton_Back_Button_Pressed = False
-                    MainGamepadButton_Start_Button_Pressed = False
+                        ReloadHome()
+
+                        'Do not leave the buttons in a pressed state
+                        MainGamepadButton_L_Button_Pressed = False
+                        MainGamepadButton_R_Button_Pressed = False
+                    End If
+
+                    If MainGamepadButton_A_Button_Pressed Then
+                        If TypeOf FocusedItem Is Image Then
+
+                            If String.IsNullOrEmpty(StartedGameExecutable) Then
+                                Dim FocusedApp As Image = TryCast(FocusedItem, Image)
+                                Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppPath
+
+                                PauseInput = True
+
+                                If String.IsNullOrEmpty(FocusedAppPath) Then
+                                    SimpleAppStartAnimation(FocusedApp)
+                                Else
+                                    StartGameAnimation(FocusedApp)
+                                End If
+
+                                LastFocusedApp = FocusedApp
+                            Else
+                                Await Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png"))
+                            End If
+
+                        End If
+                    ElseIf MainGamepadButton_DPad_Left_Pressed Then
+                        If TypeOf FocusedItem Is Image Then
+                            Dim SelectedApp As Image = TryCast(FocusedItem, Image)
+                            Dim NextAppImage As Image
+
+                            If App2.IsFocused And IsDiscInserted Then
+                                NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
+                            ElseIf DiscApp.IsFocused Then
+                                NextAppImage = CType(MainCanvas.FindName("App1"), Image)
+                            Else
+                                Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
+                                If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                    NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                                Else
+                                    NextAppImage = Nothing
+                                End If
+                            End If
+
+                            'Do not move if there's no next app
+                            If NextAppImage IsNot Nothing Then
+                                DidAnimate = False
+
+                                Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
+                                ChangeBackgroundImage(NextAppDetails.AppPath)
+                                MoveAppsLeft(SelectedApp, NextAppImage)
+                            End If
+
+                        End If
+                    ElseIf MainGamepadButton_DPad_Right_Pressed Then
+                        If TypeOf FocusedItem Is Image Then
+                            Dim SelectedApp As Image = TryCast(FocusedItem, Image)
+                            Dim NextAppImage As Image
+
+                            If App1.IsFocused And IsDiscInserted Then
+                                NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
+                            ElseIf DiscApp.IsFocused Then
+                                NextAppImage = CType(MainCanvas.FindName("App2"), Image)
+                            Else
+                                Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
+                                If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                    NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                                Else
+                                    NextAppImage = Nothing
+                                End If
+                            End If
+
+                            If NextAppImage IsNot Nothing Then
+                                DidAnimate = False
+
+                                Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
+                                ChangeBackgroundImage(NextAppDetails.AppPath)
+                                MoveAppsRight(SelectedApp, NextAppImage)
+                            End If
+
+                        End If
+                    ElseIf MainGamepadButton_Back_Button_Pressed Then
+                        PlayBackgroundSound(Sounds.Options)
+                        PauseInput = True
+
+                        Dim OpenWindowsManager As New OpenWindows() With {.Top = 0, .Left = 0, .ShowActivated = True, .Opacity = 0, .Opener = "MainWindow"}
+
+                        If Not String.IsNullOrEmpty(StartedGameExecutable) Then
+                            OpenWindowsManager.OtherProcess = StartedGameExecutable
+                        End If
+
+                        OpenWindowsManager.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                        OpenWindowsManager.Show()
+                    End If
+
+                Else
+
+                    Dim MainGamepadButton_Back_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Back) <> 0
+                    Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
+
+                    If MainGamepadButton_Back_Button_Pressed AndAlso MainGamepadButton_Start_Button_Pressed Then
+
+                        If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso ActiveProcess IsNot Nothing Then
+                            'Suspend the running game process
+                            Try
+                                PauseProcessThreads(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                            Catch ex As Exception
+                                PauseInput = True
+                                ExceptionDialog("System Error", ex.Message)
+                            End Try
+
+                            WindowState = WindowState.Normal
+                            Topmost = True
+                            DidAnimate = False
+                            ReturnAnimation()
+                            Activate()
+                            Topmost = False
+                        Else
+                            'Resume the game process and bring it to the front
+                            If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso ActiveProcess IsNot Nothing Then
+                                PauseInput = True
+                                ReduceUsage()
+                                ResumeProcessThreads()
+                                ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                            End If
+                        End If
+
+                        'Do not leave the buttons in a pressed state
+                        MainGamepadButton_Back_Button_Pressed = False
+                        MainGamepadButton_Start_Button_Pressed = False
+                    End If
 
                 End If
-
-                AdditionalDelayAmount += 60
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             'Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
+
+#End Region
+
+#Region "Timers"
+
+    Private Sub ClockTimer_Tick(sender As Object, e As EventArgs) Handles ClockTimer.Tick
+        'Update clock
+        SystemClock.Text = Date.Now.ToString("HH:mm")
+
+        'Border Glowing
+        SelectedAppBorder.BeginAnimation(OpacityProperty, SelectedAppBorderAnimation)
+    End Sub
+
+    Private Sub SystemTimer_Tick(sender As Object, e As EventArgs) Handles SystemTimer.Tick
+        'Get battery info
+        If IsMobileDevice() Then
+            Dim NewBatteryInfo As BatteryInfo = GetBatteryInfo()
+            If NewBatteryInfo.BatteryStatus = Forms.BatteryChargeStatus.Charging Then
+                BatteryPercentageTextBlock.Text = (NewBatteryInfo.BatteryPercentage * 100).ToString() + "%"
+                BatteryIndicatorImage.Source = GetBatteryImage(NewBatteryInfo.BatteryPercentage, True)
+            Else
+                BatteryPercentageTextBlock.Text = (NewBatteryInfo.BatteryPercentage * 100).ToString() + "%"
+                BatteryIndicatorImage.Source = GetBatteryImage(NewBatteryInfo.BatteryPercentage, False)
+            End If
+        Else
+            If BatteryIndicatorImage.Source IsNot Nothing Then
+                BatteryPercentageTextBlock.Text = ""
+                BatteryIndicatorImage.Source = Nothing
+            End If
+        End If
+
+        'Get WiFi info
+        If IsWiFiRadioOn() Then
+            Dim SignalStrenght As Integer = GetWiFiSignalStrenght()
+            If SignalStrenght <> 0 Then
+                WiFiNetworkNameStrenghtTextBlock.Text = GetConnectedWiFiNetworkSSID().ToString() + " - " + SignalStrenght.ToString() + "%"
+                WiFiIndicatorImage.Source = GetWiFiSignalImage(SignalStrenght)
+            End If
+        Else
+            If WiFiIndicatorImage.Source IsNot Nothing Then
+                WiFiIndicatorImage.Source = Nothing
+            End If
+        End If
+    End Sub
+
+#End Region
+
+#Region "Background Functions"
+
+    Public Sub SetBackground()
+        'Set the background
+        Select Case ConfigFile.IniReadValue("System", "Background")
+            Case "Blue Bubbles"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+            Case "Orange/Red Gradient Waves"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+            Case "PS2 Dots"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Custom"
+                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
+            Case Else
+                BackgroundMedia.Source = Nothing
+        End Select
+
+        'Play the background media if Source is not empty
+        If BackgroundMedia.Source IsNot Nothing Then
+            BackgroundMedia.Play()
+        End If
+
+        'Go to first second of the background video and pause it if BackgroundAnimation = False
+        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
+            BackgroundMedia.Position = New TimeSpan(0, 0, 1)
+            BackgroundMedia.Pause()
+        End If
+
+        'Mute BackgroundMedia if BackgroundMusic = False
+        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
+            BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(OrbisMainWindow, MainCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(OrbisMainWindow, MainCanvas)
+            End If
+        End If
+    End Sub
+
+    Private Sub BackgroundMedia_MediaEnded(sender As Object, e As RoutedEventArgs) Handles BackgroundMedia.MediaEnded
+        'Loop the background media
+        BackgroundMedia.Position = TimeSpan.FromSeconds(0)
+        BackgroundMedia.Play()
+    End Sub
+
+    Private Sub ChangeBackgroundImage(AppFilePath As String)
+        If ConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation") = "true" Then
+            'Change background animation
+            If Path.GetExtension(AppFilePath) = ".exe" Then
+                If Not String.IsNullOrEmpty(CheckForExistingBackgroundAsset(AppFilePath)) Then
+                    Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+
+                    Dispatcher.BeginInvoke(Sub()
+                                               Dim TempBitmapImage = New BitmapImage()
+                                               TempBitmapImage.BeginInit()
+                                               TempBitmapImage.CacheOption = BitmapCacheOption.OnLoad
+                                               TempBitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache
+                                               TempBitmapImage.UriSource = New Uri(CheckForExistingBackgroundAsset(AppFilePath), UriKind.RelativeOrAbsolute)
+                                               TempBitmapImage.EndInit()
+                                               BackgroundImage.Source = TempBitmapImage
+                                           End Sub)
+
+                    Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                End If
+            Else
+                If BackgroundMedia.Opacity = 0 Then
+                    BackgroundImage.Source = Nothing
+                    Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                End If
+            End If
+        End If
+    End Sub
 
 #End Region
 
@@ -1210,7 +1334,7 @@ Class MainWindow
 
                 'Game Title
                 If InfoRows.Item(4).InnerText IsNot Nothing Then
-                    GameDatabaseReturnedTitle = InfoRows.Item(4).InnerText.Split(New String() {"Official Title "}, StringSplitOptions.RemoveEmptyEntries)(0)
+                    GameDatabaseReturnedTitle = InfoRows.Item(4).InnerText.Split(PS1TitleSeparator, StringSplitOptions.RemoveEmptyEntries)(0)
                 Else
                     GameDatabaseReturnedTitle = ""
                 End If
@@ -1221,13 +1345,13 @@ Class MainWindow
                 End If
 
                 If CoverImgSrc IsNot Nothing Then
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri))
+                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri))
                     Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                .AppIconPath = CoverImgSrc.UriSource.AbsoluteUri,
                                                                .AppExecutable = "Start Disc",
                                                                .AppPath = DiscDriveName}))
                 Else
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", "/Icons/Media-PS1-icon.png"))
+                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", "/Icons/Media-PS1-icon.png"))
                     Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                .AppIconPath = "/Icons/Media-PS1-icon.png",
                                                                .AppExecutable = "Start Disc",
@@ -1246,7 +1370,7 @@ Class MainWindow
 
                 'Game Title
                 If InfoRows.Item(4).InnerText IsNot Nothing Then
-                    GameDatabaseReturnedTitle = InfoRows.Item(4).InnerText.Split(New String() {"OFFICIAL TITLE "}, StringSplitOptions.RemoveEmptyEntries)(0)
+                    GameDatabaseReturnedTitle = InfoRows.Item(4).InnerText.Split(PS2TitleSeparator, StringSplitOptions.RemoveEmptyEntries)(0)
                 Else
                     GameDatabaseReturnedTitle = ""
                 End If
@@ -1257,9 +1381,9 @@ Class MainWindow
                 End If
 
                 If CoverImgSrc IsNot Nothing Then
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri))
+                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri))
                 Else
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(OrbisGrid, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", "/Icons/Media-DVD-icon.png"))
+                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", "/Icons/Media-DVD-icon.png"))
                 End If
 
                 'Check if a PS2 disc image exists
@@ -1299,20 +1423,13 @@ Class MainWindow
 
     End Sub
 
-    Private Sub Systimer_Tick(sender As Object, e As EventArgs) Handles SystemTimer.Tick
-        SystemClock.Text = Date.Now.ToString("HH:mm")
-
-        'Border Glowing
-        SelectedAppBorder.BeginAnimation(OpacityProperty, SelectedBoxAnimation)
-    End Sub
-
     Public Sub AddNewApp(AppTitle As String, AppFolderOrFile As String)
 
         'Get the count of displayed apps
         Dim InstalledAppsOnMenu As Integer = 0
 
         If HomeAppsCount = 0 Then
-            For Each AppImage In OrbisGrid.Children
+            For Each AppImage In MainCanvas.Children
                 If TypeOf AppImage Is Image Then
                     Dim Img As Image = CType(AppImage, Image)
                     If Img.Name.StartsWith("App") Then
@@ -1348,7 +1465,7 @@ Class MainWindow
         End If
 
         'Get the last app on the main menu
-        Dim LastAppInMenu As Image = CType(OrbisGrid.FindName("App" + InstalledAppsOnMenu.ToString()), Image)
+        Dim LastAppInMenu As Image = CType(MainCanvas.FindName("App" + InstalledAppsOnMenu.ToString()), Image)
         HomeAppsCount = InstalledAppsOnMenu + 1
 
         'Set the position of the new app
@@ -1384,50 +1501,12 @@ Class MainWindow
         RegisterName(NewAppImage.Name, NewAppImage)
 
         'Add the new app on the canvas
-        OrbisGrid.Children.Add(NewAppImage)
+        MainCanvas.Children.Add(NewAppImage)
     End Sub
 
     Private Sub GameStartAnimation_Completed(sender As Object, e As EventArgs) Handles GameStartAnimation.Completed
         Dim DiscInfos = CType(DiscApp.Tag, AppDetails)
         StartCDVD(DiscContentType, DiscInfos.AppPath)
-    End Sub
-
-    Public Sub SetBackground()
-        'Set the background
-        Select Case ConfigFile.IniReadValue("System", "Background")
-            Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
-            Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
-            Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
-            Case "Custom"
-                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
-            Case Else
-                BackgroundMedia.Source = Nothing
-        End Select
-
-        'Play the background media if Source is not empty
-        If BackgroundMedia.Source IsNot Nothing Then
-            BackgroundMedia.Play()
-        End If
-
-        'Go to first second of the background video and pause it if BackgroundAnimation = False
-        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
-            BackgroundMedia.Position = New TimeSpan(0, 0, 1)
-            BackgroundMedia.Pause()
-        End If
-
-        'Mute BackgroundMedia if BackgroundMusic = False
-        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
-            BackgroundMedia.IsMuted = True
-        End If
-    End Sub
-
-    Private Sub BackgroundMedia_MediaEnded(sender As Object, e As RoutedEventArgs) Handles BackgroundMedia.MediaEnded
-        'Loop the background media
-        BackgroundMedia.Position = TimeSpan.FromSeconds(0)
-        BackgroundMedia.Play()
     End Sub
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
@@ -1450,7 +1529,7 @@ Class MainWindow
 
         'Get UIElements to remove
         Dim AppsToRemove As New List(Of UIElement)()
-        For Each App In OrbisGrid.Children
+        For Each App In MainCanvas.Children
             If TypeOf App Is Image Then
 
                 Dim TheApp As Image = CType(App, Image)
@@ -1470,21 +1549,29 @@ Class MainWindow
         Next
         'Remove the UIElements from the canvas (removing while iterating will throw an exception)
         For Each AppToRemove In AppsToRemove
-            OrbisGrid.Children.Remove(AppToRemove)
+            MainCanvas.Children.Remove(AppToRemove)
         Next
 
-        HomeAnimation()
+        'Restore window and background (if hidden)
+        If Width = 0 Then
+            NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
+            ClockTimer.Start()
+            SystemTimer.Start()
+        End If
+
+        SetBackground()
 
         'Reload custom applications & games
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                If LineWithApp.StartsWith("App") AndAlso LineWithApp.Split("="c)(1).Split(";"c).Count = 3 Then
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
+            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
+                If LineWithApp.StartsWith("App") AndAlso LineWithApp.Split("="c)(1).Split(";"c).Length = 3 Then
                     AddNewApp(LineWithApp.Split("="c)(1).Split(";"c)(0), LineWithApp.Split("="c)(1).Split(";"c)(1))
                 End If
             Next
         End If
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt") Then
-            For Each Game In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt")
+
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt") Then
+            For Each Game In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt")
                 If Game.StartsWith("PS1Game") Then
                     AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
                 ElseIf Game.StartsWith("PS2Game") Then
@@ -1500,6 +1587,27 @@ Class MainWindow
         End If
 
         App1.Focus()
+    End Sub
+
+    Public Sub ReduceUsage()
+        NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, Nothing) 'Stop notification banner
+        ClockTimer.Stop() 'Stop clock timer
+        SystemTimer.Stop()
+
+        BackgroundMedia.Stop()
+        BackgroundMedia.Source = Nothing
+        BackgroundImage.Source = Nothing
+        Width = 0
+        Height = 0
+
+        WindowState = WindowState.Minimized
+
+        'Force the garbage collector to collect
+        GC.Collect()
+
+        'Force SetProcessWorkingSetSize
+        Dim CurrentProcessHandle As IntPtr = GetCurrentProcess()
+        SetProcessWorkingSetSize(CurrentProcessHandle, -1, -1)
     End Sub
 
 End Class

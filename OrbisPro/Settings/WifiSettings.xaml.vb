@@ -12,6 +12,7 @@ Imports System.Windows.Media.Animation
 
 Public Class WifiSettings
 
+    Private LastKeyboardKey As Key
     Public Opener As String = ""
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
@@ -24,6 +25,7 @@ Public Class WifiSettings
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -82,7 +84,7 @@ Public Class WifiSettings
 
         Select Case Opener
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         CType(Win, GeneralSettings).Activate()
                         CType(Win, GeneralSettings).PauseInput = False
@@ -97,119 +99,127 @@ Public Class WifiSettings
 #Region "Input"
 
     Private Async Sub WifiSettings_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-        If PauseInput = False Then
-            If e.Key = Key.A Then
-                RefreshWiFiNetworks()
-            ElseIf e.Key = Key.B Then
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            Select Case e.Key
+                Case Key.A
+                    RefreshWiFiNetworks()
+                Case Key.B
+                    If TypeOf FocusedItem Is ListViewItem Then
 
-                If TypeOf FocusedItem Is ListViewItem Then
+                        'Set selected WiFiNetworkListViewItem
+                        WiFiNetworkListViewIndex = WiFiNetworksListView.SelectedIndex
+                        Dim SelectedWiFiNetwork As WiFiNetworkListViewItem = CType(WiFiNetworksListView.SelectedItem, WiFiNetworkListViewItem)
 
-                    'Set selected WiFiNetworkListViewItem
-                    WiFiNetworkListViewIndex = WiFiNetworksListView.SelectedIndex
-                    Dim SelectedWiFiNetwork As WiFiNetworkListViewItem = CType(WiFiNetworksListView.SelectedItem, WiFiNetworkListViewItem)
+                        If ConnectTextBlock.Text = "Connect" Then
+                            If SelectedWiFiNetwork.IsWiFiSaved = False AndAlso SelectedWiFiNetwork.IsWiFiConnected = False Then
+                                WiFiNetworkToHandle = SelectedWiFiNetwork
 
-                    If ConnectTextBlock.Text = "Connect" Then
-                        If SelectedWiFiNetwork.IsWiFiSaved = False AndAlso SelectedWiFiNetwork.IsWiFiConnected = False Then
-                            WiFiNetworkToHandle = SelectedWiFiNetwork
+                                'Check if the WiFi network is secured
+                                If SelectedWiFiNetwork.IsWiFiSecured Then
 
-                            'Check if the WiFi network is secured
-                            If SelectedWiFiNetwork.IsWiFiSecured Then
+                                    'Show a password input field
+                                    Animate(PasswordInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    Animate(PasswordInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    Animate(PasswordInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                                'Show a password input field
-                                Animate(PasswordInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
-                                Animate(PasswordInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
-                                Animate(PasswordInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    'Pause the window keyboard input and focus the password input field
+                                    PauseInput = True
+                                    PasswordInputBox.PasswordInputTextBox.Clear()
+                                    PasswordInputBox.PasswordInputTextBox.Focus()
+                                    ShowVirtualKeyboard()
 
-                                'Pause the window keyboard input and focus the password input field
-                                PauseInput = True
-                                PasswordInputBox.PasswordInputTextBox.Clear()
-                                PasswordInputBox.PasswordInputTextBox.Focus()
-                                ShowVirtualKeyboard()
+                                Else
 
-                            Else
+                                    'Create a new open WiFi network profile XML
+                                    Dim WiFiNetworkNameAsHex As String = GetHexString(SelectedWiFiNetwork.WiFiSSID)
+                                    Dim NewOpenWiFiProfile As String = CreateOpenWiFiProfile(SelectedWiFiNetwork.WiFiSSID, WiFiNetworkNameAsHex, "ESS", "auto", "open", "none", "false")
+                                    Dim XMLContent As String = File.ReadAllText(NewOpenWiFiProfile)
 
-                                'Create a new open WiFi network profile XML
-                                Dim WiFiNetworkNameAsHex As String = GetHexString(SelectedWiFiNetwork.WiFiSSID)
-                                Dim NewOpenWiFiProfile As String = CreateOpenWiFiProfile(SelectedWiFiNetwork.WiFiSSID, WiFiNetworkNameAsHex, "ESS", "auto", "open", "none", "false")
-                                Dim XMLContent As String = File.ReadAllText(NewOpenWiFiProfile)
+                                    'Add (or overwrite) the WiFi profile and connect to it
+                                    If NativeWifi.SetProfile(SelectedWiFiNetwork.WiFiInterface.Id, ProfileType.AllUser, XMLContent, Nothing, True) Then
 
-                                'Add (or overwrite) the WiFi profile and connect to it
-                                If NativeWifi.SetProfile(SelectedWiFiNetwork.WiFiInterface.Id, ProfileType.AllUser, XMLContent, Nothing, True) Then
+                                        If NativeWifi.ConnectNetwork(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID, SelectedWiFiNetwork.WiFiBssType) Then
 
-                                    If NativeWifi.ConnectNetwork(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID, SelectedWiFiNetwork.WiFiBssType) Then
+                                            'Change selected WiFiNetworkListViewItem properties
+                                            SelectedWiFiNetwork.IsWiFiConnected = True
+                                            SelectedWiFiNetwork.IsWiFiSaved = True
+                                            ConnectTextBlock.Text = "Disconnect"
 
-                                        'Change selected WiFiNetworkListViewItem properties
-                                        SelectedWiFiNetwork.IsWiFiConnected = True
-                                        SelectedWiFiNetwork.IsWiFiSaved = True
-                                        ConnectTextBlock.Text = "Disconnect"
+                                            OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
 
-                                        OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Connection succeeded.", "/Icons/Wifi/WiFiNotification.png")
+                                            'Set the focus back on the previously selected WiFiNetworkListViewItem
+                                            Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
+                                            Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
+                                            If LastSelectedItem IsNot Nothing Then
+                                                LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
+                                                LastSelectedListViewItem.Focus()
+                                            End If
 
-                                        'Set the focus back on the previously selected WiFiNetworkListViewItem
-                                        Dim LastSelectedListViewItem As ListViewItem = TryCast(WiFiNetworksListView.ItemContainerGenerator.ContainerFromIndex(WiFiNetworkListViewIndex), ListViewItem)
-                                        Dim LastSelectedItem As WiFiNetworkListViewItem = TryCast(LastSelectedListViewItem.Content, WiFiNetworkListViewItem)
-                                        If LastSelectedItem IsNot Nothing Then
-                                            LastSelectedItem.IsWiFiNetworkSelected = Visibility.Visible
-                                            LastSelectedListViewItem.Focus()
+                                        Else
+                                            PauseInput = True
+                                            ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi network could be unstable.")
                                         End If
 
                                     Else
                                         PauseInput = True
-                                        ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi network could be unstable.")
+                                        ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi profile could be corrupted.")
                                     End If
 
-                                Else
-                                    PauseInput = True
-                                    ExceptionDialog("WiFi Network Error", "Could not connect to the selected WiFi network. WiFi profile could be corrupted.")
                                 End If
 
                             End If
+                        Else
+                            If SelectedWiFiNetwork.IsWiFiConnected = True Then
+                                'Delete associated profile
+                                NativeWifi.DeleteProfile(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID)
 
-                        End If
-                    Else
-                        If SelectedWiFiNetwork.IsWiFiConnected = True Then
-                            'Delete associated profile
-                            NativeWifi.DeleteProfile(SelectedWiFiNetwork.WiFiInterface.Id, SelectedWiFiNetwork.WiFiSSID)
+                                'Disconnect from SelectedWiFiNetwork
+                                If Await DisconnectWiFiNetworkAsync(SelectedWiFiNetwork) Then
+                                    'Change selected WiFiNetworkListViewItem properties
+                                    SelectedWiFiNetwork.IsWiFiConnected = False
+                                    ConnectTextBlock.Text = "Connect"
 
-                            'Disconnect from SelectedWiFiNetwork
-                            If Await DisconnectWiFiNetworkAsync(SelectedWiFiNetwork) Then
-                                'Change selected WiFiNetworkListViewItem properties
-                                SelectedWiFiNetwork.IsWiFiConnected = False
-                                ConnectTextBlock.Text = "Connect"
+                                    OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect succeeded.", "/Icons/Wifi/WiFiNotification.png")
+                                Else
+                                    SelectedWiFiNetwork.IsWiFiConnected = False
+                                    ConnectTextBlock.Text = "Connect"
 
-                                OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect succeeded.", "/Icons/Wifi/WiFiNotification.png")
-                            Else
-                                SelectedWiFiNetwork.IsWiFiConnected = False
-                                ConnectTextBlock.Text = "Connect"
-
-                                OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect did not succeed.", "/Icons/Wifi/WiFiNotification.png")
+                                    OrbisNotifications.NotificationPopup(WifiSettingsCanvas, SelectedWiFiNetwork.WiFiSSID, "Disconnect did not succeed.", "/Icons/Wifi/WiFiNotification.png")
+                                End If
                             End If
                         End If
+
                     End If
-
-                End If
-
-            ElseIf e.Key = Key.X Then
-
-                If TypeOf FocusedItem Is ListViewItem Then
-                    Dim SelectedWiFiNetwork As WiFiNetworkListViewItem = CType(WiFiNetworksListView.SelectedItem, WiFiNetworkListViewItem)
-                    'Turn WiFi on or off
-                    Select Case TurnWifiOnOffTextBlock.Text
-                        Case "Turn WiFi Off"
-                            If TurnWiFiOff(SelectedWiFiNetwork.WiFiInterface) Then
-                                TurnWifiOnOffTextBlock.Text = "Turn WiFi On"
-                                WiFiNetworksListView.Items.Clear()
-                            End If
-                        Case "Turn WiFi On"
-                            If TurnWiFiOn(SelectedWiFiNetwork.WiFiInterface) Then TurnWifiOnOffTextBlock.Text = "Turn WiFi Off"
-                    End Select
-                End If
-
-            ElseIf e.Key = Key.C Then
-                BeginAnimation(OpacityProperty, ClosingAnimation)
-            End If
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                Case Key.X
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        Dim SelectedWiFiNetwork As WiFiNetworkListViewItem = CType(WiFiNetworksListView.SelectedItem, WiFiNetworkListViewItem)
+                        'Turn WiFi on or off
+                        Select Case TurnWifiOnOffTextBlock.Text
+                            Case "Turn WiFi Off"
+                                If TurnWiFiOff(SelectedWiFiNetwork.WiFiInterface) Then
+                                    TurnWifiOnOffTextBlock.Text = "Turn WiFi On"
+                                    WiFiNetworksListView.Items.Clear()
+                                End If
+                            Case "Turn WiFi On"
+                                If TurnWiFiOn(SelectedWiFiNetwork.WiFiInterface) Then
+                                    TurnWifiOnOffTextBlock.Text = "Turn WiFi Off"
+                                    RefreshWiFiNetworks()
+                                End If
+                        End Select
+                    End If
+            End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub WifiSettings_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Sub NewGlobalKeyboardHook_KeyDown(Key As Forms.Keys) Handles NewGlobalKeyboardHook.KeyDown
@@ -270,11 +280,10 @@ Public Class WifiSettings
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -304,7 +313,10 @@ Public Class WifiSettings
                                     WiFiNetworksListView.Items.Clear()
                                 End If
                             Case "Turn WiFi On"
-                                If TurnWiFiOn(SelectedWiFiNetwork.WiFiInterface) Then TurnWifiOnOffTextBlock.Text = "Turn WiFi Off"
+                                If TurnWiFiOn(SelectedWiFiNetwork.WiFiInterface) Then
+                                    TurnWifiOnOffTextBlock.Text = "Turn WiFi Off"
+                                    RefreshWiFiNetworks()
+                                End If
                         End Select
                     End If
                 ElseIf MainGamepadButton_B_Button_Pressed Then
@@ -425,14 +437,12 @@ Public Class WifiSettings
                 ElseIf MainGamepadButton_RightThumbY_Down Then
                     ScrollDown()
                 End If
-
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -613,11 +623,11 @@ Public Class WifiSettings
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -638,6 +648,25 @@ Public Class WifiSettings
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(WifiSettingsWindow, WifiSettingsCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(WifiSettingsWindow, WifiSettingsCanvas)
+            End If
         End If
     End Sub
 

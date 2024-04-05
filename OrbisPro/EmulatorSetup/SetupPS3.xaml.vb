@@ -13,14 +13,16 @@ Public Class SetupPS3
     Private WithEvents PS3Emulator As Process
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
 
+    Private LastKeyboardKey As Key
     Public Opener As String = ""
     Public RequirementsRead As Boolean = False
     Public FirmwareDownloadCompleted As Boolean = False
 
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -65,7 +67,7 @@ Public Class SetupPS3
 
         Select Case Opener
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         CType(Win, GeneralSettings).Activate()
                         CType(Win, GeneralSettings).PauseInput = False
@@ -73,7 +75,7 @@ Public Class SetupPS3
                     End If
                 Next
             Case "SetupEmulators"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupEmulators" Then
                         CType(Win, SetupEmulators).Activate()
                         CType(Win, SetupEmulators).PauseInput = False
@@ -117,14 +119,15 @@ Public Class SetupPS3
     Private Sub InstallFirmware()
         Try
             PS3Emulator = New Process
-            PS3Emulator.StartInfo.FileName = My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+            PS3Emulator.StartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
 
             If Not ConfigFile.IniReadValue("Network", "DownloadPath") = "Default" Then
                 PS3Emulator.StartInfo.Arguments = "--installfw """ + ConfigFile.IniReadValue("Network", "DownloadPath") + "\PS3UPDAT.PUP"""
             Else
-                PS3Emulator.StartInfo.Arguments = "--installfw """ + My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP"""
+                PS3Emulator.StartInfo.Arguments = "--installfw """ + FileIO.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP"""
             End If
 
+            PS3Emulator.StartInfo.WorkingDirectory = IO.Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
             PS3Emulator.StartInfo.UseShellExecute = False
             PS3Emulator.EnableRaisingEvents = True
             PS3Emulator.Start()
@@ -195,43 +198,48 @@ Public Class SetupPS3
 #Region "Input"
 
     Private Sub SetupPS3_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            Select Case e.Key
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                Case Key.X
+                    PlayBackgroundSound(Sounds.SelectItem)
 
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-
-        If e.Key = Key.X Then
-            PlayBackgroundSound(Sounds.SelectItem)
-
-            If TypeOf FocusedItem Is Button Then
-                If ReadRequirementsButton.IsFocused Then
-                    ReadRequirements()
-                ElseIf DownloadFirmwareButton.IsFocused Then
-                    DownloadPS3Firmware()
-                ElseIf InstallFirmwareButton.IsFocused Then
-                    InstallFirmware()
-                ElseIf SelectBackupsButton.IsFocused Then
-                    OpenFileExplorer()
-                End If
-            End If
-
-        ElseIf e.Key = Key.C Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
-        ElseIf e.Key = Key.Up Then
-            MoveUp()
-        ElseIf e.Key = Key.Down Then
-            MoveDown()
+                    If TypeOf FocusedItem Is Button Then
+                        If ReadRequirementsButton.IsFocused Then
+                            ReadRequirements()
+                        ElseIf DownloadFirmwareButton.IsFocused Then
+                            DownloadPS3Firmware()
+                        ElseIf InstallFirmwareButton.IsFocused Then
+                            InstallFirmware()
+                        ElseIf SelectBackupsButton.IsFocused Then
+                            OpenFileExplorer()
+                        End If
+                    End If
+                Case Key.Up
+                    MoveUp()
+                Case Key.Down
+                    MoveDown()
+            End Select
+        Else
+            e.Handled = True
         End If
 
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SetupPS3_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -272,16 +280,15 @@ Public Class SetupPS3
                     MoveDown()
                 End If
 
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 500
             End If
+
+            MainGamepadPreviousState = MainGamepadState
 
             ' Delay to avoid excessive polling
             If AdditionalPauseDelay = 0 Then
-                Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+                Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
             Else
-                Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount + AdditionalPauseDelay)
+                Await Task.Delay(SharedController1PollingRate + AdditionalPauseDelay, CancellationToken.None)
                 AdditionalPauseDelay = 0
             End If
         End While
@@ -342,11 +349,11 @@ Public Class SetupPS3
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -367,6 +374,25 @@ Public Class SetupPS3
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(PS3SetupWindow, PS3SetupCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(PS3SetupWindow, PS3SetupCanvas)
+            End If
         End If
     End Sub
 

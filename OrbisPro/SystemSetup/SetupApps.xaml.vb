@@ -16,13 +16,15 @@ Public Class SetupApps
     Private WithEvents AppCollectionWorker As New BackgroundWorker() With {.WorkerReportsProgress = True}
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
     Private WaitedFor As Integer = 0
+    Private LastKeyboardKey As Key
 
-    Private AppShortcuts As String = My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt"
+    Private AppShortcuts As String = FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt"
 
     Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -140,7 +142,7 @@ Public Class SetupApps
                 Dim ApplicationInstallation As New InstalledApplication()
 
                 'Get the values
-                If ApplicationKey.GetValue("DisplayIcon") IsNot Nothing AndAlso ApplicationKey.GetValue("DisplayIcon").ToString().Contains("\") Then
+                If ApplicationKey.GetValue("DisplayIcon") IsNot Nothing AndAlso ApplicationKey.GetValue("DisplayIcon").ToString().Contains("\"c) Then
                     ApplicationInstallation.DisplayIconPath = ApplicationKey.GetValue("DisplayIcon").ToString()
                 End If
                 If ApplicationKey.GetValue("DisplayName") IsNot Nothing Then
@@ -191,6 +193,7 @@ Public Class SetupApps
 
     Private Async Sub AppCollectionWorker_RunWorkerCompleted(sender As Object, e As RunWorkerCompletedEventArgs) Handles AppCollectionWorker.RunWorkerCompleted
         'Hide loading indicator
+        FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
         LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
         TopLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100)), .AutoReverse = True})
@@ -225,38 +228,46 @@ Public Class SetupApps
 #Region "Input"
 
     Private Sub SetupApps_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            If TypeOf FocusedItem Is ListViewItem Then
+                Select Case e.Key
+                    Case Key.A
+                        PlayBackgroundSound(Sounds.SelectItem)
 
-        'Only respond if a ListViewItem is selected
-        If TypeOf FocusedItem Is ListViewItem Then
-            If e.Key = Key.X Then
-                ContinueSetup()
-            ElseIf e.Key = Key.O Then
-                ReturnToPreviousSetupStep()
-            ElseIf e.Key = Key.A Then
-                PlayBackgroundSound(Sounds.SelectItem)
+                        Dim SelectedApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
 
-                Dim SelectedApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                        'Add selected app to the library
+                        Using AppWriter As New StreamWriter(AppShortcuts, True)
+                            AppWriter.WriteLine("App=" + SelectedApp.AppTitle + ";" + SelectedApp.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
+                        End Using
 
-                'Add selected app to the library
-                Using AppWriter As New StreamWriter(AppShortcuts, True)
-                    AppWriter.WriteLine("App=" + SelectedApp.AppTitle + ";" + SelectedApp.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                End Using
-
-                'Notify that the app has been added and add additional delay due to animation
-                Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
+                        'Notify that the app has been added and add additional delay due to animation
+                        Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
+                    Case Key.C
+                        ReturnToPreviousSetupStep()
+                    Case Key.X
+                        ContinueSetup()
+                End Select
             End If
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SetupApps_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -292,8 +303,7 @@ Public Class SetupApps
                     End Using
 
                     'Notify that the app has been added and add additional delay due to animation
-                    AdditionalDelayAmount += 25
-                    Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
+                    Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
                 ElseIf MainGamepadButton_DPad_Left_Pressed Then
                     PlayBackgroundSound(Sounds.Move)
 
@@ -348,13 +358,12 @@ Public Class SetupApps
                     ScrollDown()
                 End If
 
-                AdditionalDelayAmount += 45
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             'Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -375,6 +384,8 @@ Public Class SetupApps
 #End Region
 
     Private Sub ContinueSetup()
+        PlayBackgroundSound(Sounds.SelectItem)
+
         Dim NewSetupCustomize As New SetupCustomize() With {.ShowActivated = True, .Top = Top, .Left = Left, .Opacity = 0}
         NewSetupCustomize.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
         NewSetupCustomize.Show()
@@ -421,11 +432,11 @@ Public Class SetupApps
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -446,6 +457,25 @@ Public Class SetupApps
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SetupAppsWindow, SetupAppsCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SetupAppsWindow, SetupAppsCanvas)
+            End If
         End If
     End Sub
 

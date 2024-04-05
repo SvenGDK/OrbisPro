@@ -7,12 +7,14 @@ Imports System.Windows.Media.Animation
 Imports System.Windows.Threading
 Imports SharpDX.XInput
 Imports System.Threading
+Imports System.Net.Http
 
 Public Class SetupCheckUpdates
 
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
     Private WithEvents UpdateWarningTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 2)}
     Private WaitedFor As Integer = 0
+    Private LastKeyboardKey As Key
     Public Opener As String = ""
 
     Private WithEvents UpdateClient As New WebClient()
@@ -20,6 +22,7 @@ Public Class SetupCheckUpdates
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -56,7 +59,7 @@ Public Class SetupCheckUpdates
         Select Case Opener
             Case "GeneralSettings"
                 PlayBackgroundSound(Sounds.Back)
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         CType(Win, GeneralSettings).Activate()
                         CType(Win, GeneralSettings).PauseInput = False
@@ -65,7 +68,7 @@ Public Class SetupCheckUpdates
                 Next
             Case "MainWindow"
                 PlayBackgroundSound(Sounds.Back)
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
                         CType(Win, MainWindow).PauseInput = False
@@ -80,9 +83,20 @@ Public Class SetupCheckUpdates
 #Region "Input"
 
     Private Sub SetupCheckUpdates_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If e.Key = Key.C Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
+        If Not e.Key = LastKeyboardKey Then
+            Select Case e.Key
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+            End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SetupCheckUpdates_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
@@ -90,9 +104,8 @@ Public Class SetupCheckUpdates
 
             Dim MainGamepadState As State = MainController.GetState()
             Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
-            Dim AdditionalDelayAmount As Integer = 0
 
-            If Not PauseInput Then
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
 
@@ -100,14 +113,12 @@ Public Class SetupCheckUpdates
                     BeginAnimation(OpacityProperty, ClosingAnimation)
                 End If
 
-                AdditionalDelayAmount += 50
-
-            Else
-                AdditionalDelayAmount += 100
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             'Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -131,28 +142,32 @@ Public Class SetupCheckUpdates
             UpdateWarningTimer.Stop()
             WaitedFor = 0
 
-            Process.Start(My.Computer.FileSystem.CurrentDirectory + "\OrbisProUpdate.exe")
-            Windows.Application.Current.Shutdown()
+            'Start the Updater
+            Dim NewProcessStartInfo As New ProcessStartInfo() With {.FileName = FileIO.FileSystem.CurrentDirectory + "\OrbisProUpdate.exe", .Arguments = "runas", .UseShellExecute = True}
+            Dim NewOrbisProUpdateProcess As New Process() With {.StartInfo = NewProcessStartInfo}
+            NewOrbisProUpdateProcess.Start()
+
+            System.Windows.Application.Current.Shutdown()
         End If
     End Sub
 
-    Private Sub CheckForUpdates()
-        If IsURLValid("http://89.58.2.209/orbispro.txt") Then
-            Dim OrbisProInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(My.Computer.FileSystem.CurrentDirectory + "\OrbisPro.exe")
+    Private Async Sub CheckForUpdates()
+        If Await IsURLValidAsync("http://89.58.2.209/orbispro.txt") Then
+            Dim OrbisProInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(FileIO.FileSystem.CurrentDirectory + "\OrbisPro.exe")
             Dim CurrentOrbisProVersion As String = OrbisProInfo.FileVersion
 
-            Dim VerCheckClient As New WebClient()
-            Dim NewOrbisProVersion As String = VerCheckClient.DownloadString("http://89.58.2.209/orbispro.txt")
+            Dim VerCheckClient As New HttpClient()
+            Dim NewOrbisProVersion As String = Await VerCheckClient.GetStringAsync("http://89.58.2.209/orbispro.txt")
 
             If CurrentOrbisProVersion < NewOrbisProVersion Then
                 TopLabel.Text = "An update is available and will be downloaded."
 
-                LoadingIndicator.SpinDuration = 5
+                FontAwesome.Sharp.Awesome.SetSpinDuration(LoadingIndicator, 5)
                 DownloadUpdate()
             Else
                 TopLabel.Text = "OrbisPro is up to date!"
 
-                LoadingIndicator.Spin = False
+                FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
                 LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
                 Select Case Opener
@@ -167,7 +182,7 @@ Public Class SetupCheckUpdates
         Else
             TopLabel.Text = "Could not check for updates. Setup will continue."
 
-            LoadingIndicator.Spin = False
+            FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
             LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
             Select Case Opener
@@ -184,7 +199,7 @@ Public Class SetupCheckUpdates
         ProgressLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
         Try
-            UpdateClient.DownloadFileAsync(New Uri("http://89.58.2.209/OrbisProUpdate.exe"), My.Computer.FileSystem.CurrentDirectory + "\OrbisProUpdate.exe")
+            UpdateClient.DownloadFileAsync(New Uri("http://89.58.2.209/OrbisProUpdate.exe"), FileIO.FileSystem.CurrentDirectory + "\OrbisProUpdate.exe")
         Catch ex As Exception
             PauseInput = True
             ExceptionDialog("System Error", ex.Message)
@@ -197,6 +212,7 @@ Public Class SetupCheckUpdates
 
     Private Sub UpdateClient_DownloadFileCompleted(sender As Object, e As AsyncCompletedEventArgs) Handles UpdateClient.DownloadFileCompleted
         TopLabel.Text = "Update downloaded. OrbisPro will update now."
+        FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
         LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
         ProgressLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
@@ -217,11 +233,11 @@ Public Class SetupCheckUpdates
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -242,6 +258,25 @@ Public Class SetupCheckUpdates
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(CheckUpdatesWindow, CheckUpdatesCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(CheckUpdatesWindow, CheckUpdatesCanvas)
+            End If
         End If
     End Sub
 

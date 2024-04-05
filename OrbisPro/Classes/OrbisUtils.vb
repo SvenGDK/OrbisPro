@@ -1,25 +1,38 @@
-﻿Imports System.Drawing
+﻿Imports System.ComponentModel
+Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Management
 Imports System.Net
+Imports System.Net.Http
 Imports System.Net.NetworkInformation
-Imports System.Runtime.InteropServices
+Imports System.Net.Sockets
 Imports System.Text.RegularExpressions
 
 Public Class OrbisUtils
 
-    Public Shared ConfigFile As New INI.IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Settings.ini")
+    Private Declare Function DeleteObject Lib "gdi32.dll" (hObject As IntPtr) As Boolean
+    Public Shared Property ConfigFile As New INI.IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Settings.ini")
+    Public Shared Property OrbisBackground As String
+        Get
+            Return _OrbisBackground
+        End Get
+        Set(Value As String)
+            _OrbisBackground = Value
+        End Set
+    End Property
+    Public Shared Property SharedDeviceModel As DeviceModel
+        Get
+            Return _SharedDeviceModel
+        End Get
+        Set(Value As DeviceModel)
+            _SharedDeviceModel = Value
+        End Set
+    End Property
 
-    <DllImport("gdi32.dll")>
-    Private Shared Function GetDeviceCaps(hDC As IntPtr, nIndex As Integer) As Integer
-    End Function
-
-    Public Shared OrbisUser As String
-    Public Shared OrbisBackground As String
-    Public Shared SharedDeviceModel As DeviceModel = Nothing
-
-    Public Shared ProcessList As New List(Of Process)()
+    Private Shared _OrbisBackground As String
+    Private Shared _SharedDeviceModel As DeviceModel
+    Private Shared ReadOnly Separator As String() = New String() {"  "}
 
     Public Enum SystemMessage
         ErrorMessage
@@ -34,38 +47,42 @@ Public Class OrbisUtils
         LegionGo
     End Enum
 
-    Public Shared Function IsURLValid(Url As String) As Boolean
+    Public Shared Property MainConfigFile As New INI.IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Settings.ini")
+
+    Public Shared Async Function IsURLValidAsync(Url As String) As Task(Of Boolean)
         If NetworkInterface.GetIsNetworkAvailable Then
             Try
-                Dim request As HttpWebRequest = CType(WebRequest.Create(Url), HttpWebRequest)
-                Using response As HttpWebResponse = CType(request.GetResponse(), HttpWebResponse)
-                    If response.StatusCode = HttpStatusCode.OK Then
-                        Return True
-                    ElseIf response.StatusCode = HttpStatusCode.Found Then
-                        Return True
-                    ElseIf response.StatusCode = HttpStatusCode.NotFound Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.Unauthorized Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.Forbidden Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.BadGateway Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.BadRequest Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.RequestTimeout Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.GatewayTimeout Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.InternalServerError Then
-                        Return False
-                    ElseIf response.StatusCode = HttpStatusCode.ServiceUnavailable Then
-                        Return False
-                    Else
-                        Return False
-                    End If
-                End Using
-            Catch Ex As WebException
+                Dim NewHttpClient As New HttpClient()
+                Dim NewHttpRequestMessage As New HttpRequestMessage(HttpMethod.Head, Url)
+                Dim NewHttpResponseMessage As HttpResponseMessage = Await NewHttpClient.SendAsync(NewHttpRequestMessage)
+
+                If NewHttpResponseMessage.StatusCode = HttpStatusCode.OK Then
+                    Return True
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.Found Then
+                    Return True
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.NotFound Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.Unauthorized Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.Forbidden Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.BadGateway Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.BadRequest Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.RequestTimeout Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.GatewayTimeout Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.InternalServerError Then
+                    Return False
+                ElseIf NewHttpResponseMessage.StatusCode = HttpStatusCode.ServiceUnavailable Then
+                    Return False
+                Else
+                    Return False
+                End If
+
+            Catch Ex As SocketException
                 Return False
             End Try
         Else
@@ -76,7 +93,7 @@ Public Class OrbisUtils
     Public Shared Function GetExecutableIconAsImageSource(FileName As String) As ImageSource
         If Not String.IsNullOrEmpty(FileName) Then
             Dim icon As Icon = Icon.ExtractAssociatedIcon(FileName)
-            Return Interop.Imaging.CreateBitmapSourceFromHIcon(icon.Handle, New Int32Rect(Nothing, Nothing, icon.Width, icon.Height), BitmapSizeOptions.FromEmptyOptions())
+            Return ToImageSource(icon)
         Else
             Return Nothing
         End If
@@ -151,23 +168,23 @@ Public Class OrbisUtils
 
     Public Shared Sub CreateGameDirectories()
         'Create game directories (for roms) at default install location
-        If Not Directory.Exists(My.Computer.FileSystem.CurrentDirectory + "\Games") Then
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\PS1")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\PS2")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\PS3")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\PS4")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\NES")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\SNES")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\SMS")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\MegaDrive")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\Saturn")
-            Directory.CreateDirectory(My.Computer.FileSystem.CurrentDirectory + "\Games\Dreamcast")
+        If Not Directory.Exists(FileIO.FileSystem.CurrentDirectory + "\Games") Then
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\PS1")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\PS2")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\PS3")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\PS4")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\NES")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\SNES")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\SMS")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\MegaDrive")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\Saturn")
+            Directory.CreateDirectory(FileIO.FileSystem.CurrentDirectory + "\Games\Dreamcast")
         End If
     End Sub
 
     Public Shared Function CheckForExistingIconAsset(ExecutableFileName As String) As String
-        Dim NewShortName As String = ""
+        Dim NewShortName As String
 
         'Get asset for executable
         If Path.GetFileName(ExecutableFileName) = "re4.exe" Then
@@ -304,15 +321,15 @@ Public Class OrbisUtils
             Return String.Empty
         End If
 
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\" + NewShortName + "_icon.jpg") Then
-            Return My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\" + NewShortName + "_icon.jpg"
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\" + NewShortName + "_icon.jpg") Then
+            Return FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\" + NewShortName + "_icon.jpg"
         Else
             Return String.Empty
         End If
     End Function
 
     Public Shared Function CheckForExistingBackgroundAsset(ExecutableFileName As String) As String
-        Dim NewShortName As String = ""
+        Dim NewShortName As String
 
         'Get asset for executable
         If Path.GetFileName(ExecutableFileName) = "re4.exe" Then
@@ -439,19 +456,11 @@ Public Class OrbisUtils
             Return String.Empty
         End If
 
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameBackgrounds\" + NewShortName + "_BG.jpg") Then
-            Return My.Computer.FileSystem.CurrentDirectory + "\Assets\GameBackgrounds\" + NewShortName + "_BG.jpg"
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameBackgrounds\" + NewShortName + "_BG.jpg") Then
+            Return FileIO.FileSystem.CurrentDirectory + "\Assets\GameBackgrounds\" + NewShortName + "_BG.jpg"
         Else
             Return String.Empty
         End If
-    End Function
-
-    Public Shared Function GetMonitorFrequency() As Integer
-        Dim Graphs As Graphics = Graphics.FromHwnd(IntPtr.Zero)
-        Dim Desk As IntPtr = Graphs.GetHdc()
-        Dim RefreshRate As Integer = GetDeviceCaps(Desk, 116)
-
-        Return RefreshRate
     End Function
 
     Public Shared Function CheckDeviceModel() As String
@@ -473,14 +482,6 @@ Public Class OrbisUtils
         Return Model
     End Function
 
-    Public Shared Sub SetUserName()
-
-
-        If Not String.IsNullOrEmpty(ConfigFile.IniReadValue("System", "Username")) Then
-            OrbisUser = ConfigFile.IniReadValue("System", "Username")
-        End If
-    End Sub
-
     Public Shared Sub ShowVirtualKeyboard()
         Dim RunningProcesses = Process.GetProcesses()
 
@@ -492,7 +493,9 @@ Public Class OrbisUtils
             End If
         Next
 
-        Process.Start("C:\Program Files\Common Files\Microsoft Shared\Ink\TabTip.exe")
+        Dim NewProcessStartInfo As New ProcessStartInfo() With {.FileName = "C:\Program Files\Common Files\Microsoft Shared\Ink\TabTip.exe", .Arguments = "runas", .UseShellExecute = True}
+        Dim NewTapTipProcess As New Process() With {.StartInfo = NewProcessStartInfo}
+        NewTapTipProcess.Start()
     End Sub
 
     Public Shared Sub HideVirtualKeyboard()
@@ -520,15 +523,16 @@ Public Class OrbisUtils
         End If
     End Sub
 
-    Public Shared Function GetDeviceVendor(VID As String) As String
-        If Not String.IsNullOrEmpty(VID) Then
+    Public Shared Function GetUSBDeviceVendor(VID As String) As String
+        If Not String.IsNullOrEmpty(VID) AndAlso File.Exists(FileIO.FileSystem.CurrentDirectory + "\System\usb.ids") Then
 
-            Dim USBIDs As String() = File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\usb.ids")
+            Dim USBIDs As String() = File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\System\usb.ids")
             Dim Vendor As String = ""
 
             For Each USBID As String In USBIDs
                 If USBID.StartsWith(VID, StringComparison.OrdinalIgnoreCase) Then
-                    Vendor = USBID.Split(New String() {"  "}, StringSplitOptions.None)(1)
+                    Vendor = USBID.Split(Separator, StringSplitOptions.None)(1)
+                    Exit For
                 End If
             Next
 
@@ -541,6 +545,19 @@ Public Class OrbisUtils
     Public Shared Function GetHexString(Source As String) As String
         Dim b As Byte() = System.Text.Encoding.UTF8.GetBytes(Source)
         Return BitConverter.ToString(b).Replace("-", "")
+    End Function
+
+    Public Shared Function ToImageSource(InputIcon As Icon) As ImageSource
+        Dim bitmap As Bitmap = InputIcon.ToBitmap()
+        Dim hBitmap As IntPtr = bitmap.GetHbitmap()
+
+        Dim wpfBitmap As ImageSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+
+        If Not DeleteObject(hBitmap) Then
+            Throw New Win32Exception()
+        End If
+
+        Return wpfBitmap
     End Function
 
 End Class

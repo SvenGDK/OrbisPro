@@ -14,14 +14,16 @@ Public Class SetupGames
     Private WithEvents GameCollectionWorker As New BackgroundWorker() With {.WorkerReportsProgress = True}
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
     Private WaitedFor As Integer = 0
+    Private LastKeyboardKey As Key
 
     Private GameTitleList As New List(Of String)()
-    Private GameShortcuts As String = My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt"
+    Private GameShortcuts As String = FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt"
 
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -51,11 +53,11 @@ Public Class SetupGames
         RemoteController = Nothing
     End Sub
 
+#End Region
+
     Private Sub ClosingAnimation_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
         Close()
     End Sub
-
-#End Region
 
     Private Sub WaitTimer_Tick(sender As Object, e As EventArgs) Handles WaitTimer.Tick
         WaitedFor += 1
@@ -93,29 +95,29 @@ Public Class SetupGames
 
                     'Skip other executables that are shipped with the game
                     If GameTitleList.Exists(Function(s) s.Equals(FileNameWithoutExtension, StringComparison.OrdinalIgnoreCase)) Then Continue For
-                    If FileNameWithoutExtension.IndexOf("crash", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    If FileNameWithoutExtension.Contains("crash", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("installer", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("installer", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("Language", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("Language", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("unins", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("unins", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("UE3", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("UE3", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("Unreal", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("Unreal", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("start", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("start", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("UbisoftConnect", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("UbisoftConnect", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("UbisoftExtension", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("UbisoftExtension", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("UbisoftGameLauncher", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("UbisoftGameLauncher", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("UplayService", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("UplayService", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("UplayWebCore", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("UplayWebCore", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
                     End If
 
@@ -169,19 +171,19 @@ Public Class SetupGames
 
                     'Skip other executables that are shipped with the game
                     If GameTitleList.Exists(Function(s) s.Equals(FileNameWithoutExtension, StringComparison.OrdinalIgnoreCase)) Then Continue For
-                    If FileNameWithoutExtension.IndexOf("crash", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    If FileNameWithoutExtension.Contains("crash", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("installer", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("installer", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("Language", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("Language", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("unins", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("unins", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("UE3", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("UE3", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("Unreal", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("Unreal", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
-                    ElseIf FileNameWithoutExtension.IndexOf("start", StringComparison.OrdinalIgnoreCase) >= 0 Then
+                    ElseIf FileNameWithoutExtension.Contains("start", StringComparison.OrdinalIgnoreCase) Then
                         Continue For
                     End If
 
@@ -214,8 +216,8 @@ Public Class SetupGames
         If File.Exists("C:\Program Files (x86)\Steam\steam.exe") Then
             Dim NewGameListViewItem As New AppListViewItem()
 
-            If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png", UriKind.RelativeOrAbsolute)))
+            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png") Then
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png", UriKind.RelativeOrAbsolute)))
             Else
                 GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Steam\steam.exe"))
             End If
@@ -229,8 +231,8 @@ Public Class SetupGames
         If File.Exists("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe") Then
             Dim NewGameListViewItem As New AppListViewItem()
 
-            If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png", UriKind.RelativeOrAbsolute)))
+            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png") Then
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png", UriKind.RelativeOrAbsolute)))
             Else
                 GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"))
             End If
@@ -244,8 +246,8 @@ Public Class SetupGames
         If File.Exists("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe") Then
             Dim NewGameListViewItem As New AppListViewItem()
 
-            If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png", UriKind.RelativeOrAbsolute)))
+            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png") Then
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png", UriKind.RelativeOrAbsolute)))
             Else
                 GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe"))
             End If
@@ -259,8 +261,8 @@ Public Class SetupGames
         If File.Exists("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe") Then
             Dim NewGameListViewItem As New AppListViewItem()
 
-            If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png", UriKind.RelativeOrAbsolute)))
+            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png") Then
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png", UriKind.RelativeOrAbsolute)))
             Else
                 GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe"))
             End If
@@ -274,8 +276,8 @@ Public Class SetupGames
         If File.Exists("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe") Then
             Dim NewGameListViewItem As New AppListViewItem()
 
-            If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(My.Computer.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png", UriKind.RelativeOrAbsolute)))
+            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png") Then
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png", UriKind.RelativeOrAbsolute)))
             Else
                 GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"))
             End If
@@ -293,7 +295,7 @@ Public Class SetupGames
 
     Private Async Sub GameCollectionWorker_RunWorkerCompleted(sender As Object, e As RunWorkerCompletedEventArgs) Handles GameCollectionWorker.RunWorkerCompleted
         'Hide loading indicator
-        LoadingIndicator.Spin = False
+        FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
         LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
         TopLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100)), .AutoReverse = True})
@@ -328,40 +330,44 @@ Public Class SetupGames
 #Region "Input"
 
     Private Sub SetupGames_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            If TypeOf FocusedItem Is ListViewItem Then
+                Select Case e.Key
+                    Case Key.A
+                        Dim SelectedGame As AppListViewItem = CType(GamesLibrary.SelectedItem, AppListViewItem)
 
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+                        'Add selected game to the library
+                        Using GameWriter As New StreamWriter(GameShortcuts, True)
+                            GameWriter.WriteLine("PC;" + SelectedGame.AppTitle + ";" + SelectedGame.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
+                        End Using
 
-        'Only respond if a ListViewItem is selected
-        If TypeOf FocusedItem Is ListViewItem Then
-            If e.Key = Key.X Then
-                ContinueSetup()
-            ElseIf e.Key = Key.O Then
-                ReturnToPreviousSetupStep()
-            ElseIf e.Key = Key.A Then
-
-                Dim SelectedGame As AppListViewItem = CType(GamesLibrary.SelectedItem, AppListViewItem)
-
-                'Add selected game to the library
-                Using GameWriter As New StreamWriter(GameShortcuts, True)
-                    GameWriter.WriteLine("PC;" + SelectedGame.AppTitle + ";" + SelectedGame.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                End Using
-
-                'Notify that the game has been added
-                Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon))
-
+                        'Notify that the game has been added
+                        Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupGamesCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon))
+                    Case Key.C
+                        ReturnToPreviousSetupStep()
+                    Case Key.X
+                        ContinueSetup()
+                End Select
             End If
+        Else
+            e.Handled = True
         End If
 
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SetupGames_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -395,12 +401,11 @@ Public Class SetupGames
                         'Add selected game to the library
                         Using GameWriter As New StreamWriter(GameShortcuts, True)
                             GameWriter.WriteLine("PC;" + SelectedGame.AppTitle + ";" + SelectedGame.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                            GameWriter.Close
+                            GameWriter.Close()
                         End Using
 
                         'Notify that the game has been added and add additional delay due to animation
-                        AdditionalDelayAmount += 25
-                        Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon))
+                        Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupGamesCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon))
                     ElseIf MainGamepadButton_DPad_Left_Pressed Then
                         PlayBackgroundSound(Sounds.Move)
 
@@ -456,13 +461,12 @@ Public Class SetupGames
                     End If
                 End If
 
-                AdditionalDelayAmount += 45
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             'Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -483,6 +487,8 @@ Public Class SetupGames
 #End Region
 
     Private Sub ContinueSetup()
+        PlayBackgroundSound(Sounds.SelectItem)
+
         Dim NewSetupApps As New SetupApps() With {.ShowActivated = True, .Top = Top, .Left = Left, .Opacity = 0}
         NewSetupApps.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
         NewSetupApps.Show()
@@ -491,7 +497,7 @@ Public Class SetupGames
     End Sub
 
     Private Sub ReturnToPreviousSetupStep()
-        PlayBackgroundSound(Sounds.SelectItem)
+        PlayBackgroundSound(Sounds.Back)
 
         Dim NewSetupCheckUpdates As New SetupCheckUpdates() With {.ShowActivated = True, .Top = Top, .Left = Left}
         NewSetupCheckUpdates.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
@@ -529,11 +535,11 @@ Public Class SetupGames
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -554,6 +560,25 @@ Public Class SetupGames
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SetupGamesWindow, SetupGamesCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SetupGamesWindow, SetupGamesCanvas)
+            End If
         End If
     End Sub
 

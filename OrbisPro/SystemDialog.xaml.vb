@@ -8,17 +8,19 @@ Imports SharpDX.XInput
 
 Public Class SystemDialog
 
+    Private LastKeyboardKey As Key
     Public Opener As String
     Public MessageTitle As String
     Public MessageDescription As String
     Public MessageType As SystemMessage
 
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
 
     Public SetupStep As Boolean = False
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -66,82 +68,70 @@ Public Class SystemDialog
 
         Select Case Opener
             Case "BluetoothSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.BluetoothSettings" Then
-                        'Re-activate the 'File Explorer'
                         CType(Win, BluetoothSettings).Activate()
-                        CType(Win, BluetoothSettings).PauseInput = False
                         Exit For
                     End If
                 Next
             Case "Downloads"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.Downloads" Then
-                        'Re-activate the 'File Explorer'
-                        CType(Win, Downloads).PauseInput = False
                         CType(Win, Downloads).Activate()
                         Exit For
                     End If
                 Next
             Case "FileExplorer"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
-                        'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
-                        CType(Win, FileExplorer).PauseInput = False
                         Exit For
                     End If
                 Next
             Case "GameLibrary"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GameLibrary" Then
-                        'Re-activate the 'File Explorer'
                         CType(Win, GameLibrary).Activate()
-                        CType(Win, GameLibrary).PauseInput = False
                         Exit For
                     End If
                 Next
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
-                        'Re-activate the 'File Explorer'
                         CType(Win, GeneralSettings).Activate()
-                        CType(Win, GeneralSettings).PauseInput = False
                         Exit For
                     End If
                 Next
             Case "MainWindow"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
-                        CType(Win, MainWindow).PauseInput = False
                         Exit For
                     End If
                 Next
             Case "OpenWindows"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.OpenWindows" Then
                         CType(Win, OpenWindows).Activate()
-                        CType(Win, OpenWindows).PauseInput = False
                         Exit For
                     End If
                 Next
             Case "SetupApps"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupApps" Then
                         CType(Win, SetupApps).Activate()
                         Exit For
                     End If
                 Next
             Case "SetupGames"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupGames" Then
                         CType(Win, SetupGames).Activate()
                         Exit For
                     End If
                 Next
             Case "SetupPS3"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupPS3" Then
 
                         If SetupStep Then
@@ -157,29 +147,46 @@ Public Class SystemDialog
                         Exit For
                     End If
                 Next
+            Case "SetupPSVita"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.SetupPSVita" Then
+
+                        If SetupStep Then
+                            CType(Win, SetupPSVita).RequirementsRead = True
+                            CType(Win, SetupPSVita).RequirementsReadCheckBox.IsChecked = True
+                            CType(Win, SetupPSVita).ReadRequirementsButton.BorderBrush = Nothing
+                            CType(Win, SetupPSVita).DownloadFirmwareButton.Focus()
+                        End If
+
+                        CType(Win, SetupPSVita).AdditionalPauseDelay = 100
+                        CType(Win, SetupPSVita).Activate()
+
+                        Exit For
+                    End If
+                Next
             Case "SetupCustomize"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupCustomize" Then
                         CType(Win, SetupCustomize).Activate()
                         Exit For
                     End If
                 Next
             Case "SystemMediaPlayer"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SystemMediaPlayer" Then
                         CType(Win, SystemMediaPlayer).Activate()
                         Exit For
                     End If
                 Next
             Case "WelcomeToSetup"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.WelcomeToSetup" Then
                         CType(Win, WelcomeToSetup).Activate()
                         Exit For
                     End If
                 Next
             Case "WifiSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.WifiSettings" Then
                         CType(Win, WifiSettings).Activate()
                         Exit For
@@ -193,20 +200,29 @@ Public Class SystemDialog
 #Region "Input"
 
     Private Sub SystemDialog_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If e.Key = Key.O Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
+        If Not e.Key = LastKeyboardKey Then
+            Select Case e.Key
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+            End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SystemDialog_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -240,13 +256,12 @@ Public Class SystemDialog
 
                 End If
 
-                AdditionalDelayAmount += 45
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -262,11 +277,11 @@ Public Class SystemDialog
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -287,6 +302,25 @@ Public Class SystemDialog
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SystemDialogWindow, SystemDialogCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SystemDialogWindow, SystemDialogCanvas)
+            End If
         End If
     End Sub
 

@@ -1,5 +1,7 @@
 ﻿Imports OrbisPro.OrbisAudio
+Imports OrbisPro.OrbisNetwork
 Imports OrbisPro.OrbisInput
+Imports OrbisPro.OrbisPowerUtils
 Imports OrbisPro.OrbisUtils
 Imports SharpDX.XInput
 Imports System.ComponentModel
@@ -8,12 +10,12 @@ Imports System.Windows.Media.Animation
 
 Public Class WelcomeToSetup
 
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-
-    Dim Part2Done As Boolean = False
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Private LastKeyboardKey As Key
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -25,32 +27,42 @@ Public Class WelcomeToSetup
 
             'Read config
             CheckDeviceModel()
-            SetUserName()
+
             OrbisNotifications.NotificationDuration = CDbl(ConfigFile.IniReadValue("Notifications", "NotificationDuration"))
             If ConfigFile.IniReadValue("Notifications", "DisableNotifications") = "true" Then OrbisNotifications.DisablePopups = True
 
-            'Open the main window
+            'Create & open the main window
             Dim OrbisProMainWindow As New MainWindow() With {.ShowActivated = True, .Top = Top, .Left = Left}
-            OrbisAnimations.Animate(OrbisProMainWindow, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(800)))
+
             If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
                 OrbisProMainWindow.BackgroundMedia.IsMuted = True
             End If
+
+            If Not IsMobileDevice() Then
+                OrbisProMainWindow.BatteryIndicatorImage.Source = Nothing
+                OrbisProMainWindow.BatteryPercentageTextBlock.Text = ""
+            End If
+
+            If Not IsWiFiRadioOn() Then
+                OrbisProMainWindow.WiFiIndicatorImage.Source = Nothing
+                OrbisProMainWindow.WiFiNetworkNameStrenghtTextBlock.Text = ""
+            End If
+
+            OrbisAnimations.Animate(OrbisProMainWindow, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(800)))
             OrbisProMainWindow.Show()
 
             Close()
         Else
 
-            If MsgBox("Welcome to the OrbisPro 0.1 Beta." +
+            If MsgBox("Welcome to the OrbisPro v0.2 Beta." +
                       vbCrLf +
                       vbCrLf +
                       "This application is still in development and you may encouter some bugs while using it." +
                       vbCrLf +
-                      "The Beta is only optimized for the Full HD (1920x1080) screen resolution at 100% scaling." +
-                      vbCrLf +
                       "By clicking OK you accept that OrbisPro checks your device model, installed games & applications." +
                       vbCrLf +
                       vbCrLf +
-                      "This dialog will only be shown on the very first setup.") = MsgBoxResult.Ok Then
+                      "This message will only be shown on the very first setup.") = MsgBoxResult.Ok Then
 
                 'Check the device that uses OrbisPro and open a customized setup on specific devices
                 Dim DeviceModel As String = CheckDeviceModel()
@@ -106,7 +118,7 @@ Public Class WelcomeToSetup
             Case DeviceModel.ROGAlly
                 'Change the background
                 BackgroundMedia.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
                 BackgroundMedia.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
 
                 'Continue setup
@@ -137,7 +149,6 @@ Public Class WelcomeToSetup
         ROGCheckGamesLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
         ROGCheckAppsLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
         ROGCustomizeLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
-        'ROGSetupEmuLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
 
         NextButton.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
 
@@ -157,7 +168,7 @@ Public Class WelcomeToSetup
 #Region "Ally Setup"
 
     Private Sub SetupAllyPart1()
-        BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\rog.mp4", UriKind.Absolute)
+        BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\rog.mp4", UriKind.Absolute)
         BackgroundMedia.Play()
     End Sub
 
@@ -194,30 +205,35 @@ Public Class WelcomeToSetup
 #Region "Input"
 
     Private Sub SystemSetup_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-
-        'The first pressed key/button (must) be HOME to continue
-        If e.Key = Key.X Then
-            PlayBackgroundSound(Sounds.SelectItem)
-
-            Select Case SharedDeviceModel
-
-                Case DeviceModel.ROGAlly
-                    SetupAllyPart3()
-                Case Else
-                    DefaultSetupPart2()
-
+        If Not e.Key = LastKeyboardKey Then
+            Select Case e.Key
+                Case Key.X
+                    PlayBackgroundSound(Sounds.SelectItem)
+                    Select Case SharedDeviceModel
+                        Case DeviceModel.ROGAlly
+                            SetupAllyPart3()
+                        Case Else
+                            DefaultSetupPart2()
+                    End Select
             End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub WelcomeToSetup_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -231,7 +247,6 @@ Public Class WelcomeToSetup
 
                 If MainGamepadButton_A_Button_Pressed Then
                     PlayBackgroundSound(Sounds.SelectItem)
-
                     Select Case SharedDeviceModel
                         Case DeviceModel.ROGAlly
                             SetupAllyPart3()
@@ -240,27 +255,26 @@ Public Class WelcomeToSetup
                     End Select
                 End If
 
-                AdditionalDelayAmount += 45
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
 #End Region
 
-    Public Sub SetBackground()
+    Private Sub SetBackground()
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -281,6 +295,22 @@ Public Class WelcomeToSetup
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(WelcomeSetupWindow, WelcomeSetupCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                OrbisDisplay.SetScaling(WelcomeSetupWindow, WelcomeSetupCanvas)
+            End If
         End If
     End Sub
 

@@ -16,30 +16,33 @@ Imports System.Text
 Public Class GeneralSettings
 
     Public Opener As String = ""
+    Private LastKeyboardKey As Key
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
 
     'Keep last selection index
     Private LastGeneralSettingsIndex As Integer
 
-    Private LastAccountManagementSettingsIndex As Integer
-    Private LastNetworkSettingsIndex As Integer
-    Private LastNotificationsSettingsIndex As Integer
-    Private LastSystemSettingsIndex As Integer
-    Private LastGeneralEmulatorSettingsIndex As Integer
+    Private LastAccountManagementSettingsIndex As Integer = 0
+    Private LastNetworkSettingsIndex As Integer = 0
+    Private LastNotificationsSettingsIndex As Integer = 0
+    Private LastSystemSettingsIndex As Integer = 0
+    Private LastGeneralEmulatorSettingsIndex As Integer = 0
 
-    Private LastAudioSettingsIndex As Integer
-    Private LastBackgroundSettingsIndex As Integer
+    Private LastAudioSettingsIndex As Integer = 0
+    Private LastDisplaySettingsIndex As Integer = 0
+    Private LastBackgroundSettingsIndex As Integer = 0
 
-    Private LastPS1EmulatorSettingsIndex As Integer
-    Private LastPS2EmulatorSettingsIndex As Integer
-    Private LastPS3EmulatorSettingsIndex As Integer
+    Private LastPS1EmulatorSettingsIndex As Integer = 0
+    Private LastPS2EmulatorSettingsIndex As Integer = 0
+    Private LastPS3EmulatorSettingsIndex As Integer = 0
 
     Private NewInputBox As New PSInputBox("Enter a new value :")
     Private SettingToChange As SettingsListViewItem
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -65,7 +68,6 @@ Public Class GeneralSettings
             'Check for gamepads
             If GetAndSetGamepads() Then MainController = SharedController1
             ChangeButtonLayout()
-
             If SharedController1 IsNot Nothing Then Await ReadGamepadInputAsync(CTS.Token)
         Catch ex As Exception
             PauseInput = True
@@ -88,7 +90,7 @@ Public Class GeneralSettings
 
         Select Case Opener
             Case "BluetoothSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.BluetoothSettings" Then
                         CType(Win, BluetoothSettings).Activate()
                         CType(Win, BluetoothSettings).PauseInput = False
@@ -96,7 +98,7 @@ Public Class GeneralSettings
                     End If
                 Next
             Case "Downloads"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.Downloads" Then
                         CType(Win, Downloads).Activate()
                         CType(Win, Downloads).PauseInput = False
@@ -104,7 +106,7 @@ Public Class GeneralSettings
                     End If
                 Next
             Case "FileExplorer"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
                         CType(Win, FileExplorer).Activate()
                         CType(Win, FileExplorer).PauseInput = False
@@ -112,7 +114,7 @@ Public Class GeneralSettings
                     End If
                 Next
             Case "GameLibrary"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GameLibrary" Then
                         CType(Win, GameLibrary).Activate()
                         CType(Win, GameLibrary).PauseInput = False
@@ -120,7 +122,7 @@ Public Class GeneralSettings
                     End If
                 Next
             Case "MainWindow"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
                         CType(Win, MainWindow).PauseInput = False
@@ -128,14 +130,13 @@ Public Class GeneralSettings
                     End If
                 Next
             Case "WifiSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.WifiSettings" Then
                         CType(Win, WifiSettings).Activate()
                         CType(Win, WifiSettings).PauseInput = False
                         Exit For
                     End If
                 Next
-
         End Select
 
         Close()
@@ -246,7 +247,7 @@ Public Class GeneralSettings
 
         Dim AudioSetting As New SettingsListViewItem With {.SettingsTitle = "Audio", .SettingsIcon = New BitmapImage(New Uri("/Icons/Music.png", UriKind.RelativeOrAbsolute))}
         Dim VideoSetting As New SettingsListViewItem With {.SettingsTitle = "Video", .SettingsIcon = New BitmapImage(New Uri("/Icons/Video.png", UriKind.RelativeOrAbsolute))}
-        Dim BackgroundSetting As New SettingsListViewItem With {.SettingsTitle = "Background", .SettingsIcon = New BitmapImage(New Uri("/Icons/GalleryTransparent.png", UriKind.RelativeOrAbsolute))}
+        Dim BackgroundSetting As New SettingsListViewItem With {.SettingsTitle = "Display", .SettingsIcon = New BitmapImage(New Uri("/Icons/TVIcon.png", UriKind.RelativeOrAbsolute))}
         Dim SystemUpdateSetting As New SettingsListViewItem With {.SettingsTitle = "Check for OrbisPro Updates", .SettingsIcon = New BitmapImage(New Uri("/Icons/Update.png", UriKind.RelativeOrAbsolute))}
 
         Dim Setting1Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = AudioSetting}
@@ -292,6 +293,39 @@ Public Class GeneralSettings
         Dim Setting1Item As New ListViewItem With {.ContentTemplate = SettingWithAudioControlStyle, .Content = SystemVolumeSetting}
         Dim Setting2Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = NavigationSoundsSetting}
 
+        GeneralSettingsListView.Items.Add(Setting1Item)
+        GeneralSettingsListView.Items.Add(Setting2Item)
+
+        GeneralSettingsListView.Items.Refresh()
+    End Sub
+
+    Public Sub LoadDisplaySettings()
+        WindowTitle.Text = "Display"
+
+        GeneralSettingsListView.Items.Clear()
+
+        'Declare the styles
+        Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
+        Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
+
+        'Get the values
+        Dim DisplayResolution As String = ConfigFile.IniReadValue("System", "DisplayResolution")
+
+        'Declare the settings
+        Dim SelectedBackgroundSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/GalleryTransparent.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Background Settings"}
+        Dim CustomBackgroundPathSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/TVIcon.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Display Resolution",
+            .SettingsState = DisplayResolution,
+            .SettingsDescription = "Set the Display Resoltion of OrbisPro.",
+            .ConfigSectionName = "System",
+            .ConfigToChange = "DisplayResolution"}
+
+        'Create a new ListViewItem and override the content template style
+        Dim Setting1Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = SelectedBackgroundSetting}
+        Dim Setting2Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = CustomBackgroundPathSetting}
+
+        'Add the settings to the ListView
         GeneralSettingsListView.Items.Add(Setting1Item)
         GeneralSettingsListView.Items.Add(Setting2Item)
 
@@ -532,7 +566,7 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Clear()
 
         'Get the PCSX2 config
-        Dim PCSX2Config As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\inis\PCSX2_ui.ini")
+        Dim PCSX2Config As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\inis\PCSX2_ui.ini")
 
         'Declare the styles
         Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
@@ -1083,7 +1117,7 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Clear()
 
         'Get the PPSSPP config
-        Dim PPSSPPConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
+        Dim PPSSPPConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
 
         'Declare the styles
         Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
@@ -2269,7 +2303,7 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Clear()
 
         'Get the Dolphin config
-        Dim DolphinConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\User\Config\Dolphin.ini")
+        Dim DolphinConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\User\Config\Dolphin.ini")
 
         'Declare the styles
         Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
@@ -2372,7 +2406,7 @@ Public Class GeneralSettings
         InsertFusionConfigSections()
 
         'Get the Fusion config     
-        Dim FusionConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
+        Dim FusionConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
 
         'Declare the styles
         Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
@@ -2735,7 +2769,7 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Clear()
 
         'Get the PPSSPP config
-        Dim PPSSPPConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
+        Dim PPSSPPConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
 
         'Declare the styles
         Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
@@ -2926,13 +2960,19 @@ Public Class GeneralSettings
                     NewWifiSettings.Show()
 
                 Case "Audio"
-                    LastAudioSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LastSystemSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadAudioSettings()
                     GoForwardAnimation()
-                Case "Background"
-                    LastBackgroundSettingsIndex = GeneralSettingsListView.SelectedIndex
+                Case "Display"
+                    LastSystemSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadDisplaySettings()
+                    GoForwardAnimation()
+                Case "Background Settings"
+                    LastDisplaySettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadBackgroundSettings()
                     GoForwardAnimation()
+                Case "Video"
+                    'LastSystemSettingsIndex = GeneralSettingsListView.SelectedIndex
 
                 Case "Setup Emulators"
                     PauseInput = True
@@ -2976,15 +3016,15 @@ Public Class GeneralSettings
                     GoForwardAnimation()
 
                 Case "PS3 Audio Settings"
-
+                    LastPS3EmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadPS3AudioSettings()
                     GoForwardAnimation()
                 Case "PS3 Video Settings"
-
+                    LastPS3EmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadPS3VideoSettings()
                     GoForwardAnimation()
                 Case "PS3 Core Settings"
-
+                    LastPS3EmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadPS3CoreSettings()
                     GoForwardAnimation()
             End Select
@@ -3040,7 +3080,7 @@ Public Class GeneralSettings
 
                 Select Case SelectedItem.SettingsTitle
                     'Known and pre-defined settings
-                    Case "Duration of Notifications", "Selected Background", "Navigation Audio Pack"
+                    Case "Duration of Notifications", "Selected Background", "Navigation Audio Pack", "Display Resolution"
                         'Show available options for specific settings
                         ShowHideSideMenuSettings()
                     Case Else
@@ -3070,8 +3110,8 @@ Public Class GeneralSettings
 
         ElseIf TypeOf FocusedItem Is Button Then
 
-            Dim SelectedButton = CType(FocusedItem, Button)
-            Dim SelectedSettingValue = SelectedButton.Content.ToString
+            Dim SelectedButton As Button = CType(FocusedItem, Button)
+            Dim SelectedSettingValue As String = SelectedButton.Content.ToString()
 
             If SettingToChange IsNot Nothing Then
                 'Save the new value
@@ -3084,7 +3124,25 @@ Public Class GeneralSettings
                         SetBackground()
 
                         'Update background on MainWindow
-                        For Each Win In Windows.Application.Current.Windows()
+                        For Each Win In System.Windows.Application.Current.Windows()
+                            If Win.ToString = "OrbisPro.MainWindow" Then
+                                CType(Win, MainWindow).SetBackground()
+                                Exit For
+                            End If
+                        Next
+                    Case "Display Resolution"
+
+                        If SelectedSettingValue = "AutoScaling" Then
+                            ConfigFile.IniWriteValue("System", "DisplayScaling", "AutoScaling")
+                        Else
+                            ConfigFile.IniWriteValue("System", "DisplayScaling", "Manual")
+                        End If
+
+                        'Update background
+                        SetBackground()
+
+                        'Update background on MainWindow
+                        For Each Win In System.Windows.Application.Current.Windows()
                             If Win.ToString = "OrbisPro.MainWindow" Then
                                 CType(Win, MainWindow).SetBackground()
                                 Exit For
@@ -3145,11 +3203,15 @@ Public Class GeneralSettings
                 Case "Audio"
                     LastAudioSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadSystemSettings()
-                    GoBackAnimation(LastGeneralSettingsIndex)
+                    GoBackAnimation(LastSystemSettingsIndex)
+                Case "Display"
+                    LastDisplaySettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadSystemSettings()
+                    GoBackAnimation(LastSystemSettingsIndex)
                 Case "Background"
                     LastBackgroundSettingsIndex = GeneralSettingsListView.SelectedIndex
-                    LoadSystemSettings()
-                    GoBackAnimation(LastGeneralSettingsIndex)
+                    LoadDisplaySettings()
+                    GoBackAnimation(LastDisplaySettingsIndex)
 
 
                 Case "PS1 Emulator (ePSXe)", "PS2 Emulator (pcsx2)", "PS3 Emulator (rpcs3)", "PSP Emulator (ppsspp)", "PS Vita Emulator (vita3k)", "Dolpin Emulator", "Sega Emulator (Fusion)", "Mednafen Emulator"
@@ -3226,6 +3288,14 @@ Public Class GeneralSettings
                         SettingButton3.Content = "PS3"
                         SettingButton4.Content = "PS4"
                         SettingButton5.Content = "PS5"
+
+                        ShowAllSettingButtons()
+                    Case "Display Resolution"
+                        SettingButton1.Content = "AutoScaling"
+                        SettingButton2.Content = "1280x720"
+                        SettingButton3.Content = "1920x1080"
+                        SettingButton4.Content = "2560x1440"
+                        SettingButton5.Content = "3840x2160"
 
                         ShowAllSettingButtons()
 #End Region
@@ -3450,18 +3520,30 @@ Public Class GeneralSettings
 #Region "Input"
 
     Private Sub GeneralSettings_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-        If PauseInput = False Then
-            If e.Key = Key.X Then
-                OpenNewSettings()
-            ElseIf e.Key = Key.C Then
-                ReturnToPreviousSettings()
-            ElseIf e.Key = Key.Up Then
-                MoveUp()
-            ElseIf e.Key = Key.Down Then
-                MoveDown()
+
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            If PauseInput = False Then
+                Select Case e.Key
+                    Case Key.C
+                        ReturnToPreviousSettings()
+                    Case Key.X
+                        OpenNewSettings()
+                    Case Key.Up
+                        MoveUp()
+                    Case Key.Down
+                        MoveDown()
+                End Select
             End If
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub GeneralSettings_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Sub NewGlobalKeyboardHook_KeyDown(Key As Forms.Keys) Handles NewGlobalKeyboardHook.KeyDown
@@ -3508,11 +3590,10 @@ Public Class GeneralSettings
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -3540,13 +3621,12 @@ Public Class GeneralSettings
                     ScrollDown()
                 End If
 
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 100
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             'Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -3594,7 +3674,7 @@ Public Class GeneralSettings
     Private Sub SetRegistryStringValue(RegPath As String, RegValueName As String, NewValue As String)
         If Registry.CurrentUser.OpenSubKey(RegPath) IsNot Nothing Then
             If Registry.CurrentUser.OpenSubKey(RegPath).GetValue(RegValueName) IsNot Nothing Then
-                Registry.CurrentUser.OpenSubKey(RegPath).SetValue(RegValueName, NewValue)
+                Registry.CurrentUser.OpenSubKey(RegPath, True).SetValue(RegValueName, NewValue)
             End If
         End If
     End Sub
@@ -3602,7 +3682,7 @@ Public Class GeneralSettings
     Private Function GetVitaConfigValue(ConfigName As String) As String
         Dim ConfigValue As String = ""
 
-        For Each Line As String In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\config.yml")
+        For Each Line As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\config.yml")
             If Line.Contains(ConfigName) Then
                 ConfigValue = Line.Split(":"c)(1)
                 Exit For
@@ -3619,7 +3699,7 @@ Public Class GeneralSettings
     Private Sub SetVitaConfigValue(ConfigName As String, NewValue As String)
         Dim NewConfigLines As New List(Of String)()
 
-        For Each Line As String In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\config.yml")
+        For Each Line As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\config.yml")
             If Line.Contains(ConfigName) Then
                 'Split the line of the config -> initial-setup(0): false(1)
                 Dim SplittedLine As String() = Line.Split(":"c)
@@ -3632,13 +3712,13 @@ Public Class GeneralSettings
         Next
 
         'Save as new config
-        File.WriteAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\config.yml", NewConfigLines.ToArray(), Encoding.UTF8)
+        File.WriteAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\config.yml", NewConfigLines.ToArray(), Encoding.UTF8)
     End Sub
 
     Private Function GetPS3ConfigValue(ConfigName As String) As String
         Dim ConfigValue As String = ""
 
-        For Each Line As String In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\config.yml")
+        For Each Line As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\config.yml")
             If Line.Contains(ConfigName) Then
                 ConfigValue = Line.Split(":"c)(1)
                 Exit For
@@ -3655,7 +3735,7 @@ Public Class GeneralSettings
     Private Sub SetPS3ConfigValue(ConfigName As String, NewValue As String)
         Dim NewConfigLines As New List(Of String)()
 
-        For Each Line As String In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\config.yml")
+        For Each Line As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\config.yml")
             If Line.Contains(ConfigName) Then
                 'Split the line of the config -> initial-setup(0): false(1)
                 Dim SplittedLine As String() = Line.Split(":"c)
@@ -3668,11 +3748,11 @@ Public Class GeneralSettings
         Next
 
         'Save as new config
-        File.WriteAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\config.yml", NewConfigLines.ToArray(), Encoding.UTF8)
+        File.WriteAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\config.yml", NewConfigLines.ToArray(), Encoding.UTF8)
     End Sub
 
     Private Sub InsertFusionConfigSections()
-        Dim FusionConfigLines() As String = File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
+        Dim FusionConfigLines() As String = File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
 
         'Add sections
         If Not FusionConfigLines(9) = "[Graphics]" Then
@@ -3689,7 +3769,7 @@ Public Class GeneralSettings
         End If
 
         'Save config
-        File.WriteAllLines(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini", FusionConfigLines)
+        File.WriteAllLines(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini", FusionConfigLines)
     End Sub
 
     Private Sub ChangeBoolValue(SelectedConfig As SettingsListViewItem)
@@ -3702,7 +3782,7 @@ Public Class GeneralSettings
                 BooleanTrueValue = "True"
                 BooleanFalseValue = "False"
 
-                Dim DolphinConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\User\Config\Dolphin.ini")
+                Dim DolphinConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\User\Config\Dolphin.ini")
                 If SelectedConfig.IsSettingChecked Then
                     DolphinConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanFalseValue)
                 Else
@@ -3721,7 +3801,7 @@ Public Class GeneralSettings
                 BooleanTrueValue = "enabled"
                 BooleanFalseValue = "disabled"
 
-                Dim PCSX2Config As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\inis\PCSX2_ui.ini")
+                Dim PCSX2Config As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\inis\PCSX2_ui.ini")
                 If SelectedConfig.IsSettingChecked Then
                     PCSX2Config.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanFalseValue)
                 Else
@@ -3740,7 +3820,7 @@ Public Class GeneralSettings
                 BooleanTrueValue = "True"
                 BooleanFalseValue = "False"
 
-                Dim PPSSPPConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
+                Dim PPSSPPConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
                 If SelectedConfig.IsSettingChecked Then
                     PPSSPPConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanFalseValue)
                 Else
@@ -3759,15 +3839,15 @@ Public Class GeneralSettings
                 BooleanTrueValue = "1"
                 BooleanFalseValue = "0"
 
-                Dim FusionConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
+                Dim FusionConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
                 If SelectedConfig.IsSettingChecked Then
                     FusionConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanFalseValue)
                 Else
                     FusionConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanTrueValue)
                 End If
             Case "Mednafen Emulator"
-                BooleanTrueValue = "1"
-                BooleanFalseValue = "0"
+                'BooleanTrueValue = "1"
+                'BooleanFalseValue = "0"
                 'Future build
 
             Case "Account Management", "Notifications", "Notifications", "Background", "Network"
@@ -3779,9 +3859,6 @@ Public Class GeneralSettings
                 Else
                     ConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanTrueValue)
                 End If
-            Case Else
-                BooleanTrueValue = "True"
-                BooleanFalseValue = "False"
         End Select
 
     End Sub
@@ -3789,34 +3866,34 @@ Public Class GeneralSettings
     Private Sub ChangeStringValue(SelectedConfig As SettingsListViewItem, NewValue As String)
         Select Case WindowTitle.Text
             Case "Dolpin Emulator"
-                Dim DolphinConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\User\Config\Dolphin.ini")
+                Dim DolphinConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\User\Config\Dolphin.ini")
                 DolphinConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
             Case "PS1 Emulator (ePSXe)"
                 SetRegistryStringValue("Software\epsxe\config", SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
             Case "PS2 Emulator (pcsx2)"
-                Dim PCSX2Config As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\inis\PCSX2_ui.ini")
+                Dim PCSX2Config As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\inis\PCSX2_ui.ini")
                 PCSX2Config.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
             Case "PS3 Emulator (rpcs3)"
                 SetPS3ConfigValue(SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
             Case "PSP Emulator (ppsspp)"
-                Dim PPSSPPConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
+                Dim PPSSPPConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
                 PPSSPPConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
             Case "PS Vita Emulator (vita3k)"
                 SetVitaConfigValue(SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
             Case "Sega Emulator (Fusion)"
-                Dim FusionConfig As New IniFile(My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
+                Dim FusionConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.ini")
                 FusionConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
             Case "Mednafen Emulator"
                 'Future build
 
-            Case "Account Management", "Notifications", "Notifications", "Background", "Network"
+            Case "Account Management", "Audio", "Background", "Display", "Network", "Notifications", "System"
                 ConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
         End Select
@@ -3828,11 +3905,11 @@ Public Class GeneralSettings
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -3853,6 +3930,25 @@ Public Class GeneralSettings
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SettingsWindow, SettingsCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SettingsWindow, SettingsCanvas)
+            End If
         End If
     End Sub
 

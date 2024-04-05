@@ -70,4 +70,34 @@ Public Class OrbisPowerUtils
         Return NewBatteryInfo
     End Function
 
+    Public Shared Function GetBatteryImage(BatteryPercentageValue As Single, Optional IsCharging As Boolean = False) As ImageSource
+        Dim TempBitmapImage = New BitmapImage()
+
+        TempBitmapImage.BeginInit()
+        TempBitmapImage.CacheOption = BitmapCacheOption.OnLoad
+        TempBitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache
+
+        Dim IntPercentage As Integer = CInt(BatteryPercentageValue)
+
+        If IntPercentage = 100 AndAlso IsCharging Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Battery/BatteryFullCharging.png", UriKind.RelativeOrAbsolute)
+        ElseIf IntPercentage = 100 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Battery/BatteryFull.png", UriKind.RelativeOrAbsolute)
+        ElseIf IntPercentage >= 80 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Battery/Battery80.png", UriKind.RelativeOrAbsolute)
+        ElseIf IntPercentage >= 60 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Battery/Battery80.png", UriKind.RelativeOrAbsolute)
+        ElseIf IntPercentage >= 40 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Battery/Battery80.png", UriKind.RelativeOrAbsolute)
+        ElseIf IntPercentage >= 20 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Battery/Battery80.png", UriKind.RelativeOrAbsolute)
+        ElseIf IntPercentage >= 1 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Battery/BatteryCritical.png", UriKind.RelativeOrAbsolute)
+        End If
+
+        TempBitmapImage.EndInit()
+
+        Return TempBitmapImage
+    End Function
+
 End Class

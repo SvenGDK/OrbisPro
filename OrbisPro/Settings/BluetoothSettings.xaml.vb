@@ -21,6 +21,7 @@ Public Class BluetoothSettings
     Private WithEvents BluetoothWorker As New BackgroundWorker() With {.WorkerReportsProgress = True}
     Private BluetoothWorkerAction As String
     Private WaitedFor As Integer = 0
+    Private LastKeyboardKey As Key
 
     Private BTClient As New BluetoothClient()
     Private PINInputBox As New PSInputBox("Pairing PIN Code (optional) :")
@@ -33,6 +34,7 @@ Public Class BluetoothSettings
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -81,7 +83,7 @@ Public Class BluetoothSettings
 
         Select Case Opener
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         CType(Win, GeneralSettings).Activate()
                         CType(Win, GeneralSettings).PauseInput = False
@@ -106,60 +108,70 @@ Public Class BluetoothSettings
 #Region "Input"
 
     Private Sub BluetoothSettings_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-        If e.Key = Key.T Then
-            If Not BluetoothWorker.IsBusy Then
-                BluetoothWorkerAction = "Discover"
-                BluetoothWorker.RunWorkerAsync("Discover")
-            End If
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            Select Case e.Key
+                Case Key.A
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        Dim SelectedDevice As BTDeviceOrServiceListViewItem = CType(BluetoothDevicesListView.SelectedItem, BTDeviceOrServiceListViewItem)
+                        DeviceToHandle = SelectedDevice
 
-        ElseIf e.Key = Key.A Then
-            If TypeOf FocusedItem Is ListViewItem Then
-                Dim SelectedDevice As BTDeviceOrServiceListViewItem = CType(BluetoothDevicesListView.SelectedItem, BTDeviceOrServiceListViewItem)
-                DeviceToHandle = SelectedDevice
+                        If ActionTextBlock.Text = "Pair" Then
+                            If Not BluetoothWorker.IsBusy Then
 
-                If ActionTextBlock.Text = "Pair" Then
-                    If Not BluetoothWorker.IsBusy Then
+                                'Show a PIN input field
+                                Animate(PINInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
+                                Animate(PINInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
+                                Animate(PINInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                        'Show a PIN input field
-                        Animate(PINInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
-                        Animate(PINInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
-                        Animate(PINInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                                'Pause the window keyboard input and focus the PIN input field
+                                PauseInput = True
+                                PINInputBox.InputTextBox.Clear()
+                                PINInputBox.InputTextBox.Focus()
+                                ShowVirtualKeyboard()
 
-                        'Pause the window keyboard input and focus the PIN input field
-                        PauseInput = True
-                        PINInputBox.InputTextBox.Clear()
-                        PINInputBox.InputTextBox.Focus()
-                        ShowVirtualKeyboard()
-
+                            End If
+                        Else
+                            If Not BluetoothWorker.IsBusy Then
+                                BluetoothWorkerAction = "Unpair"
+                                BluetoothWorker.RunWorkerAsync("Unpair")
+                            End If
+                        End If
                     End If
-                Else
-                    If Not BluetoothWorker.IsBusy Then
-                        BluetoothWorkerAction = "Unpair"
-                        BluetoothWorker.RunWorkerAsync("Unpair")
-                    End If
-                End If
-            End If
-        ElseIf e.Key = Key.S Then
-            If TypeOf FocusedItem Is ListViewItem Then
-                Dim SelectedDevice As BTDeviceOrServiceListViewItem = CType(BluetoothDevicesListView.SelectedItem, BTDeviceOrServiceListViewItem)
-                DeviceToHandle = SelectedDevice
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                Case Key.S
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        Dim SelectedDevice As BTDeviceOrServiceListViewItem = CType(BluetoothDevicesListView.SelectedItem, BTDeviceOrServiceListViewItem)
+                        DeviceToHandle = SelectedDevice
 
-                If ActionTextBlock.Text = "Connect" Then
-                    If Not BluetoothWorker.IsBusy Then
-                        BluetoothWorkerAction = "Connect"
-                        BluetoothWorker.RunWorkerAsync("Connect")
+                        If ActionTextBlock.Text = "Connect" Then
+                            If Not BluetoothWorker.IsBusy Then
+                                BluetoothWorkerAction = "Connect"
+                                BluetoothWorker.RunWorkerAsync("Connect")
+                            End If
+                        Else
+                            If Not BluetoothWorker.IsBusy Then
+                                BluetoothWorkerAction = "Disconnect"
+                                BluetoothWorker.RunWorkerAsync("Disconnect")
+                            End If
+                        End If
                     End If
-                Else
+                Case Key.X
                     If Not BluetoothWorker.IsBusy Then
-                        BluetoothWorkerAction = "Disconnect"
-                        BluetoothWorker.RunWorkerAsync("Disconnect")
+                        BluetoothWorkerAction = "Discover"
+                        BluetoothWorker.RunWorkerAsync("Discover")
                     End If
-                End If
-            End If
-        ElseIf e.Key = Key.C Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
+            End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub BluetoothSettings_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Sub NewGlobalKeyboardHook_KeyDown(Key As Forms.Keys) Handles NewGlobalKeyboardHook.KeyDown
@@ -209,12 +221,10 @@ Public Class BluetoothSettings
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
-
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
                 Dim MainGamepadButton_X_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.X) <> 0
@@ -308,14 +318,12 @@ Public Class BluetoothSettings
                 ElseIf MainGamepadButton_RightThumbY_Down Then
                     ScrollDown()
                 End If
-
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -352,7 +360,6 @@ Public Class BluetoothSettings
                     End If
 
                     Dispatcher.BeginInvoke(Sub()
-
                                                'Set icon depending on type of device
                                                Select Case DiscoveredDevice.ClassOfDevice
                                                    Case DeviceClass.PeripheralGamepad
@@ -366,7 +373,7 @@ Public Class BluetoothSettings
                                                    Case DeviceClass.AudioVideoDisplayLoudspeaker
                                                        NewBTDeviceOrServiceLVItem.DeviceIcon = New BitmapImage(New Uri("/Icons/TVIcon.png", UriKind.Relative))
                                                    Case Else
-                                                       Console.WriteLine(DiscoveredDevice.ClassOfDevice.ToString())
+                                                       Debug.WriteLine(DiscoveredDevice.ClassOfDevice.ToString())
                                                End Select
 
                                                NewBTDeviceOrServiceLVItem.IsDeviceSelected = Visibility.Hidden
@@ -411,7 +418,7 @@ Public Class BluetoothSettings
         Select Case BluetoothWorkerAction
             Case "Discover"
                 'Hide scanning indicator
-                ScanningIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
+                'ScanningIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
                 If BluetoothDevicesListView.Items.Count > 0 Then
 
@@ -516,11 +523,11 @@ Public Class BluetoothSettings
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -541,6 +548,25 @@ Public Class BluetoothSettings
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(BTSettingsWindow, BTSettingsCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(BTSettingsWindow, BTSettingsCanvas)
+            End If
         End If
     End Sub
 

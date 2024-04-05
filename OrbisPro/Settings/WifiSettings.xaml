@@ -128,7 +128,7 @@
 
         <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         <Image x:Name="BackButton" Height="48" Canvas.Left="101" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-        <TextBlock x:Name="BackTextBlock" Canvas.Left="156" TextWrapping="Wrap" Text="Cancel" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+        <TextBlock x:Name="BackTextBlock" Canvas.Left="156" TextWrapping="Wrap" Text="Close" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>

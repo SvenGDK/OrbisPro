@@ -1,17 +1,38 @@
-﻿Public Class ProcessUtils
+﻿Imports System.Runtime.InteropServices
 
-    Public Shared SuspendedThreads As New List(Of IntPtr)()
-    Declare Function SuspendThread Lib "kernel32.dll" (hThread As IntPtr) As UInteger
-    Declare Function ResumeThread Lib "kernel32.dll" (hThread As IntPtr) As UInteger
-    Declare Function OpenThread Lib "kernel32.dll" (dwDesiredAccess As ThreadAccess, bInheritHandle As Boolean, dwThreadId As UInteger) As IntPtr
+Public Class ProcessUtils
 
-    Declare Function SetForegroundWindow Lib "user32.dll" (hWnd As IntPtr) As Boolean
-    Declare Function ShowWindow Lib "user32.dll" (handle As IntPtr, nCmdShow As Integer) As Boolean
-    Declare Function GetActiveWindow Lib "user32.dll" Alias "GetActiveWindow" () As IntPtr
-    Declare Function GetForegroundWindow Lib "user32.dll" () As IntPtr
-    Declare Function GetWindowText Lib "user32.dll" Alias "GetWindowTextA" (hwnd As IntPtr, lpString As Text.StringBuilder, cch As Integer) As Integer
-    Declare Function BringWindowToTop Lib "user32.dll" (hwnd As IntPtr) As Boolean
-    Declare Function IsIconic Lib "user32.dll" (handle As IntPtr) As Boolean
+    Public Shared WithEvents ActiveProcess As Process
+    Private Shared _SuspendedThreads As List(Of IntPtr)
+
+    Public Shared Property SuspendedThreads As List(Of IntPtr)
+        Get
+            Return _SuspendedThreads
+        End Get
+        Set(Value As List(Of IntPtr))
+            _SuspendedThreads = Value
+        End Set
+    End Property
+
+    Private Declare Function SuspendThread Lib "kernel32.dll" (hThread As IntPtr) As UInteger
+    Private Declare Function ResumeThread Lib "kernel32.dll" (hThread As IntPtr) As UInteger
+    Private Declare Function OpenThread Lib "kernel32.dll" (dwDesiredAccess As ThreadAccess, bInheritHandle As Boolean, dwThreadId As UInteger) As IntPtr
+
+    Private Declare Function SetForegroundWindow Lib "user32.dll" (hWnd As IntPtr) As Boolean
+    Private Declare Function ShowWindow Lib "user32.dll" (handle As IntPtr, nCmdShow As Integer) As Boolean
+    Private Declare Function GetActiveWindow Lib "user32.dll" Alias "GetActiveWindow" () As IntPtr
+    Private Declare Function GetForegroundWindow Lib "user32.dll" () As IntPtr
+    Private Declare Function GetWindowText Lib "user32.dll" Alias "GetWindowTextA" (hwnd As IntPtr, lpString As Text.StringBuilder, cch As Integer) As Integer
+    Private Declare Function BringWindowToTop Lib "user32.dll" (hwnd As IntPtr) As Boolean
+    Private Declare Function IsIconic Lib "user32.dll" (handle As IntPtr) As Boolean
+
+    <DllImport("KERNEL32.DLL", EntryPoint:="SetProcessWorkingSetSize", SetLastError:=True, CallingConvention:=CallingConvention.StdCall)>
+    Friend Shared Function SetProcessWorkingSetSize(pProcess As IntPtr, dwMinimumWorkingSetSize As Integer, dwMaximumWorkingSetSize As Integer) As Boolean
+    End Function
+
+    <DllImport("KERNEL32.DLL", EntryPoint:="GetCurrentProcess", SetLastError:=True, CallingConvention:=CallingConvention.StdCall)>
+    Friend Shared Function GetCurrentProcess() As IntPtr
+    End Function
 
     Public Enum ThreadAccess As Integer
         TERMINATE = 1
@@ -28,56 +49,23 @@
     'Switch to another process window
     Public Shared Sub ShowProcess(ActiveProcessName As String)
         Dim ProcessesByName As Process() = Process.GetProcessesByName(ActiveProcessName)
-        If ProcessesByName.Count > 0 Then
+        If ProcessesByName.Length > 0 Then
             Dim MainProcess As Process = ProcessesByName(0)
             Dim NewHandle As IntPtr = MainProcess.MainWindowHandle
             If NewHandle <> IntPtr.Zero Then
-
-                'Used for debugging
-                Dim ForegroundWindow As IntPtr = GetActiveWindow()
-                If ForegroundWindow <> IntPtr.Zero Then
-                    Dim Caption As New Text.StringBuilder(256)
-                    GetWindowText(ForegroundWindow, Caption, Caption.Capacity)
-                    Console.WriteLine("Window Title (GetActiveWindow) : " + Caption.ToString())
-                Else
-                    ForegroundWindow = GetForegroundWindow()
-                    If ForegroundWindow <> IntPtr.Zero Then
-                        Dim Caption As New Text.StringBuilder(256)
-                        GetWindowText(ForegroundWindow, Caption, Caption.Capacity)
-                        Console.WriteLine("Window Title (GetForegroundWindow) : " + Caption.ToString())
-                    End If
-                End If
-
-                If ShowWindow(NewHandle, 9) Then Console.WriteLine("Sucess ShowWindow - 9 (Restore)")
-                If SetForegroundWindow(NewHandle) Then Console.WriteLine("Success SetForegroundWindow")
-
-                'Used for debugging
-                Dim NewForegroundWindow As IntPtr = GetForegroundWindow()
-                If NewForegroundWindow <> IntPtr.Zero Then
-                    Dim Caption As New Text.StringBuilder(256)
-                    GetWindowText(NewForegroundWindow, Caption, Caption.Capacity)
-                    Console.WriteLine("Window Title (GetActiveWindow) : " + Caption.ToString())
-                Else
-                    NewForegroundWindow = GetForegroundWindow()
-                    If NewForegroundWindow <> IntPtr.Zero Then
-                        Dim Caption As New Text.StringBuilder(256)
-                        GetWindowText(NewForegroundWindow, Caption, Caption.Capacity)
-                        Console.WriteLine("Window Title (GetForegroundWindow) : " + Caption.ToString())
-                    End If
-                End If
-
+                If ShowWindow(NewHandle, 9) Then Debug.WriteLine("Sucess ShowWindow - 9 (Restore)")
+                If SetForegroundWindow(NewHandle) Then Debug.WriteLine("Success SetForegroundWindow")
             End If
-        Else
-            Console.WriteLine("No active process found - " + ActiveProcessName)
         End If
     End Sub
 
     'Suspend all process threads
-    Public Shared Sub PauseProcessThread(ActiveProcessName As String)
+    Public Shared Sub PauseProcessThreads(ActiveProcessName As String)
         Dim ProcessByName As Process() = Process.GetProcessesByName(ActiveProcessName)
-        If ProcessByName.Count > 0 Then
+        If ProcessByName.Length > 0 Then
             Dim FoundProcess As Process = ProcessByName(0)
-            Dim ProcessMainWindowHandle As IntPtr = FoundProcess.MainWindowHandle
+
+            SuspendedThreads = New List(Of IntPtr)
 
             For Each ProcThread As ProcessThread In FoundProcess.Threads
                 Dim OpenProcessThread As IntPtr = OpenThread(ThreadAccess.SUSPEND_RESUME, False, CType(ProcThread.Id, UInteger))
@@ -87,10 +75,10 @@
                 End If
 
                 SuspendedThreads.Add(OpenProcessThread)
-                SuspendThread(OpenProcessThread)
+                Dim SuspendThreadResult As UInteger = SuspendThread(OpenProcessThread)
             Next
         Else
-            Console.WriteLine("No active process found - " + ActiveProcessName)
+            Debug.WriteLine("No active process found - " + ActiveProcessName)
         End If
     End Sub
 
@@ -99,10 +87,33 @@
         If SuspendedThreads IsNot Nothing Then
             For Each SuspendedThread In SuspendedThreads
                 If SuspendedThread <> IntPtr.Zero Then
-                    ResumeThread(SuspendedThread)
+                    Dim ResumeThreadResult As UInteger = ResumeThread(SuspendedThread)
                 End If
             Next
         End If
+    End Sub
+
+    Private Shared Sub ActiveProcess_Exited(sender As Object, e As EventArgs) Handles ActiveProcess.Exited
+        ActiveProcess = Nothing
+
+        'Clear SuspendedThreads if game was force closed in a suspended state
+        SuspendedThreads?.Clear()
+
+        'Restore MainWindow and clear StartedGameExecutable
+        System.Windows.Application.Current.Dispatcher.BeginInvoke(Sub()
+                                                                      For Each Win In System.Windows.Application.Current.Windows()
+                                                                          If Win.ToString = "OrbisPro.MainWindow" Then
+                                                                              CType(Win, MainWindow).StartedGameExecutable = String.Empty
+                                                                              CType(Win, MainWindow).WindowState = WindowState.Normal
+                                                                              CType(Win, MainWindow).Topmost = True
+                                                                              CType(Win, MainWindow).ReturnAnimation()
+                                                                              CType(Win, MainWindow).Activate()
+                                                                              CType(Win, MainWindow).Topmost = False
+                                                                              Exit For
+                                                                          End If
+                                                                      Next
+                                                                  End Sub)
+
     End Sub
 
 End Class

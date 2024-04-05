@@ -14,9 +14,9 @@ Namespace ROOT.CIMV2.Win32
         Inherits Component
 
         ' Private property to hold the WMI namespace in which the class resides.
-        Private Shared CreatedWmiNamespace As String = "root\CimV2"
+        Private Shared ReadOnly CreatedWmiNamespace As String = "root\CimV2"
         ' Private property to hold the name of WMI class which created this class.
-        Private Shared CreatedClassName As String = "Win32_NetworkAdapter"
+        Private Shared ReadOnly CreatedClassName As String = "Win32_NetworkAdapter"
         ' Private member variable to hold the ManagementScope which is used by the various methods.
         Private Shared statMgmtScope As ManagementScope = Nothing
         Private PrivateSystemProperties As ManagementSystemProperties
@@ -25,7 +25,7 @@ Namespace ROOT.CIMV2.Win32
         ' Member variable to store the 'automatic commit' behavior for the class.
         Private AutoCommitProp As Boolean
         ' Private variable to hold the embedded property representing the instance.
-        Private embeddedObj As ManagementBaseObject
+        Private ReadOnly embeddedObj As ManagementBaseObject
         ' The current WMI object used
         Private curObj As ManagementBaseObject
         ' Flag to indicate if the instance is an embedded object.
@@ -86,7 +86,7 @@ Namespace ROOT.CIMV2.Win32
         ' Property returns the namespace of the WMI class.
         <Browsable(True)>
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
-        Public ReadOnly Property OriginatingNamespace As String
+        Public Shared ReadOnly Property OriginatingNamespace As String
             Get
                 Return "root\CimV2"
             End Get
@@ -194,7 +194,7 @@ Namespace ROOT.CIMV2.Win32
         <Description("The AdapterType property reflects the network medium in use. This property may no" & "t be applicable to all types of network adapters listed within this class. Windo" & "ws NT only.")>
         Public ReadOnly Property AdapterType As String
             Get
-                Return CStr(curObj("AdapterType"))
+                Return CStr(curObj(NameOf(AdapterType)))
             End Get
         End Property
 
@@ -202,7 +202,7 @@ Namespace ROOT.CIMV2.Win32
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsAdapterTypeIdNull As Boolean
             Get
-                If curObj("AdapterTypeId") Is Nothing Then
+                If curObj(NameOf(AdapterTypeId)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -231,10 +231,10 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property AdapterTypeId As AdapterTypeIdValues
             Get
-                If curObj("AdapterTypeId") Is Nothing Then
+                If curObj(NameOf(AdapterTypeId)) Is Nothing Then
                     Return CType(Convert.ToInt32(14), AdapterTypeIdValues)
                 End If
-                Return CType(Convert.ToInt32(curObj("AdapterTypeId")), AdapterTypeIdValues)
+                Return CType(Convert.ToInt32(curObj(NameOf(AdapterTypeId))), AdapterTypeIdValues)
             End Get
         End Property
 
@@ -242,7 +242,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsAutoSenseNull As Boolean
             Get
-                If curObj("AutoSense") Is Nothing Then
+                If curObj(NameOf(AutoSense)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -256,10 +256,10 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property AutoSense As Boolean
             Get
-                If curObj("AutoSense") Is Nothing Then
+                If curObj(NameOf(AutoSense)) Is Nothing Then
                     Return Convert.ToBoolean(0)
                 End If
-                Return CBool(curObj("AutoSense"))
+                Return CBool(curObj(NameOf(AutoSense)))
             End Get
         End Property
 
@@ -267,7 +267,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsAvailabilityNull As Boolean
             Get
-                If curObj("Availability") Is Nothing Then
+                If curObj(NameOf(Availability)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -281,10 +281,10 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property Availability As AvailabilityValues
             Get
-                If curObj("Availability") Is Nothing Then
+                If curObj(NameOf(Availability)) Is Nothing Then
                     Return CType(Convert.ToInt32(0), AvailabilityValues)
                 End If
-                Return CType(Convert.ToInt32(curObj("Availability")), AvailabilityValues)
+                Return CType(Convert.ToInt32(curObj(NameOf(Availability))), AvailabilityValues)
             End Get
         End Property
 
@@ -292,7 +292,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property Caption As String
             Get
-                Return CStr(curObj("Caption"))
+                Return CStr(curObj(NameOf(Caption)))
             End Get
         End Property
 
@@ -300,7 +300,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsConfigManagerErrorCodeNull As Boolean
             Get
-                If curObj("ConfigManagerErrorCode") Is Nothing Then
+                If curObj(NameOf(ConfigManagerErrorCode)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -314,10 +314,10 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property ConfigManagerErrorCode As ConfigManagerErrorCodeValues
             Get
-                If curObj("ConfigManagerErrorCode") Is Nothing Then
+                If curObj(NameOf(ConfigManagerErrorCode)) Is Nothing Then
                     Return CType(Convert.ToInt32(32), ConfigManagerErrorCodeValues)
                 End If
-                Return CType(Convert.ToInt32(curObj("ConfigManagerErrorCode")), ConfigManagerErrorCodeValues)
+                Return CType(Convert.ToInt32(curObj(NameOf(ConfigManagerErrorCode))), ConfigManagerErrorCodeValues)
             End Get
         End Property
 
@@ -325,7 +325,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsConfigManagerUserConfigNull As Boolean
             Get
-                If curObj("ConfigManagerUserConfig") Is Nothing Then
+                If curObj(NameOf(ConfigManagerUserConfig)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -339,10 +339,10 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property ConfigManagerUserConfig As Boolean
             Get
-                If curObj("ConfigManagerUserConfig") Is Nothing Then
+                If curObj(NameOf(ConfigManagerUserConfig)) Is Nothing Then
                     Return Convert.ToBoolean(0)
                 End If
-                Return CBool(curObj("ConfigManagerUserConfig"))
+                Return CBool(curObj(NameOf(ConfigManagerUserConfig)))
             End Get
         End Property
 
@@ -351,7 +351,7 @@ This property may not be applicable to all types of network adapters listed with
         <Description("CreationClassName indicates the name of the class or the subclass used in the cre" & "ation of an instance. When used with the other key properties of this class, thi" & "s property allows all instances of this class and its subclasses to be uniquely " & "identified.")>
         Public ReadOnly Property CreationClassName As String
             Get
-                Return CStr(curObj("CreationClassName"))
+                Return CStr(curObj(NameOf(CreationClassName)))
             End Get
         End Property
 
@@ -359,7 +359,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property Description As String
             Get
-                Return CStr(curObj("Description"))
+                Return CStr(curObj(NameOf(Description)))
             End Get
         End Property
 
@@ -368,7 +368,7 @@ This property may not be applicable to all types of network adapters listed with
         <Description("The DeviceID property contains a string uniquely identifying the network adapter " & "from other devices on the system.")>
         Public ReadOnly Property DeviceID As String
             Get
-                Return CStr(curObj("DeviceID"))
+                Return CStr(curObj(NameOf(DeviceID)))
             End Get
         End Property
 
@@ -376,7 +376,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsErrorClearedNull As Boolean
             Get
-                If curObj("ErrorCleared") Is Nothing Then
+                If curObj(NameOf(ErrorCleared)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -390,10 +390,10 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property ErrorCleared As Boolean
             Get
-                If curObj("ErrorCleared") Is Nothing Then
+                If curObj(NameOf(ErrorCleared)) Is Nothing Then
                     Return Convert.ToBoolean(0)
                 End If
-                Return CBool(curObj("ErrorCleared"))
+                Return CBool(curObj(NameOf(ErrorCleared)))
             End Get
         End Property
 
@@ -402,7 +402,7 @@ This property may not be applicable to all types of network adapters listed with
         <Description("ErrorDescription is a free-form string supplying more information about the error" & " recorded in LastErrorCode property, and information on any corrective actions t" & "hat may be taken.")>
         Public ReadOnly Property ErrorDescription As String
             Get
-                Return CStr(curObj("ErrorDescription"))
+                Return CStr(curObj(NameOf(ErrorDescription)))
             End Get
         End Property
 
@@ -411,7 +411,7 @@ This property may not be applicable to all types of network adapters listed with
         <Description("The GUID property specifies the Globally-unique identifier for the connection.")>
         Public ReadOnly Property GUID As String
             Get
-                Return CStr(curObj("GUID"))
+                Return CStr(curObj(NameOf(GUID)))
             End Get
         End Property
 
@@ -419,7 +419,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsIndexNull As Boolean
             Get
-                If curObj("Index") Is Nothing Then
+                If curObj(NameOf(Index)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -433,10 +433,10 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property Index As UInteger
             Get
-                If curObj("Index") Is Nothing Then
+                If curObj(NameOf(Index)) Is Nothing Then
                     Return Convert.ToUInt32(0)
                 End If
-                Return CUInt(curObj("Index"))
+                Return CUInt(curObj(NameOf(Index)))
             End Get
         End Property
 
@@ -444,7 +444,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsInstallDateNull As Boolean
             Get
-                If curObj("InstallDate") Is Nothing Then
+                If curObj(NameOf(InstallDate)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -457,8 +457,8 @@ This property may not be applicable to all types of network adapters listed with
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property InstallDate As Date
             Get
-                If curObj("InstallDate") IsNot Nothing Then
-                    Return ToDateTime(CStr(curObj("InstallDate")))
+                If curObj(NameOf(InstallDate)) IsNot Nothing Then
+                    Return ToDateTime(CStr(curObj(NameOf(InstallDate))))
                 Else
                     Return Date.MinValue
                 End If
@@ -469,7 +469,7 @@ This property may not be applicable to all types of network adapters listed with
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsInstalledNull As Boolean
             Get
-                If curObj("Installed") Is Nothing Then
+                If curObj(NameOf(Installed)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -485,10 +485,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property Installed As Boolean
             Get
-                If curObj("Installed") Is Nothing Then
+                If curObj(NameOf(Installed)) Is Nothing Then
                     Return Convert.ToBoolean(0)
                 End If
-                Return CBool(curObj("Installed"))
+                Return CBool(curObj(NameOf(Installed)))
             End Get
         End Property
 
@@ -496,7 +496,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsInterfaceIndexNull As Boolean
             Get
-                If curObj("InterfaceIndex") Is Nothing Then
+                If curObj(NameOf(InterfaceIndex)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -510,10 +510,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property InterfaceIndex As UInteger
             Get
-                If curObj("InterfaceIndex") Is Nothing Then
+                If curObj(NameOf(InterfaceIndex)) Is Nothing Then
                     Return Convert.ToUInt32(0)
                 End If
-                Return CUInt(curObj("InterfaceIndex"))
+                Return CUInt(curObj(NameOf(InterfaceIndex)))
             End Get
         End Property
 
@@ -521,7 +521,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsLastErrorCodeNull As Boolean
             Get
-                If curObj("LastErrorCode") Is Nothing Then
+                If curObj(NameOf(LastErrorCode)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -535,10 +535,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property LastErrorCode As UInteger
             Get
-                If curObj("LastErrorCode") Is Nothing Then
+                If curObj(NameOf(LastErrorCode)) Is Nothing Then
                     Return Convert.ToUInt32(0)
                 End If
-                Return CUInt(curObj("LastErrorCode"))
+                Return CUInt(curObj(NameOf(LastErrorCode)))
             End Get
         End Property
 
@@ -547,7 +547,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("The MACAddress property indicates the media access control address for this network adapter. A MAC address is a unique 48-bit number assigned to the network adapter by the manufacturer. It uniquely identifies this network adapter and is used for mapping TCP/IP network communications.")>
         Public ReadOnly Property MACAddress As String
             Get
-                Return CStr(curObj("MACAddress"))
+                Return CStr(curObj(NameOf(MACAddress)))
             End Get
         End Property
 
@@ -556,7 +556,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("The Manufacturer property indicates the name of the network adapter's manufacture" & "r." & vbLf & "Example: 3COM.")>
         Public ReadOnly Property Manufacturer As String
             Get
-                Return CStr(curObj("Manufacturer"))
+                Return CStr(curObj(NameOf(Manufacturer)))
             End Get
         End Property
 
@@ -564,7 +564,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsMaxNumberControlledNull As Boolean
             Get
-                If curObj("MaxNumberControlled") Is Nothing Then
+                If curObj(NameOf(MaxNumberControlled)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -578,10 +578,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property MaxNumberControlled As UInteger
             Get
-                If curObj("MaxNumberControlled") Is Nothing Then
+                If curObj(NameOf(MaxNumberControlled)) Is Nothing Then
                     Return Convert.ToUInt32(0)
                 End If
-                Return CUInt(curObj("MaxNumberControlled"))
+                Return CUInt(curObj(NameOf(MaxNumberControlled)))
             End Get
         End Property
 
@@ -589,7 +589,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsMaxSpeedNull As Boolean
             Get
-                If curObj("MaxSpeed") Is Nothing Then
+                If curObj(NameOf(MaxSpeed)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -603,10 +603,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property MaxSpeed As ULong
             Get
-                If curObj("MaxSpeed") Is Nothing Then
+                If curObj(NameOf(MaxSpeed)) Is Nothing Then
                     Return Convert.ToUInt64(0)
                 End If
-                Return CULng(curObj("MaxSpeed"))
+                Return CULng(curObj(NameOf(MaxSpeed)))
             End Get
         End Property
 
@@ -614,7 +614,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property Name As String
             Get
-                Return CStr(curObj("Name"))
+                Return CStr(curObj(NameOf(Name)))
             End Get
         End Property
 
@@ -623,10 +623,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("The NetConnectionID property specifies the name of the network connection as it a" & "ppears in the 'Network Connections' folder.")>
         Public Property NetConnectionID As String
             Get
-                Return CStr(curObj("NetConnectionID"))
+                Return CStr(curObj(NameOf(NetConnectionID)))
             End Get
             Set(value As String)
-                curObj("NetConnectionID") = value
+                curObj(NameOf(NetConnectionID)) = value
                 If isEmbedded = False AndAlso AutoCommitProp = True Then
                     PrivateLateBoundObject.Put()
                 End If
@@ -637,7 +637,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsNetConnectionStatusNull As Boolean
             Get
-                If curObj("NetConnectionStatus") Is Nothing Then
+                If curObj(NameOf(NetConnectionStatus)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -665,10 +665,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property NetConnectionStatus As UShort
             Get
-                If curObj("NetConnectionStatus") Is Nothing Then
+                If curObj(NameOf(NetConnectionStatus)) Is Nothing Then
                     Return Convert.ToUInt16(0)
                 End If
-                Return CUShort(curObj("NetConnectionStatus"))
+                Return CUShort(curObj(NameOf(NetConnectionStatus)))
             End Get
         End Property
 
@@ -676,7 +676,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsNetEnabledNull As Boolean
             Get
-                If curObj("NetEnabled") Is Nothing Then
+                If curObj(NameOf(NetEnabled)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -690,10 +690,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property NetEnabled As Boolean
             Get
-                If curObj("NetEnabled") Is Nothing Then
+                If curObj(NameOf(NetEnabled)) Is Nothing Then
                     Return Convert.ToBoolean(0)
                 End If
-                Return CBool(curObj("NetEnabled"))
+                Return CBool(curObj(NameOf(NetEnabled)))
             End Get
         End Property
 
@@ -702,7 +702,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("An array of strings indicating the network addresses for an adapter.")>
         Public ReadOnly Property NetworkAddresses As String()
             Get
-                Return CType(curObj("NetworkAddresses"), String())
+                Return CType(curObj(NameOf(NetworkAddresses)), String())
             End Get
         End Property
 
@@ -711,7 +711,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("PermanentAddress defines the network address hard coded into an adapter.  This 'hard coded' address may be changed via firmware upgrade or software configuration. If so, this field should be updated when the change is made.  PermanentAddress should be left blank if no 'hard coded' address exists for the network adapter.")>
         Public ReadOnly Property PermanentAddress As String
             Get
-                Return CStr(curObj("PermanentAddress"))
+                Return CStr(curObj(NameOf(PermanentAddress)))
             End Get
         End Property
 
@@ -719,7 +719,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsPhysicalAdapterNull As Boolean
             Get
-                If curObj("PhysicalAdapter") Is Nothing Then
+                If curObj(NameOf(PhysicalAdapter)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -733,10 +733,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property PhysicalAdapter As Boolean
             Get
-                If curObj("PhysicalAdapter") Is Nothing Then
+                If curObj(NameOf(PhysicalAdapter)) Is Nothing Then
                     Return Convert.ToBoolean(0)
                 End If
-                Return CBool(curObj("PhysicalAdapter"))
+                Return CBool(curObj(NameOf(PhysicalAdapter)))
             End Get
         End Property
 
@@ -745,7 +745,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("Indicates the Win32 Plug and Play device ID of the logical device.  Example: *PNP" & "030b")>
         Public ReadOnly Property PNPDeviceID As String
             Get
-                Return CStr(curObj("PNPDeviceID"))
+                Return CStr(curObj(NameOf(PNPDeviceID)))
             End Get
         End Property
 
@@ -758,7 +758,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsPowerManagementSupportedNull As Boolean
             Get
-                If curObj("PowerManagementSupported") Is Nothing Then
+                If curObj(NameOf(PowerManagementSupported)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -772,10 +772,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property PowerManagementSupported As Boolean
             Get
-                If curObj("PowerManagementSupported") Is Nothing Then
+                If curObj(NameOf(PowerManagementSupported)) Is Nothing Then
                     Return Convert.ToBoolean(0)
                 End If
-                Return CBool(curObj("PowerManagementSupported"))
+                Return CBool(curObj(NameOf(PowerManagementSupported)))
             End Get
         End Property
 
@@ -784,7 +784,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("The ProductName property indicates the product name of the network adapter." & vbLf & "Examp" & "le: Fast EtherLink XL")>
         Public ReadOnly Property ProductName As String
             Get
-                Return CStr(curObj("ProductName"))
+                Return CStr(curObj(NameOf(ProductName)))
             End Get
         End Property
 
@@ -793,7 +793,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("The ServiceName property indicates the service name of the network adapter. This " & "name is usually shorter that the full product name. " & vbLf & "Example: Elnkii.")>
         Public ReadOnly Property ServiceName As String
             Get
-                Return CStr(curObj("ServiceName"))
+                Return CStr(curObj(NameOf(ServiceName)))
             End Get
         End Property
 
@@ -801,7 +801,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsSpeedNull As Boolean
             Get
-                If curObj("Speed") Is Nothing Then
+                If curObj(NameOf(Speed)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -815,10 +815,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property Speed As ULong
             Get
-                If curObj("Speed") Is Nothing Then
+                If curObj(NameOf(Speed)) Is Nothing Then
                     Return Convert.ToUInt64(0)
                 End If
-                Return CULng(curObj("Speed"))
+                Return CULng(curObj(NameOf(Speed)))
             End Get
         End Property
 
@@ -826,7 +826,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property Status As String
             Get
-                Return CStr(curObj("Status"))
+                Return CStr(curObj(NameOf(Status)))
             End Get
         End Property
 
@@ -834,7 +834,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsStatusInfoNull As Boolean
             Get
-                If curObj("StatusInfo") Is Nothing Then
+                If curObj(NameOf(StatusInfo)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -848,10 +848,10 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property StatusInfo As StatusInfoValues
             Get
-                If curObj("StatusInfo") Is Nothing Then
+                If curObj(NameOf(StatusInfo)) Is Nothing Then
                     Return CType(Convert.ToInt32(0), StatusInfoValues)
                 End If
-                Return CType(Convert.ToInt32(curObj("StatusInfo")), StatusInfoValues)
+                Return CType(Convert.ToInt32(curObj(NameOf(StatusInfo))), StatusInfoValues)
             End Get
         End Property
 
@@ -860,7 +860,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("The scoping System's CreationClassName.")>
         Public ReadOnly Property SystemCreationClassName As String
             Get
-                Return CStr(curObj("SystemCreationClassName"))
+                Return CStr(curObj(NameOf(SystemCreationClassName)))
             End Get
         End Property
 
@@ -869,7 +869,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <Description("The scoping System's Name.")>
         Public ReadOnly Property SystemName As String
             Get
-                Return CStr(curObj("SystemName"))
+                Return CStr(curObj(NameOf(SystemName)))
             End Get
         End Property
 
@@ -877,7 +877,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public ReadOnly Property IsTimeOfLastResetNull As Boolean
             Get
-                If curObj("TimeOfLastReset") Is Nothing Then
+                If curObj(NameOf(TimeOfLastReset)) Is Nothing Then
                     Return True
                 Else
                     Return False
@@ -891,8 +891,8 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(WMIValueTypeConverter))>
         Public ReadOnly Property TimeOfLastReset As Date
             Get
-                If curObj("TimeOfLastReset") IsNot Nothing Then
-                    Return ToDateTime(CStr(curObj("TimeOfLastReset")))
+                If curObj(NameOf(TimeOfLastReset)) IsNot Nothing Then
+                    Return ToDateTime(CStr(curObj(NameOf(TimeOfLastReset))))
                 Else
                     Return Date.MinValue
                 End If
@@ -989,13 +989,13 @@ The Installed property has been deprecated.  There is no replacementvalue and th
             Dim dmtf = dmtfDate
 
             If Equals(dmtf, Nothing) Then
-                Throw New ArgumentOutOfRangeException()
+                Throw New ArgumentOutOfRangeException(Nothing, NameOf(dmtf))
             End If
             If dmtf.Length = 0 Then
-                Throw New ArgumentOutOfRangeException()
+                Throw New ArgumentOutOfRangeException(Nothing, NameOf(dmtf))
             End If
             If dmtf.Length <> 25 Then
-                Throw New ArgumentOutOfRangeException()
+                Throw New ArgumentOutOfRangeException(Nothing, NameOf(dmtf))
             End If
             Dim tempString As String
             Try
@@ -1028,14 +1028,15 @@ The Installed property has been deprecated.  There is no replacementvalue and th
                     ticks = Long.Parse(tempString) * CLng(TimeSpan.TicksPerMillisecond / 1000)
                 End If
                 If year < 0 OrElse month < 0 OrElse day < 0 OrElse hour < 0 OrElse minute < 0 OrElse minute < 0 OrElse second < 0 OrElse ticks < 0 Then
-                    Throw New ArgumentOutOfRangeException()
+                    Throw New ArgumentOutOfRangeException(Nothing, "")
                 End If
             Catch e As Exception
                 Throw New ArgumentOutOfRangeException(Nothing, e.Message)
             End Try
             Dim datetime As New DateTime(year, month, day, hour, minute, second, 0)
             datetime = datetime.AddTicks(ticks)
-            Dim tickOffset = TimeZone.CurrentTimeZone.GetUtcOffset(datetime)
+
+            Dim tickOffset = TimeZoneInfo.Local.GetUtcOffset(datetime)
             Dim OffsetMins As Long = CLng(tickOffset.Ticks / TimeSpan.TicksPerMinute)
             tempString = dmtf.Substring(22, 3)
             If Not Equals(tempString, "******") Then
@@ -1054,7 +1055,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
 
         ' Converts a given System.DateTime object to DMTF datetime format.
         Private Shared Function ToDmtfDateTime([date] As Date) As String
-            Dim tickOffset = TimeZone.CurrentTimeZone.GetUtcOffset([date])
+            Dim tickOffset = TimeZoneInfo.Local.GetUtcOffset([date])
             Dim OffsetMins As Long = CLng(tickOffset.Ticks / TimeSpan.TicksPerMinute)
             Dim utcString As String
             If Math.Abs(OffsetMins) > 999 Then
@@ -1130,7 +1131,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         End Function
 
         Private Sub ResetNetConnectionID()
-            curObj("NetConnectionID") = Nothing
+            curObj(NameOf(NetConnectionID)) = Nothing
             If isEmbedded = False AndAlso AutoCommitProp = True Then
                 PrivateLateBoundObject.Put()
             End If
@@ -1453,7 +1454,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
             Inherits Object
             Implements ICollection
 
-            Private privColObj As ManagementObjectCollection
+            Private ReadOnly privColObj As ManagementObjectCollection
 
             Public Sub New(objCollection As ManagementObjectCollection)
                 privColObj = objCollection
@@ -1496,7 +1497,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
                 Inherits Object
                 Implements IEnumerator
 
-                Private privObjEnum As ManagementObjectCollection.ManagementObjectEnumerator
+                Private ReadOnly privObjEnum As ManagementObjectCollection.ManagementObjectEnumerator
 
                 Public Sub New(objEnum As ManagementObjectCollection.ManagementObjectEnumerator)
                     privObjEnum = objEnum
@@ -1522,9 +1523,8 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         Public Class WMIValueTypeConverter
             Inherits TypeConverter
 
-            Private baseConverter As TypeConverter
-
-            Private baseType As Type
+            Private ReadOnly baseConverter As TypeConverter
+            Private ReadOnly baseType As Type
 
             Public Sub New(inBaseType As Type)
                 baseConverter = TypeDescriptor.GetConverter(inBaseType)
@@ -1599,7 +1599,7 @@ The Installed property has been deprecated.  There is no replacementvalue and th
         <TypeConverter(GetType(ExpandableObjectConverter))>
         Public Class ManagementSystemProperties
 
-            Private PrivateLateBoundObject As ManagementBaseObject
+            Private ReadOnly PrivateLateBoundObject As ManagementBaseObject
 
             Public Sub New(ManagedObject As ManagementBaseObject)
                 PrivateLateBoundObject = ManagedObject

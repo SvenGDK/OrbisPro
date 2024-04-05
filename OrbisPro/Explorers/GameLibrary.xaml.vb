@@ -11,6 +11,7 @@ Imports System.Text
 Public Class GameLibrary
 
     Public Opener As String
+    Private LastKeyboardKey As Key
     Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Options menu animations
@@ -21,6 +22,7 @@ Public Class GameLibrary
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -32,8 +34,8 @@ Public Class GameLibrary
         SetBackground()
 
         'Load games
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt") Then
-            For Each Game In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt")
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt") Then
+            For Each Game In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt")
                 If Game.StartsWith("PS1Game") Then
                     Dim NewGameListViewItem As New AppListViewItem() With {
                         .AppTitle = Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)),
@@ -78,9 +80,9 @@ Public Class GameLibrary
         End If
 
         'Load applications
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                If LineWithApp.Split("="c)(1).Split(";"c).Count = 3 AndAlso LineWithApp.StartsWith("App") Then
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
+            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
+                If LineWithApp.Split("="c)(1).Split(";"c).Length = 3 AndAlso LineWithApp.StartsWith("App") Then
                     Dim NewAppListViewItem As New AppListViewItem() With {
                         .AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0),
                         .AppLaunchPath = LineWithApp.Split("="c)(1).Split(";"c)(1),
@@ -101,7 +103,6 @@ Public Class GameLibrary
         If ApplicationLibrary.Items.Count > 0 Then
             'Focus the first game
             Dim FirstListViewItem As ListViewItem = CType(ApplicationLibrary.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
-            ApplicationLibrary.Focus()
             FirstListViewItem.Focus()
 
             'Convert to FirstListViewItem to control the item's customized properties
@@ -138,49 +139,56 @@ Public Class GameLibrary
 #Region "Input"
 
     Private Sub GameLibrary_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            Select Case e.Key
+                Case Key.A
+                    ShowHideSideMenu()
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                Case Key.S
+                    If TypeOf FocusedItem Is ListViewItem Then
 
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+                        Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                        If SelectedGameOrApp.IsGame Then
+                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt")
+                        Else
+                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
+                        End If
 
-        If e.Key = Key.X Then
-            If TypeOf FocusedItem Is Button Then
+                    End If
+                Case Key.X
+                    If TypeOf FocusedItem Is Button Then
 
-                Dim SelectedButton As Button = CType(FocusedItem, Button)
-                If SelectedButton.Name = "MenuStartAppButton" Then
-                    Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
-                    LaunchGameOrApplication(SelectedGameOrApp)
-                End If
+                        Dim SelectedButton As Button = CType(FocusedItem, Button)
+                        If SelectedButton.Name = "MenuStartAppButton" Then
+                            Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                            LaunchGameOrApplication(SelectedGameOrApp)
+                        End If
 
-            ElseIf TypeOf FocusedItem Is ListViewItem Then
-                Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
-                LaunchGameOrApplication(SelectedGameOrApp)
-            End If
-        ElseIf e.Key = Key.C Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
-        ElseIf e.Key = Key.A Then
-            ShowHideSideMenu()
-        ElseIf e.Key = Key.S Then
-            If TypeOf FocusedItem Is ListViewItem Then
-
-                Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
-                If SelectedGameOrApp.IsGame Then
-                    RemoveGameOrAppFromLibrary(SelectedGameOrApp, My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt")
-                Else
-                    RemoveGameOrAppFromLibrary(SelectedGameOrApp, My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                End If
-
-            End If
+                    ElseIf TypeOf FocusedItem Is ListViewItem Then
+                        Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                        LaunchGameOrApplication(SelectedGameOrApp)
+                    End If
+            End Select
+        Else
+            e.Handled = True
         End If
 
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub GameLibrary_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -221,9 +229,9 @@ Public Class GameLibrary
 
                         Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
                         If SelectedGameOrApp.IsGame Then
-                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt")
+                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt")
                         Else
-                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
+                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
                         End If
 
                     End If
@@ -241,13 +249,12 @@ Public Class GameLibrary
                     ScrollDown()
                 End If
 
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -265,7 +272,6 @@ Public Class GameLibrary
 #Region "Navigation"
 
     Private Sub ApplicationLibrary_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles ApplicationLibrary.SelectionChanged
-
         If ApplicationLibrary.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
             Dim PreviousItem As AppListViewItem = CType(e.RemovedItems(0), AppListViewItem)
             Dim SelectedItem As AppListViewItem = CType(e.AddedItems(0), AppListViewItem)
@@ -273,7 +279,6 @@ Public Class GameLibrary
             SelectedItem.IsAppSelected = Visibility.Visible
             PreviousItem.IsAppSelected = Visibility.Hidden
         End If
-
     End Sub
 
     Private Sub ShowHideSideMenu()
@@ -448,7 +453,7 @@ Public Class GameLibrary
         PlayBackgroundSound(Sounds.SelectItem)
 
         'Start the game
-        For Each Win In Windows.Application.Current.Windows()
+        For Each Win In System.Windows.Application.Current.Windows()
             If Win.ToString = "OrbisPro.MainWindow" Then
                 CType(Win, MainWindow).StartedGameExecutable = SelectedApp.AppLaunchPath
                 Exit For
@@ -475,7 +480,7 @@ Public Class GameLibrary
         ApplicationLibrary.Items.Remove(ApplicationLibrary.SelectedItem)
 
         'Reload the Home menu
-        For Each Win In Windows.Application.Current.Windows()
+        For Each Win In System.Windows.Application.Current.Windows()
             If Win.ToString = "OrbisPro.MainWindow" Then
                 CType(Win, MainWindow).ReloadHome()
                 CType(Win, MainWindow).PauseInput = True
@@ -498,11 +503,11 @@ Public Class GameLibrary
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -523,6 +528,25 @@ Public Class GameLibrary
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(GameLibraryWindow, GameLibraryCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(GameLibraryWindow, GameLibraryCanvas)
+            End If
         End If
     End Sub
 

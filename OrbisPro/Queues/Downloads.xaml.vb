@@ -80,7 +80,7 @@ Public Class Downloads
         'Reactive previous window
         Select Case Opener
             Case "FileExplorer"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
@@ -89,7 +89,7 @@ Public Class Downloads
                     End If
                 Next
             Case "GameLibrary"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GameLibrary" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, GameLibrary).Activate()
@@ -98,7 +98,7 @@ Public Class Downloads
                     End If
                 Next
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, GeneralSettings).Activate()
@@ -107,7 +107,7 @@ Public Class Downloads
                     End If
                 Next
             Case "MainWindow"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
                         CType(Win, MainWindow).PauseInput = False
@@ -115,7 +115,7 @@ Public Class Downloads
                     End If
                 Next
             Case "OpenWindows"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.OpenWindows" Then
                         CType(Win, OpenWindows).Activate()
                         CType(Win, OpenWindows).PauseInput = False
@@ -123,7 +123,7 @@ Public Class Downloads
                     End If
                 Next
             Case "SetupPS3"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupPS3" Then
 
                         If PS3SetupDownload Then
@@ -140,7 +140,7 @@ Public Class Downloads
                     End If
                 Next
             Case "SetupPSVita"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupPSVita" Then
 
                         If PS3SetupDownload Then
@@ -186,7 +186,7 @@ Public Class Downloads
         If Not String.IsNullOrEmpty(DownloadPath) Then
             NewWebClient.DownloadFileAsync(New Uri("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2024_0227_3694eb3fb8d9915c112e6ab41a60c69f/PS3UPDAT.PUP"), DownloadPath + "\PS3UPDAT.PUP", Stopwatch.StartNew)
         Else
-            NewWebClient.DownloadFileAsync(New Uri("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2024_0227_3694eb3fb8d9915c112e6ab41a60c69f/PS3UPDAT.PUP"), My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP", Stopwatch.StartNew)
+            NewWebClient.DownloadFileAsync(New Uri("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2024_0227_3694eb3fb8d9915c112e6ab41a60c69f/PS3UPDAT.PUP"), FileIO.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP", Stopwatch.StartNew)
         End If
 
         AddHandler NewWebClient.DownloadProgressChanged, Sub(sender As Object, e As DownloadProgressChangedEventArgs)
@@ -217,7 +217,7 @@ Public Class Downloads
                                                            Next
 
                                                            'Let the installer know that the PS3 firmware download finished
-                                                           For Each Win In Windows.Application.Current.Windows()
+                                                           For Each Win In System.Windows.Application.Current.Windows()
                                                                If Win.ToString = "OrbisPro.SetupPS3" Then
                                                                    CType(Win, SetupPS3).FirmwareDownloadCompleted = True
                                                                    Exit For
@@ -259,7 +259,7 @@ Public Class Downloads
                                            Stopwatch.StartNew)
         Else
             NewWebClient.DownloadFileAsync(New Uri("http://dus01.psv.update.playstation.net/update/psv/image/2022_0209/rel_f2c7b12fe85496ec88a0391b514d6e3b/PSVUPDAT.PUP"),
-                                           My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PSVUPDAT.PUP",
+                                           FileIO.FileSystem.CurrentDirectory + "\System\Downloads\PSVUPDAT.PUP",
                                            Stopwatch.StartNew)
         End If
 
@@ -291,7 +291,7 @@ Public Class Downloads
                                                            Next
 
                                                            'Let the installer know that the PS3 firmware download finished
-                                                           For Each Win In Windows.Application.Current.Windows()
+                                                           For Each Win In System.Windows.Application.Current.Windows()
                                                                If Win.ToString = "OrbisPro.SetupPSVita" Then
                                                                    CType(Win, SetupPSVita).FirmwareDownloadCompleted = True
                                                                    Exit For
@@ -308,31 +308,27 @@ Public Class Downloads
 #Region "Input"
 
     Private Sub Downloads_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-
-        If e.Key = Key.X Then
-
-        ElseIf e.Key = Key.C Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
-        ElseIf e.Key = Key.A Then
-            If TypeOf FocusedItem Is ListViewItem Then
-                Dim SelectedDownloadItem As DownloadListViewItem = CType(FocusedItem, DownloadListViewItem)
-                Try
-                    SelectedDownloadItem.AssociatedWebClient.CancelAsync()
-                    OrbisNotifications.NotificationPopup(DownloadsCanvas, SelectedDownloadItem.AppName, "Download aborted.", SelectedDownloadItem.AppIcon)
-                    PlayBackgroundSound(Sounds.Trophy)
-                Catch ex As Exception
-                    PauseInput = True
-                    ExceptionDialog("System Error", ex.Message)
-                End Try
-            End If
-        ElseIf e.Key = Key.Up Then
-            MoveUp()
-        ElseIf e.Key = Key.Down Then
-            MoveDown()
-        End If
-
+        Select Case e.Key
+            Case Key.A
+                If TypeOf FocusedItem Is ListViewItem Then
+                    Dim SelectedDownloadItem As DownloadListViewItem = CType(FocusedItem, DownloadListViewItem)
+                    Try
+                        SelectedDownloadItem.AssociatedWebClient.CancelAsync()
+                        OrbisNotifications.NotificationPopup(DownloadsCanvas, SelectedDownloadItem.AppName, "Download aborted.", SelectedDownloadItem.AppIcon)
+                        PlayBackgroundSound(Sounds.Trophy)
+                    Catch ex As Exception
+                        PauseInput = True
+                        ExceptionDialog("System Error", ex.Message)
+                    End Try
+                End If
+            Case Key.C
+                BeginAnimation(OpacityProperty, ClosingAnimation)
+            Case Key.Up
+                MoveUp()
+            Case Key.Down
+                MoveDown()
+        End Select
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
@@ -395,7 +391,7 @@ Public Class Downloads
             End If
 
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount, CancellationToken.None)
         End While
     End Function
 
@@ -474,11 +470,11 @@ Public Class Downloads
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -499,6 +495,25 @@ Public Class Downloads
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(DownloadsWindow, DownloadsCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(DownloadsWindow, DownloadsCanvas)
+            End If
         End If
     End Sub
 

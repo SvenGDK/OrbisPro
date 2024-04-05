@@ -13,6 +13,7 @@ Public Class SetupPSVita
     Private WithEvents PSVEmulator As Process
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
 
+    Private LastKeyboardKey As Key
     Public Opener As String = ""
     Public RequirementsRead As Boolean = False
     Public FirmwareDownloadCompleted As Boolean = False
@@ -21,6 +22,7 @@ Public Class SetupPSVita
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -65,7 +67,7 @@ Public Class SetupPSVita
 
         Select Case Opener
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         CType(Win, GeneralSettings).Activate()
                         CType(Win, GeneralSettings).PauseInput = False
@@ -73,7 +75,7 @@ Public Class SetupPSVita
                     End If
                 Next
             Case "SetupEmulators"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupEmulators" Then
                         CType(Win, SetupEmulators).Activate()
                         CType(Win, SetupEmulators).PauseInput = False
@@ -117,14 +119,15 @@ Public Class SetupPSVita
     Private Sub InstallFirmware()
         Try
             PSVEmulator = New Process
-            PSVEmulator.StartInfo.FileName = My.Computer.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\Vita3K.exe"
+            PSVEmulator.StartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\Vita3K.exe"
 
             If Not ConfigFile.IniReadValue("Network", "DownloadPath") = "Default" Then
                 PSVEmulator.StartInfo.Arguments = "--firmware """ + ConfigFile.IniReadValue("Network", "DownloadPath") + "\PSVUPDAT.PUP"""
             Else
-                PSVEmulator.StartInfo.Arguments = "--firmware """ + My.Computer.FileSystem.CurrentDirectory + "\System\Downloads\PSVUPDAT.PUP"""
+                PSVEmulator.StartInfo.Arguments = "--firmware """ + FileIO.FileSystem.CurrentDirectory + "\System\Downloads\PSVUPDAT.PUP"""
             End If
 
+            PSVEmulator.StartInfo.WorkingDirectory = IO.Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\vita3k\Vita3K.exe")
             PSVEmulator.StartInfo.UseShellExecute = False
             PSVEmulator.EnableRaisingEvents = True
             PSVEmulator.Start()
@@ -195,42 +198,48 @@ Public Class SetupPSVita
 #Region "Input"
 
     Private Sub SetupPSVita_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            Select Case e.Key
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                Case Key.X
+                    PlayBackgroundSound(Sounds.SelectItem)
 
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-
-        If e.Key = Key.X Then
-            PlayBackgroundSound(Sounds.SelectItem)
-
-            If TypeOf FocusedItem Is Button Then
-                If ReadRequirementsButton.IsFocused Then
-                    ReadRequirements()
-                ElseIf DownloadFirmwareButton.IsFocused Then
-                    DownloadPSVitaFirmware()
-                ElseIf InstallFirmwareButton.IsFocused Then
-                    InstallFirmware()
-                ElseIf SelectBackupsButton.IsFocused Then
-                    OpenFileExplorer()
-                End If
-            End If
-        ElseIf e.Key = Key.C Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
-        ElseIf e.Key = Key.Up Then
-            MoveUp()
-        ElseIf e.Key = Key.Down Then
-            MoveDown()
+                    If TypeOf FocusedItem Is Button Then
+                        If ReadRequirementsButton.IsFocused Then
+                            ReadRequirements()
+                        ElseIf DownloadFirmwareButton.IsFocused Then
+                            DownloadPSVitaFirmware()
+                        ElseIf InstallFirmwareButton.IsFocused Then
+                            InstallFirmware()
+                        ElseIf SelectBackupsButton.IsFocused Then
+                            OpenFileExplorer()
+                        End If
+                    End If
+                Case Key.Up
+                    MoveUp()
+                Case Key.Down
+                    MoveDown()
+            End Select
+        Else
+            e.Handled = True
         End If
 
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub SetupPSVita_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -271,15 +280,14 @@ Public Class SetupPSVita
                     MoveDown()
                 End If
 
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 100
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             If AdditionalPauseDelay = 0 Then
-                Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+                Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
             Else
-                Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount + AdditionalPauseDelay)
+                Await Task.Delay(SharedController1PollingRate + AdditionalPauseDelay, CancellationToken.None)
                 AdditionalPauseDelay = 0
             End If
         End While
@@ -340,11 +348,11 @@ Public Class SetupPSVita
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -365,6 +373,25 @@ Public Class SetupPSVita
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SetupPSVitaWindow, SetupPSVitaCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(SetupPSVitaWindow, SetupPSVitaCanvas)
+            End If
         End If
     End Sub
 

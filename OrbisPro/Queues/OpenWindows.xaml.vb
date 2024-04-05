@@ -9,6 +9,7 @@ Imports System.Windows.Media.Animation
 
 Public Class OpenWindows
 
+    Private LastKeyboardKey As Key
     Public Opener As String
 
     Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
@@ -16,6 +17,7 @@ Public Class OpenWindows
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -31,7 +33,7 @@ Public Class OpenWindows
         WindowDescriptionTextBlock.Text = "Open windows & running executables." + vbCrLf + "Choose an application from the list and select an action."
 
         'Check for open windows of OrbisPro
-        For Each Win In Windows.Application.Current.Windows()
+        For Each Win In System.Windows.Application.Current.Windows()
 
             'Don't add this window
             If Win.ToString = "OrbisPro.OpenWindows" Then Continue For
@@ -63,13 +65,7 @@ Public Class OpenWindows
             End If
         Next
 
-        'Focus the first item
-        Dim LastSelectedListViewItem As ListViewItem = CType(OpenWindowsListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
-        LastSelectedListViewItem.Focus()
-
-        'Convert to OpenWindowListViewItem to set the border visibility on the first item
-        Dim LastSelectedItem As OpenWindowListViewItem = CType(LastSelectedListViewItem.Content, OpenWindowListViewItem)
-        LastSelectedItem.IsItemSelected = Visibility.Visible
+        RefocusFirstItem()
     End Sub
 
     Private Async Sub OpenWindows_ContentRendered(sender As Object, e As EventArgs) Handles Me.ContentRendered
@@ -101,21 +97,21 @@ Public Class OpenWindows
 
         Select Case Opener
             Case "BluetoothSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.BluetoothSettings" Then
                         CType(Win, BluetoothSettings).Activate()
                         Exit For
                     End If
                 Next
             Case "Downloads"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.Downloads" Then
                         CType(Win, Downloads).Activate()
                         Exit For
                     End If
                 Next
             Case "FileExplorer"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
@@ -123,21 +119,21 @@ Public Class OpenWindows
                     End If
                 Next
             Case "GameLibrary"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GameLibrary" Then
                         CType(Win, GameLibrary).Activate()
                         Exit For
                     End If
                 Next
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         CType(Win, GeneralSettings).Activate()
                         Exit For
                     End If
                 Next
             Case "MainWindow"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
                         CType(Win, MainWindow).Topmost = True
@@ -147,21 +143,21 @@ Public Class OpenWindows
                     End If
                 Next
             Case "SetupApps"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupApps" Then
                         CType(Win, SetupApps).Activate()
                         Exit For
                     End If
                 Next
             Case "SetupGames"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupGames" Then
                         CType(Win, SetupGames).Activate()
                         Exit For
                     End If
                 Next
             Case "WifiSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.WifiSettings" Then
                         CType(Win, WifiSettings).Activate()
                         Exit For
@@ -181,90 +177,89 @@ Public Class OpenWindows
 #Region "Input"
 
     Private Sub OpenWindows_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
+        If Not e.Key = LastKeyboardKey Then
+            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+            Select Case e.Key
+                Case Key.A
+                    PlayBackgroundSound(Sounds.CancelOptions)
 
-        Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        Dim SelectedListViewItem As ListViewItem = CType(OpenWindowsListView.SelectedItem, ListViewItem)
+                        Dim CurrentSelectedItem As OpenWindowListViewItem = CType(SelectedListViewItem.Content, OpenWindowListViewItem)
 
-        If e.Key = Key.X Then
-            If TypeOf FocusedItem Is ListViewItem Then
+                        If CurrentSelectedItem.ItemName = IO.Path.GetFileNameWithoutExtension(OtherProcess) AndAlso Not String.IsNullOrEmpty(OtherProcess) Then
+                            'Find the process by name
+                            Dim ProcessByName As Process() = Process.GetProcessesByName(IO.Path.GetFileNameWithoutExtension(OtherProcess))
+                            If ProcessByName IsNot Nothing Then
+                                Dim FoundProcess As Process = ProcessByName(0)
 
-                Dim SelectedListViewItem As ListViewItem = CType(OpenWindowsListView.SelectedItem, ListViewItem)
-                Dim CurrentSelectedItem As OpenWindowListViewItem = CType(SelectedListViewItem.Content, OpenWindowListViewItem)
+                                'Kill the process
+                                FoundProcess.Kill()
+                                Close()
+                            End If
+                        Else
+                            'Kill the selected unknown process
+                            Dim ActiveProcessesByName As Process() = Process.GetProcessesByName(CurrentSelectedItem.ItemName)
+                            If ActiveProcessesByName IsNot Nothing AndAlso ActiveProcessesByName.Length <> 0 Then
+                                Dim ActiveProcess As Process = ActiveProcessesByName(0)
 
-                If CurrentSelectedItem.ItemName = "MainWindow" Then
-                    For Each Win In Windows.Application.Current.Windows()
-                        If Win.ToString = "OrbisPro.MainWindow" Then
-                            CType(Win, MainWindow).Activate()
-                            CType(Win, MainWindow).PauseInput = False
-                            Exit For
+                                ActiveProcess.Kill()
+
+                                OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
+
+                                RefocusFirstItem()
+                            End If
                         End If
-                    Next
-                Else
-                    If CurrentSelectedItem.ItemProcessID <> 0 Then
-                        'Resume threads of the process if suspended
-                        If SuspendedThreads.Count > 0 Then
-                            ResumeProcessThreads()
-                        End If
-                        'Show the process window
-                        ShowProcess(CurrentSelectedItem.ItemName)
                     End If
-                End If
 
-                BeginAnimation(OpacityProperty, SwitchAnimation)
+                Case Key.C
+                    BeginAnimation(OpacityProperty, ClosingAnimation)
+                Case Key.X
+                    If TypeOf FocusedItem Is ListViewItem Then
 
-            End If
-        ElseIf e.Key = Key.A Then
+                        Dim SelectedListViewItem As ListViewItem = CType(OpenWindowsListView.SelectedItem, ListViewItem)
+                        Dim CurrentSelectedItem As OpenWindowListViewItem = CType(SelectedListViewItem.Content, OpenWindowListViewItem)
 
-            PlayBackgroundSound(Sounds.CancelOptions)
-
-            If Not String.IsNullOrEmpty(OtherProcess) Then
-                'Find the process by name
-                Dim ProcessByName As Process() = Process.GetProcessesByName(IO.Path.GetFileNameWithoutExtension(OtherProcess))
-                If ProcessByName IsNot Nothing Then
-                    Dim FoundProcess As Process = ProcessByName(0)
-
-                    'Kill the process
-                    FoundProcess.Kill()
-
-                    'Remove from OpenWindowsListView
-                    OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
-
-                    'Remove suspended threads from the list if the executable has been suspended
-                    SuspendedThreads?.Clear()
-
-                    'Remove executable path from StartedGameExecutable in the MainWindow
-                    For Each Win In Windows.Application.Current.Windows()
-                        If Win.ToString = "OrbisPro.MainWindow" Then
-                            CType(Win, MainWindow).StartedGameExecutable = String.Empty
-                            Exit For
+                        If CurrentSelectedItem.ItemName = "MainWindow" Then
+                            For Each Win In System.Windows.Application.Current.Windows()
+                                If Win.ToString = "OrbisPro.MainWindow" Then
+                                    CType(Win, MainWindow).Activate()
+                                    Exit For
+                                End If
+                            Next
+                        Else
+                            If CurrentSelectedItem.ItemProcessID <> 0 Then
+                                'Resume threads of the process if suspended
+                                If SuspendedThreads IsNot Nothing Then
+                                    ResumeProcessThreads()
+                                End If
+                                'Show the process window
+                                ShowProcess(CurrentSelectedItem.ItemName)
+                            End If
                         End If
-                    Next
-                End If
-            Else
-                'Kill the selected unknown process
-                Dim SelectedListViewItem As ListViewItem = CType(OpenWindowsListView.SelectedItem, ListViewItem)
-                Dim CurrentSelectedItem As OpenWindowListViewItem = CType(SelectedListViewItem.Content, OpenWindowListViewItem)
-                Dim ActiveProcessesByName As Process() = Process.GetProcessesByName(CurrentSelectedItem.ItemName)
-                If ActiveProcessesByName IsNot Nothing AndAlso ActiveProcessesByName.Count <> 0 Then
-                    Dim ActiveProcess As Process = ActiveProcessesByName(0)
-                    ActiveProcess.Kill()
-                    OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
-                End If
-            End If
 
-        ElseIf e.Key = Key.O Then
-            BeginAnimation(OpacityProperty, ClosingAnimation)
+                        BeginAnimation(OpacityProperty, SwitchAnimation)
+
+                    End If
+            End Select
+        Else
+            e.Handled = True
         End If
 
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub OpenWindows_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -290,7 +285,7 @@ Public Class OpenWindows
                         Dim CurrentSelectedItem As OpenWindowListViewItem = CType(SelectedListViewItem.Content, OpenWindowListViewItem)
 
                         If CurrentSelectedItem.ItemName = "MainWindow" Then
-                            For Each Win In Windows.Application.Current.Windows()
+                            For Each Win In System.Windows.Application.Current.Windows()
                                 If Win.ToString = "OrbisPro.MainWindow" Then
                                     CType(Win, MainWindow).Activate()
                                     CType(Win, MainWindow).PauseInput = False
@@ -300,7 +295,7 @@ Public Class OpenWindows
                         Else
                             If CurrentSelectedItem.ItemProcessID <> 0 Then
                                 'Resume threads of the process if suspended
-                                If SuspendedThreads.Count > 0 Then
+                                If SuspendedThreads IsNot Nothing Then
                                     ResumeProcessThreads()
                                 End If
                                 'Show the process window
@@ -316,38 +311,32 @@ Public Class OpenWindows
                 ElseIf MainGamepadButton_Y_Button_Pressed Then
                     PlayBackgroundSound(Sounds.CancelOptions)
 
-                    If Not String.IsNullOrEmpty(OtherProcess) Then
-                        'Find the process by name
-                        Dim ProcessByName As Process() = Process.GetProcessesByName(IO.Path.GetFileNameWithoutExtension(OtherProcess))
-                        If ProcessByName IsNot Nothing Then
-                            Dim FoundProcess As Process = ProcessByName(0)
-
-                            'Kill the process
-                            FoundProcess.Kill()
-
-                            'Remove from OpenWindowsListView
-                            OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
-
-                            'Remove suspended threads from the list if the executable has been suspended
-                            SuspendedThreads?.Clear()
-
-                            'Remove executable path from StartedGameExecutable in the MainWindow
-                            For Each Win In Windows.Application.Current.Windows()
-                                If Win.ToString = "OrbisPro.MainWindow" Then
-                                    CType(Win, MainWindow).StartedGameExecutable = String.Empty
-                                    Exit For
-                                End If
-                            Next
-                        End If
-                    Else
-                        'Kill the selected unknown process
+                    If TypeOf FocusedItem Is ListViewItem Then
                         Dim SelectedListViewItem As ListViewItem = CType(OpenWindowsListView.SelectedItem, ListViewItem)
                         Dim CurrentSelectedItem As OpenWindowListViewItem = CType(SelectedListViewItem.Content, OpenWindowListViewItem)
-                        Dim ActiveProcessesByName As Process() = Process.GetProcessesByName(CurrentSelectedItem.ItemName)
-                        If ActiveProcessesByName IsNot Nothing AndAlso ActiveProcessesByName.Count <> 0 Then
-                            Dim ActiveProcess As Process = ActiveProcessesByName(0)
-                            ActiveProcess.Kill()
-                            OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
+
+                        If CurrentSelectedItem.ItemName = IO.Path.GetFileNameWithoutExtension(OtherProcess) AndAlso Not String.IsNullOrEmpty(OtherProcess) Then
+                            'Find the process by name
+                            Dim ProcessByName As Process() = Process.GetProcessesByName(IO.Path.GetFileNameWithoutExtension(OtherProcess))
+                            If ProcessByName IsNot Nothing Then
+                                Dim FoundProcess As Process = ProcessByName(0)
+
+                                'Kill the process
+                                FoundProcess.Kill()
+                                Close()
+                            End If
+                        Else
+                            'Kill the selected unknown process
+                            Dim ActiveProcessesByName As Process() = Process.GetProcessesByName(CurrentSelectedItem.ItemName)
+                            If ActiveProcessesByName IsNot Nothing AndAlso ActiveProcessesByName.Length <> 0 Then
+                                Dim ActiveProcess As Process = ActiveProcessesByName(0)
+
+                                ActiveProcess.Kill()
+
+                                OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
+
+                                RefocusFirstItem()
+                            End If
                         End If
                     End If
 
@@ -380,14 +369,12 @@ Public Class OpenWindows
                 ElseIf MainGamepadButton_RightThumbY_Down Then
                     ScrollDown()
                 End If
-
-                AdditionalDelayAmount += 45
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -402,7 +389,6 @@ Public Class OpenWindows
 #End Region
 
     Private Sub OpenWindowsListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles OpenWindowsListView.SelectionChanged
-
         If OpenWindowsListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
 
             PlayBackgroundSound(Sounds.Move)
@@ -416,7 +402,6 @@ Public Class OpenWindows
             SelectedItem.IsItemSelected = Visibility.Visible
             PreviousItem.IsItemSelected = Visibility.Hidden
         End If
-
     End Sub
 
     Private Sub ScrollUp()
@@ -449,11 +434,11 @@ Public Class OpenWindows
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -475,12 +460,46 @@ Public Class OpenWindows
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
         End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(OpenWindowsWindow, MainCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(OpenWindowsWindow, MainCanvas)
+            End If
+        End If
     End Sub
 
     Private Sub BackgroundMedia_MediaEnded(sender As Object, e As RoutedEventArgs) Handles BackgroundMedia.MediaEnded
         'Loop the background media
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
+    End Sub
+
+    Private Sub RefocusFirstItem()
+        If OpenWindowsListView.Items.Count > 0 Then
+            'Focus the first item
+            Dim LastSelectedListViewItem As ListViewItem = CType(OpenWindowsListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+            LastSelectedListViewItem.Focus()
+
+            'Convert to OpenWindowListViewItem to set the border visibility on the first item
+            Dim LastSelectedItem As OpenWindowListViewItem = CType(LastSelectedListViewItem.Content, OpenWindowListViewItem)
+            LastSelectedItem.IsItemSelected = Visibility.Visible
+
+            Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(OpenWindowsListView)
+            OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(0)
+        End If
     End Sub
 
 End Class

@@ -12,16 +12,18 @@ Imports SharpDX.XInput
 Public Class FileExplorer
 
     Public Opener As String
-    Public Shared LastPath As String 'Keep track of the last path
+    Public LastPath As String 'Keep track of the last path
     Public LastSelectedIndex As Integer
     Public SelectedItemToCopy As FileBrowserListViewItem
+    Private LastKeyboardKey As Key
 
-    Dim GameLibraryPath As New INI.IniFile(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt")
+    Dim GameLibraryPath As New INI.IniFile(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt")
 
     Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
+    Private MainGamepadPreviousState As State
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
@@ -65,7 +67,7 @@ Public Class FileExplorer
         'Add OrbisPro system folder to the list
         DevicesListView.Items.Add(New ListViewItem With {.ContentTemplate = DevicesListView.ItemTemplate, .Content = New DeviceListViewItem() With {.DeviceName = "System",
                                           .DeviceType = "Fixed",
-                                          .AccessiblePath = My.Computer.FileSystem.CurrentDirectory + "\system\",
+                                          .AccessiblePath = FileIO.FileSystem.CurrentDirectory + "\system\",
                                           .IsDeviceSelected = Visibility.Hidden,
                                           .DeviceIcon = New BitmapImage(New Uri("/Icons/InternalStorage.png", UriKind.RelativeOrAbsolute))}})
 
@@ -109,7 +111,7 @@ Public Class FileExplorer
         'Reactive previous window
         Select Case Opener
             Case "FileExplorer"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
@@ -118,7 +120,7 @@ Public Class FileExplorer
                     End If
                 Next
             Case "GameLibrary"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GameLibrary" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, GameLibrary).Activate()
@@ -127,7 +129,7 @@ Public Class FileExplorer
                     End If
                 Next
             Case "GeneralSettings"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, GeneralSettings).Activate()
@@ -136,7 +138,7 @@ Public Class FileExplorer
                     End If
                 Next
             Case "MainWindow"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
                         CType(Win, MainWindow).PauseInput = False
@@ -144,7 +146,7 @@ Public Class FileExplorer
                     End If
                 Next
             Case "OpenWindows"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.OpenWindows" Then
                         CType(Win, OpenWindows).Activate()
                         CType(Win, OpenWindows).PauseInput = False
@@ -152,7 +154,7 @@ Public Class FileExplorer
                     End If
                 Next
             Case "SetupPS3"
-                For Each Win In Windows.Application.Current.Windows()
+                For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.SetupPS3" Then
 
                         'If PS3SetupDownload Then
@@ -193,93 +195,102 @@ Public Class FileExplorer
 #Region "Input"
 
     Private Sub FileExplorer_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If e.Key = Key.X Then
-            GoTo_Device_FileFolder_OR_DoSideMenuAction()
-        ElseIf e.Key = Key.C Then
-            Dim FocusedItem = FocusManager.GetFocusedElement(Me)
+        If Not e.Key = LastKeyboardKey Then
+            Select Case e.Key
+                Case Key.A
+                    CopySelectedItem()
+                Case Key.C
+                    Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
-            If TypeOf FocusedItem Is ListViewItem Then
+                    If TypeOf FocusedItem Is ListViewItem Then
 
-                Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
-                If CurrentListView.Name = "FilesFoldersListView" Then
-                    'Get the previously selected device
-                    Dim SelectedDeviceItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
-                    Dim CurrentSelectedDeviceItem As DeviceListViewItem = CType(SelectedDeviceItem.Content, DeviceListViewItem)
-                    Dim NewBrowsePath As String = CurrentSelectedDeviceItem.AccessiblePath
+                        If CurrentListView.Name = "FilesFoldersListView" Then
+                            'Get the previously selected device
+                            Dim SelectedDeviceItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
+                            Dim CurrentSelectedDeviceItem As DeviceListViewItem = CType(SelectedDeviceItem.Content, DeviceListViewItem)
+                            Dim NewBrowsePath As String = CurrentSelectedDeviceItem.AccessiblePath
 
-                    Dim SelectedFileFolderItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
-                    Dim CurrentSelectedFileFolderItem As String = CType(SelectedFileFolderItem.Content, FileBrowserListViewItem).FileFolderName
-                    Dim ParentFolder = Directory.GetParent(CurrentSelectedFileFolderItem).FullName
+                            Dim SelectedFileFolderItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
+                            Dim CurrentSelectedFileFolderItem As String = CType(SelectedFileFolderItem.Content, FileBrowserListViewItem).FileFolderName
+                            Dim ParentFolder = Directory.GetParent(CurrentSelectedFileFolderItem).FullName
 
-                    'If the previous folder is non-existant return to the device selection
-                    If Not ParentFolder = NewBrowsePath Then
-                        ReturnTo()
-                    Else
-                        'Play the 'return' sound effect
-                        PlayBackgroundSound(Sounds.Back)
+                            'If the previous folder is non-existant return to the device selection
+                            If Not ParentFolder = NewBrowsePath Then
+                                ReturnTo()
+                            Else
+                                'Play the 'return' sound effect
+                                PlayBackgroundSound(Sounds.Back)
 
-                        'Return to device selection
-                        DevicesListView.Focus()
-                        SelectedDeviceItem.Focus()
+                                'Return to device selection
+                                DevicesListView.Focus()
+                                SelectedDeviceItem.Focus()
+                            End If
+                        Else
+                            'Close the 'File Explorer'
+                            BeginAnimation(OpacityProperty, ClosingAnimation)
+                        End If
+
+                    ElseIf TypeOf FocusedItem Is Button Then
+
+                        'Remove the options side menu
+                        Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                        Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                        If Canvas.GetLeft(SettingButton5) = 1430 Then
+                            Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        End If
+                        If Canvas.GetLeft(SettingButton6) = 1430 Then
+                            Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        End If
+
+                        'Set the focus back
+                        Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
+                        NextSelectedListViewItem.Focus()
+
+                    ElseIf TypeOf FocusedItem Is ListView Then
+
+                        Dim CurrentListView As ListView = CType(FocusedItem, ListView)
+
+                        If CurrentListView.Name = "FilesFoldersListView" Then
+                            If Not String.IsNullOrEmpty(LastPath) Then
+                                ReturnTo()
+                            End If
+                        End If
+
                     End If
-                Else
-                    'Close the 'File Explorer'
-                    BeginAnimation(OpacityProperty, ClosingAnimation)
-                End If
-
-            ElseIf TypeOf FocusedItem Is Button Then
-
-                'Remove the options side menu
-                Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-
-                Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-
-                If Canvas.GetLeft(SettingButton5) = 1430 Then
-                    Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                End If
-                If Canvas.GetLeft(SettingButton6) = 1430 Then
-                    Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                End If
-
-                'Set the focus back
-                Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
-                NextSelectedListViewItem.Focus()
-
-            ElseIf TypeOf FocusedItem Is ListView Then
-
-                Dim CurrentListView As ListView = CType(FocusedItem, ListView)
-
-                If CurrentListView.Name = "FilesFoldersListView" Then
-                    If Not String.IsNullOrEmpty(LastPath) Then
-                        ReturnTo()
-                    End If
-                End If
-
-            End If
-
-        ElseIf e.Key = Key.A Then
-            CopySelectedItem()
-        ElseIf e.Key = Key.S Then
-            ShowHideSideOptions()
-        ElseIf e.Key = Key.Up Then
-            MoveUp()
-        ElseIf e.Key = Key.Down Then
-            MoveDown()
+                Case Key.S
+                    ShowHideSideOptions()
+                Case Key.X
+                    GoTo_Device_FileFolder_OR_DoSideMenuAction()
+                Case Key.Up
+                    MoveUp()
+                Case Key.Down
+                    MoveDown()
+            End Select
+        Else
+            e.Handled = True
         End If
+
+        LastKeyboardKey = e.Key
+    End Sub
+
+    Private Sub FileExplorer_KeyUp(sender As Object, e As KeyEventArgs) Handles Me.KeyUp
+        LastKeyboardKey = Nothing
     End Sub
 
     Private Async Function ReadGamepadInputAsync(CancelToken As CancellationToken) As Task
         While Not CancelToken.IsCancellationRequested
 
-            Dim AdditionalDelayAmount As Integer = 0
+            Dim MainGamepadState As State = MainController.GetState()
+            Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
-            If Not PauseInput Then
-                Dim MainGamepadState As State = MainController.GetState()
-                Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
+            If Not PauseInput AndAlso MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber Then
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
@@ -378,13 +389,12 @@ Public Class FileExplorer
                     ScrollDown()
                 End If
 
-                AdditionalDelayAmount += 50
-            Else
-                AdditionalDelayAmount += 500
             End If
 
+            MainGamepadPreviousState = MainGamepadState
+
             ' Delay to avoid excessive polling
-            Await Task.Delay(SharedController1PollingRate + AdditionalDelayAmount)
+            Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
 
@@ -1703,7 +1713,7 @@ Public Class FileExplorer
         If Not IsDirectory AndAlso SupportedGameExtension(SelectedFileBrowserListViewItem.FileFolderName) Then
             Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(SelectedFileBrowserListViewItem.FileFolderName)
             Dim FileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(SelectedFileBrowserListViewItem.FileFolderName)
-            Dim NewTitle As String = ""
+            Dim NewTitle As String
 
             'Set the title
             If Not String.IsNullOrEmpty(FileVersionInfo.ProductName) Then
@@ -1713,13 +1723,13 @@ Public Class FileExplorer
             End If
 
             'Add to GameList
-            Using SW As New StreamWriter(My.Computer.FileSystem.CurrentDirectory + "\Games\GameList.txt", True)
+            Using SW As New StreamWriter(FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt", True)
                 SW.WriteLine("PC;" + NewTitle + ";" + SelectedFileBrowserListViewItem.FileFolderName + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
                 SW.Close()
             End Using
 
             'Reload the Home menu
-            For Each Win In Windows.Application.Current.Windows()
+            For Each Win In System.Windows.Application.Current.Windows()
                 If Win.ToString = "OrbisPro.MainWindow" Then
                     CType(Win, MainWindow).ReloadHome()
                     CType(Win, MainWindow).PauseInput = True
@@ -1740,7 +1750,7 @@ Public Class FileExplorer
         If Not IsDirectory AndAlso Path.GetExtension(SelectedFileBrowserListViewItem.FileFolderName) = ".exe" Then
             Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(SelectedFileBrowserListViewItem.FileFolderName)
             Dim FileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(SelectedFileBrowserListViewItem.FileFolderName)
-            Dim NewTitle As String = ""
+            Dim NewTitle As String
 
             'Set the title
             If Not String.IsNullOrEmpty(FileVersionInfo.ProductName) Then
@@ -1750,13 +1760,13 @@ Public Class FileExplorer
             End If
 
             'Add to AppsList
-            Using SW As New StreamWriter(My.Computer.FileSystem.CurrentDirectory + "\Apps\AppsList.txt", True)
+            Using SW As New StreamWriter(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt", True)
                 SW.WriteLine("App=" + NewTitle + ";" + SelectedFileBrowserListViewItem.FileFolderName + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
                 SW.Close()
             End Using
 
             'Reload the Home menu
-            For Each Win In Windows.Application.Current.Windows()
+            For Each Win In System.Windows.Application.Current.Windows()
                 If Win.ToString = "OrbisPro.MainWindow" Then
                     CType(Win, MainWindow).ReloadHome()
                     CType(Win, MainWindow).PauseInput = True
@@ -1812,7 +1822,7 @@ Public Class FileExplorer
         PlayBackgroundSound(Sounds.SelectItem)
 
         'Start the game
-        For Each Win In Windows.Application.Current.Windows()
+        For Each Win In System.Windows.Application.Current.Windows()
             If Win.ToString = "OrbisPro.MainWindow" Then
                 CType(Win, MainWindow).StartedGameExecutable = SelectedFile.FileFolderName
                 Exit For
@@ -1827,11 +1837,11 @@ Public Class FileExplorer
         'Set the background
         Select Case ConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
-                BackgroundMedia.Source = New Uri(My.Computer.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -1852,6 +1862,25 @@ Public Class FileExplorer
         'Mute BackgroundMedia if BackgroundMusic = False
         If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
+        End If
+
+        'Set width & height
+        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(FileExplorerWindow, FileExplorerCanvas, False, NewWidth, NewHeight)
+            End If
+        Else
+            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            If SplittedValues.Length <> 0 Then
+                Dim NewWidth As Double = CDbl(SplittedValues(0))
+                Dim NewHeight As Double = CDbl(SplittedValues(1))
+
+                OrbisDisplay.SetScaling(FileExplorerWindow, FileExplorerCanvas)
+            End If
         End If
     End Sub
 

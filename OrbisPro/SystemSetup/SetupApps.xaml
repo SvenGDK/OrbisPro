@@ -3,12 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:OrbisPro"
-        xmlns:fa="http://schemas.fontawesome.io/icons/" x:Class="SetupApps"
+    xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+        xmlns:local="clr-namespace:OrbisPro" x:Name="SetupAppsWindow"
+    x:Class="SetupApps"
         mc:Ignorable="d"
         Title="OrbisPro - Apps Setup" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
         KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
-    <Canvas x:Name="SetupCanvas">
+    <Canvas x:Name="SetupAppsCanvas">
         <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
 
         <TextBlock x:Name="SetupTitle" Text="Checking for Applications" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -23,6 +24,11 @@
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
+        <fa:IconImage x:Name="LoadingIndicator" Icon="Refresh" Height="48" Width="48" Canvas.Left="1485" Canvas.Top="178" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Top" fa:Awesome.Spin="True" fa:Awesome.SpinDuration="2" >
+            <fa:IconImage.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </fa:IconImage.Effect>
+        </fa:IconImage>
 
         <ListView x:Name="ApplicationLibrary" Height="650" Canvas.Left="138" Canvas.Top="271" Width="1644" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" d:ItemsSource="{d:SampleData ItemCount=5}" HorizontalAlignment="Center" VerticalAlignment="Center" ScrollViewer.CanContentScroll="True">
             <ListView.ItemsPanel>
@@ -55,12 +61,6 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-
-        <fa:ImageAwesome x:Name="LoadingIndicator" Icon="Refresh" Spin="True" Height="48" Width="48" Canvas.Left="1473" Canvas.Top="178" SpinDuration="2" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Top" >
-            <fa:ImageAwesome.Effect>
-                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
-            </fa:ImageAwesome.Effect>
-        </fa:ImageAwesome>
 
         <Image x:Name="BackButton" Height="48" Canvas.Left="136" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <TextBlock x:Name="BackTextBlock" Canvas.Left="191" TextWrapping="Wrap" Text="Back" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center">

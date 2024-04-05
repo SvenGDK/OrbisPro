@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="OrbisPro - Home" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
         KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
-    <Canvas x:Name="OrbisGrid">
+    <Canvas x:Name="MainCanvas">
         <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
         <Image x:Name="BackgroundImage" Width="1920" Height="1080"></Image>
 
@@ -40,22 +40,32 @@
         </TextBlock>
 
         <!-- Upper Home Items -->
-        <Image x:Name="PlusBanner" Height="48" Canvas.Left="96" Canvas.Top="78" Width="48" Source="/Icons/psplus.png"/>
-        <Image x:Name="NotificationsBannerB" Height="48" Canvas.Left="192" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_notifications.png"/>
-        <Image x:Name="FriendsBanner" Height="48" Canvas.Left="720" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_friends.png"/>
-        <Image x:Name="OnlineBanner" Height="48" Canvas.Left="822" Canvas.Top="78" Width="48" Source="/Icons/online.png"/>
-        <Image x:Name="TrophyBanner" Height="48" Canvas.Left="1297" Canvas.Top="78" Width="48" Source="/Icons/trophy.png"/>
-        <TextBlock x:Name="NotificationsBanner" Text="OrbisPro Beta 0.1" Canvas.Left="260" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <Image x:Name="WiFiIndicatorImage" Height="48" Canvas.Left="1100" Canvas.Top="78" Width="48" Source="/Icons/Wifi/WiFiHigh.png"/>
+        <Image x:Name="NotificationImage" Height="48" Canvas.Left="96" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_notifications.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="FriendsBannerImage" Height="48" Canvas.Left="720" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_friends.png"/>
+        <Image x:Name="OnlineIndicatorImage" Height="48" Canvas.Left="800" Canvas.Top="78" Width="48" Source="/Icons/online.png"/>
+        <Image x:Name="BatteryIndicatorImage" Height="48" Canvas.Left="1500" Canvas.Top="78" Width="48" Source="/Icons/Battery/BatteryFull.png"/>
+        <TextBlock x:Name="NotificationBannerTextBlock" Text="OrbisPro Beta 0.2" Canvas.Left="150" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <TextBlock x:Name="UsernameLabel" Text="SvenGDK" Canvas.Left="880" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30">
+        <TextBlock x:Name="UsernameTextBlock" Text="SvenGDK" Canvas.Left="855" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
         <TextBlock x:Name="SystemClock" Text="00:00" Canvas.Left="1726" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBlock x:Name="BatteryPercentageTextBlock" Text="100%" Canvas.Left="1553" Canvas.Top="86" FontFamily="SST Light" Foreground="White" FontSize="24" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBlock x:Name="WiFiNetworkNameStrenghtTextBlock" Text="WirelessLAN - 100%" Canvas.Left="1160" Canvas.Top="86" FontFamily="SST Light" Foreground="White" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center" Width="330">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>

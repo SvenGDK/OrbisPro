@@ -52,10 +52,10 @@ Public Class OrbisNetwork
                                               </MSM>
                                           </WLANProfile>
 
-        WiFiXMLProfile.Save(My.Computer.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml")
+        WiFiXMLProfile.Save(FileIO.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml")
 
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml") Then
-            Return My.Computer.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml"
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml") Then
+            Return FileIO.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml"
         Else
             Return Nothing
         End If
@@ -84,10 +84,10 @@ Public Class OrbisNetwork
                                               </MSM>
                                           </WLANProfile>
 
-        WiFiXMLProfile.Save(My.Computer.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml")
+        WiFiXMLProfile.Save(FileIO.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml")
 
-        If File.Exists(My.Computer.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml") Then
-            Return My.Computer.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml"
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml") Then
+            Return FileIO.FileSystem.CurrentDirectory + "\System\WiFi\" + NetworkName + ".xml"
         Else
             Return Nothing
         End If
@@ -112,7 +112,6 @@ Public Class OrbisNetwork
         Else
             Return False
         End If
-
     End Function
 
     Public Shared Function TurnWiFiOff(WiFiInterface As InterfaceInfo) As Boolean
@@ -129,6 +128,50 @@ Public Class OrbisNetwork
         Else
             Return False
         End If
+    End Function
+
+    Public Shared Function GetWiFiSignalStrenght() As Integer
+        Dim ConnectedWifi As NetworkIdentifier = GetConnectedWiFiNetworkSSID()
+        If ConnectedWifi IsNot Nothing Then
+            Dim AvailableWiFiNetworks As IEnumerable(Of AvailableNetworkPack) = NativeWifi.EnumerateAvailableNetworks()
+            If AvailableWiFiNetworks IsNot Nothing Then
+                Dim SignalQualityStrenght As Integer = 0
+                For Each AvailableWiFiNetwork As AvailableNetworkPack In AvailableWiFiNetworks
+                    'If the connected SSID matches exactly a found SSID then return it's SignalQuality
+                    If AvailableWiFiNetwork.Ssid.ToString() = ConnectedWifi.ToString() Then
+                        SignalQualityStrenght = AvailableWiFiNetwork.SignalQuality
+                        Exit For
+                    End If
+                Next
+                Return SignalQualityStrenght
+            Else
+                Return 0
+            End If
+        Else
+            Return 0
+        End If
+    End Function
+
+    Public Shared Function GetWiFiSignalImage(SignalQualityStrenght As Integer) As ImageSource
+        Dim TempBitmapImage = New BitmapImage()
+
+        TempBitmapImage.BeginInit()
+        TempBitmapImage.CacheOption = BitmapCacheOption.OnLoad
+        TempBitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache
+
+        If SignalQualityStrenght >= 80 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Wifi/WiFiHigh.png", UriKind.RelativeOrAbsolute)
+        ElseIf SignalQualityStrenght >= 40 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Wifi/WiFiMid.png", UriKind.RelativeOrAbsolute)
+        ElseIf SignalQualityStrenght >= 20 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Wifi/WiFiLow.png", UriKind.RelativeOrAbsolute)
+        ElseIf SignalQualityStrenght >= 1 Then
+            TempBitmapImage.UriSource = New Uri("pack://application:,,,/Icons/Wifi/WiFiOff.png", UriKind.RelativeOrAbsolute)
+        End If
+
+        TempBitmapImage.EndInit()
+
+        Return TempBitmapImage
     End Function
 
 #End Region

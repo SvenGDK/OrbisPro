@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="OrbisPro - Message" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
         KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
-    <Canvas>
+    <Canvas x:Name="SystemDialogCanvas">
         <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
         
         <TextBlock x:Name="SetupTitle" Text="System Dialog" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
