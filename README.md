@@ -15,6 +15,7 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
   - Current display limitation: Full HD (1920x1080) screen resolution at 100% scaling.
 - RAM: 8 GB Dual Channel (2x4 GB)
 - OS: Windows 10 or 11 x64
+- [.NET Desktop Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ## Current Available Core Features
 - System Setup
