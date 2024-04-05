@@ -10,12 +10,21 @@ OrbisPro is on a BETA stage and some bugs may occur while running the applicatio
 Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/wiki/First-Run
 
 ## Requirements
+Minimal
+- CPU: AMD Zen 2 / Intel Skylake with 4 cores and 8 threads or more (x64, AVX2 support recommended)
+- GPU: AMD HD 5000 series or newer / NVIDIA GTX 400 or newer / Intel HD Graphics 500 or newer (OpenGL 4.3 support recommended)
+- RAM: 8 GB RAM or better
+- OS: Windows 10 x64 or newer
+- [.NET Desktop Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+
+Recommended
 - CPU: AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
 - GPU: AMD RX 400 / NVIDIA GTX 900 or newer (With Vulkan API support)
-  - Current display limitation: 100% scaling (no zoom).
 - RAM: 8 GB Dual Channel (2x4 GB)
 - OS: Windows 10 or 11 x64
 - [.NET Desktop Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+
+Current display limitation: 100% scaling (no zoom).
 
 ## Current Available Core Features
 - System Setup
@@ -25,6 +34,7 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
   - The button layout changes depending on which device you use
 - Video Backgrounds
 - User Interface animations and interactions
+- Wifi & Battery indicator
 - Add / Remove Device Detection
   - Currently only used for USB drives & Disc drives
   - Detects if a USB or a disc get inserted or removed and adds them to Home or File Explorer
@@ -68,14 +78,15 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
   - Change notification volume (not working yet)
   - Enable/Disable background audio
   - Select a navigation sound pack (Changes the sound effects of the UI navigation)
-- Background Settings
+- Background & Display Settings
   - Enable/Disable background animation
   - Enable/Disable background music
   - Enable/Disable background switchting animation
   - Set a custom background
+  - Set a custom display resolution or AutoScale
 - Emulator Settings
   - Emulator setup for PS3 & PS Vita
-  - Change any emulator settings directly inside OrbisPro
+  - Change any emulator settings directly inside OrbisPro (PS3 not working atm)
   - Settings -> Emulators
 - Network Settings
   - Connect To Internet -> Enables/Disables Ethernet connection
