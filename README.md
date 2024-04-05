@@ -12,7 +12,7 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 ## Requirements
 - CPU: AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
 - GPU: AMD RX 400 / NVIDIA GTX 900 or newer (With Vulkan API support)
-  - Current display limitation: Full HD (1920x1080) screen resolution at 100% scaling.
+  - Current display limitation: 100% scaling (no zoom).
 - RAM: 8 GB Dual Channel (2x4 GB)
 - OS: Windows 10 or 11 x64
 - [.NET Desktop Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
