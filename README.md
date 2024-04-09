@@ -1,5 +1,9 @@
 # OrbisPro
 Media center and game launcher for Windows in the style of PS4's UI.<br>
+The goal of this project is to build an entire Shell replacement for Windows with the focus on gaming.<br>
+This Shell replacement can be used on any Desktop, Laptop or Portable device that runs Windows 10 or 11 x64.<br>
+Beta releases do not disable any Windows features like the Taskbar or Explorer, they're both still accessible in any case.
+
 <img width="360" alt="OrbisProBetaScreenshot1" src="https://github.com/SvenGDK/OrbisPro/assets/84620/85f51a20-eabb-4159-89ef-29cf17455751">
 <img width="360" alt="OrbisProBetaScreenshot2" src="https://github.com/SvenGDK/OrbisPro/assets/84620/937f572f-4f64-4072-baf3-a84f851388f3">
 <img width="360" alt="OrbisProBetaScreenshot3" src="https://github.com/SvenGDK/OrbisPro/assets/84620/06bd3293-bed5-4048-b2f0-a86e909ecc1d">
