@@ -1,2 +1,7 @@
-
+*.suo
+*.user
+.vs
+bin
+obj
+packages
 *.mp4

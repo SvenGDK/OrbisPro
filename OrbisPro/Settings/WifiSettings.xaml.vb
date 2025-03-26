@@ -568,7 +568,7 @@ Public Class WifiSettings
                 WiFiAuthenticationAlg = "shared"
             Case AuthenticationAlgorithm.WPA
                 WiFiAuthenticationAlg = "WPA"
-            Case AuthenticationAlgorithm.WPA3
+            Case AuthenticationAlgorithm.WPA3_ENT
                 WiFiAuthenticationAlg = "WPA3"
             Case AuthenticationAlgorithm.WPA3_SAE
                 WiFiAuthenticationAlg = "WPA3SAE"

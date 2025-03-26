@@ -17,7 +17,6 @@ Imports System.Windows.Media.Animation
 Imports System.Windows.Threading
 Imports System.Threading
 
-
 Class MainWindow
 
     'Used to show the current time

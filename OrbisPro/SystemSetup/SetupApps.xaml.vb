@@ -70,113 +70,116 @@ Public Class SetupApps
     End Sub
 
     Private Sub AppCollectionWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles AppCollectionWorker.DoWork
+        Try
+            'Get installed applications through Registry
+            Dim UninstallKeys = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", False)
+            Dim AppPathKeys = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths", False)
 
-        'Get installed applications through Registry
-        Dim UninstallKeys = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
-        Dim AppPathKeys = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths")
+            Dim ListOfUninstallSubKeys As New List(Of String)()
+            Dim ListOfAppPathSubKeys As New List(Of String)()
 
-        Dim ListOfUninstallSubKeys As New List(Of String)()
-        Dim ListOfAppPathSubKeys As New List(Of String)()
+            Dim FoundApplicationsInUninstall As New List(Of String)()
+            Dim FoundApplicationsInAppPaths As New List(Of String)()
 
-        Dim FoundApplicationsInUninstall As New List(Of String)()
-        Dim FoundApplicationsInAppPaths As New List(Of String)()
+            'List all installation keys
+            For Each InstallationKey In UninstallKeys.GetSubKeyNames()
+                ListOfUninstallSubKeys.Add(InstallationKey)
+            Next
 
-        'List all installation keys
-        For Each InstallationKey In UninstallKeys.GetSubKeyNames()
-            ListOfUninstallSubKeys.Add(InstallationKey)
-        Next
+            'List all App Path keys
+            For Each AppPathKey In AppPathKeys.GetSubKeyNames()
+                ListOfAppPathSubKeys.Add(AppPathKey)
+            Next
 
-        'List all App Path keys
-        For Each AppPathKey In AppPathKeys.GetSubKeyNames()
-            ListOfAppPathSubKeys.Add(AppPathKey)
-        Next
-
-        'Get all default values for the AppPathKeys
-        For Each AppPathSubKeyName In ListOfAppPathSubKeys
-            If Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + AppPathSubKeyName) IsNot Nothing Then
-                Dim DefaultKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + AppPathSubKeyName)
-                If DefaultKey.GetValue("") IsNot Nothing Then
-                    'Remove special characters from string value
-                    If DefaultKey.GetValue("").ToString().Contains(""""c) Then
-                        'Check if file still exists
-                        If File.Exists(DefaultKey.GetValue("").ToString().Replace(""""c, "")) Then
-                            FoundApplicationsInAppPaths.Add(DefaultKey.GetValue("").ToString().Replace(""""c, ""))
-                        End If
-                    Else
-                        If File.Exists(DefaultKey.GetValue("").ToString()) Then
-                            FoundApplicationsInAppPaths.Add(DefaultKey.GetValue("").ToString())
+            'Get all default values for the AppPathKeys
+            For Each AppPathSubKeyName In ListOfAppPathSubKeys
+                If Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + AppPathSubKeyName, False) IsNot Nothing Then
+                    Dim DefaultKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + AppPathSubKeyName, False)
+                    If DefaultKey.GetValue("") IsNot Nothing Then
+                        'Remove special characters from string value
+                        If DefaultKey.GetValue("").ToString().Contains(""""c) Then
+                            'Check if file still exists
+                            If File.Exists(DefaultKey.GetValue("").ToString().Replace(""""c, "")) Then
+                                FoundApplicationsInAppPaths.Add(DefaultKey.GetValue("").ToString().Replace(""""c, ""))
+                            End If
+                        Else
+                            If File.Exists(DefaultKey.GetValue("").ToString()) Then
+                                FoundApplicationsInAppPaths.Add(DefaultKey.GetValue("").ToString())
+                            End If
                         End If
                     End If
                 End If
-            End If
-        Next
+            Next
 
-        'Add applications from App Paths
-        For Each FoundApp In FoundApplicationsInAppPaths
-            Dim ApplicationInstallation As New InstalledApplication With {.ExecutableLocation = FoundApp, .DisplayIconPath = FoundApp, .InstallLocation = Path.GetDirectoryName(FoundApp)}
+            'Add applications from App Paths
+            For Each FoundApp In FoundApplicationsInAppPaths
+                Dim ApplicationInstallation As New InstalledApplication With {.ExecutableLocation = FoundApp, .DisplayIconPath = FoundApp, .InstallLocation = Path.GetDirectoryName(FoundApp)}
 
-            'Adjust Application Title if there's a FileDescription
-            Dim ExecutableFileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(FoundApp)
-            If Not String.IsNullOrEmpty(ExecutableFileVersionInfo.FileDescription) Then
-                ApplicationInstallation.DisplayName = ExecutableFileVersionInfo.FileDescription
-            Else
-                ApplicationInstallation.DisplayName = ExecutableFileVersionInfo.FileName
-            End If
-
-            Dim NewGameListViewItem As New AppListViewItem()
-            ApplicationLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(ApplicationInstallation.ExecutableLocation))
-            NewGameListViewItem.AppTitle = ApplicationInstallation.DisplayName
-            NewGameListViewItem.AppLaunchPath = ApplicationInstallation.ExecutableLocation
-            NewGameListViewItem.IsAppSelected = Visibility.Hidden
-
-            ApplicationLibrary.Dispatcher.BeginInvoke(Sub() ApplicationLibrary.Items.Add(NewGameListViewItem))
-            Thread.Sleep(150)
-        Next
-
-        'Add applications from Uninstall
-        For Each SubKeyName In ListOfUninstallSubKeys
-
-            If Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + SubKeyName) IsNot Nothing Then
-
-                Dim ApplicationKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + SubKeyName)
-                Dim ApplicationInstallation As New InstalledApplication()
-
-                'Get the values
-                If ApplicationKey.GetValue("DisplayIcon") IsNot Nothing AndAlso ApplicationKey.GetValue("DisplayIcon").ToString().Contains("\"c) Then
-                    ApplicationInstallation.DisplayIconPath = ApplicationKey.GetValue("DisplayIcon").ToString()
-                End If
-                If ApplicationKey.GetValue("DisplayName") IsNot Nothing Then
-                    ApplicationInstallation.DisplayName = ApplicationKey.GetValue("DisplayName").ToString()
-                End If
-                If ApplicationKey.GetValue("InstallLocation") IsNot Nothing Then
-                    ApplicationInstallation.InstallLocation = ApplicationKey.GetValue("InstallLocation").ToString()
+                'Adjust Application Title if there's a FileDescription
+                Dim ExecutableFileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(FoundApp)
+                If Not String.IsNullOrEmpty(ExecutableFileVersionInfo.FileDescription) Then
+                    ApplicationInstallation.DisplayName = ExecutableFileVersionInfo.FileDescription
+                Else
+                    ApplicationInstallation.DisplayName = ExecutableFileVersionInfo.FileName
                 End If
 
-                'Proceed if we have a DisplayIconPath, DisplayName and InstallLocation
-                If Not String.IsNullOrEmpty(ApplicationInstallation.DisplayIconPath) AndAlso Not String.IsNullOrEmpty(ApplicationInstallation.DisplayName) AndAlso Not String.IsNullOrEmpty(ApplicationInstallation.InstallLocation) Then
+                Dim NewGameListViewItem As New AppListViewItem()
+                ApplicationLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(ApplicationInstallation.ExecutableLocation))
+                NewGameListViewItem.AppTitle = ApplicationInstallation.DisplayName
+                NewGameListViewItem.AppLaunchPath = ApplicationInstallation.ExecutableLocation
+                NewGameListViewItem.IsAppSelected = Visibility.Hidden
 
-                    If Path.GetExtension(ApplicationInstallation.DisplayIconPath) = ".exe" Then
+                ApplicationLibrary.Dispatcher.BeginInvoke(Sub() ApplicationLibrary.Items.Add(NewGameListViewItem))
+                Thread.Sleep(150)
+            Next
 
-                        If File.Exists(ApplicationInstallation.DisplayIconPath) Then
-                            ApplicationInstallation.ExecutableLocation = ApplicationInstallation.DisplayIconPath
+            'Add applications from Uninstall
+            For Each SubKeyName In ListOfUninstallSubKeys
 
-                            Dim NewGameListViewItem As New AppListViewItem()
-                            ApplicationLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(ApplicationInstallation.DisplayIconPath))
-                            NewGameListViewItem.AppTitle = ApplicationInstallation.DisplayName
-                            NewGameListViewItem.AppLaunchPath = ApplicationInstallation.DisplayIconPath
-                            NewGameListViewItem.IsAppSelected = Visibility.Hidden
+                If Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + SubKeyName, False) IsNot Nothing Then
 
-                            ApplicationLibrary.Dispatcher.BeginInvoke(Sub() ApplicationLibrary.Items.Add(NewGameListViewItem))
-                            Thread.Sleep(150)
+                    Dim ApplicationKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + SubKeyName, False)
+                    Dim ApplicationInstallation As New InstalledApplication()
+
+                    'Get the values
+                    If ApplicationKey.GetValue("DisplayIcon") IsNot Nothing AndAlso ApplicationKey.GetValue("DisplayIcon").ToString().Contains("\"c) Then
+                        ApplicationInstallation.DisplayIconPath = ApplicationKey.GetValue("DisplayIcon").ToString()
+                    End If
+                    If ApplicationKey.GetValue("DisplayName") IsNot Nothing Then
+                        ApplicationInstallation.DisplayName = ApplicationKey.GetValue("DisplayName").ToString()
+                    End If
+                    If ApplicationKey.GetValue("InstallLocation") IsNot Nothing Then
+                        ApplicationInstallation.InstallLocation = ApplicationKey.GetValue("InstallLocation").ToString()
+                    End If
+
+                    'Proceed if we have a DisplayIconPath, DisplayName and InstallLocation
+                    If Not String.IsNullOrEmpty(ApplicationInstallation.DisplayIconPath) AndAlso Not String.IsNullOrEmpty(ApplicationInstallation.DisplayName) AndAlso Not String.IsNullOrEmpty(ApplicationInstallation.InstallLocation) Then
+
+                        If Path.GetExtension(ApplicationInstallation.DisplayIconPath) = ".exe" Then
+
+                            If File.Exists(ApplicationInstallation.DisplayIconPath) Then
+                                ApplicationInstallation.ExecutableLocation = ApplicationInstallation.DisplayIconPath
+
+                                Dim NewGameListViewItem As New AppListViewItem()
+                                ApplicationLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(ApplicationInstallation.DisplayIconPath))
+                                NewGameListViewItem.AppTitle = ApplicationInstallation.DisplayName
+                                NewGameListViewItem.AppLaunchPath = ApplicationInstallation.DisplayIconPath
+                                NewGameListViewItem.IsAppSelected = Visibility.Hidden
+
+                                ApplicationLibrary.Dispatcher.BeginInvoke(Sub() ApplicationLibrary.Items.Add(NewGameListViewItem))
+                                Thread.Sleep(150)
+                            End If
+
                         End If
 
                     End If
 
                 End If
+            Next
 
-            End If
-        Next
-
+        Catch UnauthorizedEx As UnauthorizedAccessException
+        Catch Ex As Exception
+        End Try
     End Sub
 
     Private Function ItemAlreadyExists(DisplayName As String) As Boolean

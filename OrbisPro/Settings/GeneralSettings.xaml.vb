@@ -612,7 +612,7 @@ Public Class GeneralSettings
         Dim DisableResizeBorders As Boolean = GetBoolValue(PCSX2Config.IniReadValue("GSWindow", "DisableResizeBorders"))
         Dim DisableScreenSaver As Boolean = GetBoolValue(PCSX2Config.IniReadValue("GSWindow", "DisableScreenSaver"))
         Dim EnableVsyncWindowFlag As Boolean = GetBoolValue(PCSX2Config.IniReadValue("GSWindow", "EnableVsyncWindowFlag"))
-        Dim AspectRatio As String = PCSX2Config.IniReadValue("GSWindow", "EnableVsyncWindowFlag")
+        Dim AspectRatio As String = PCSX2Config.IniReadValue("GSWindow", "AspectRatio")
         Dim Zoom As String = PCSX2Config.IniReadValue("GSWindow", "Zoom")
 #End Region
 #Region "Framerate"

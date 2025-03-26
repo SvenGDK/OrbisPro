@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
     <RootNamespace>OrbisPro</RootNamespace>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>True</UseWindowsForms>
@@ -10,8 +10,8 @@
     <ApplicationIcon>OrbisProIcon.ico</ApplicationIcon>
     <OptionStrict>On</OptionStrict>
     <Copyright>SvenGDK</Copyright>
-    <AssemblyVersion>0.2.0.0</AssemblyVersion>
-    <FileVersion>0.2.0.0</FileVersion>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <FileVersion>0.3.0.0</FileVersion>
     <Authors>SvenGDK</Authors>
     <Company>SvenGDK</Company>
     <Title>OrbisPro</Title>
@@ -19,7 +19,7 @@
     <Product>OrbisPro</Product>
     <PackageProjectUrl>https://github.com/SvenGDK/OrbisPro</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SvenGDK/OrbisPro.git</RepositoryUrl>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <PackageTags>OrbisPro</PackageTags>
     <AssemblyName>OrbisPro</AssemblyName>
     <Description>Media center and game launcher for Windows in the style of PS4's UI.</Description>
@@ -220,19 +220,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CoreAudio" Version="1.37.0" />
+    <PackageReference Include="CoreAudio" Version="1.40.0" />
     <PackageReference Include="DiscUtils.Iso9660" Version="0.16.13" />
-    <PackageReference Include="FontAwesome.Sharp" Version="6.3.0" />
-    <PackageReference Include="InTheHand.Net.Bluetooth" Version="4.1.43" />
-    <PackageReference Include="LibVLCSharp" Version="3.8.2" />
-    <PackageReference Include="LibVLCSharp.WPF" Version="3.8.2" />
-    <PackageReference Include="ManagedNativeWifi" Version="2.5.0" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2420.47" />
+    <PackageReference Include="FontAwesome.Sharp" Version="6.6.0" />
+    <PackageReference Include="InTheHand.Net.Bluetooth" Version="4.2.0" />
+    <PackageReference Include="LibVLCSharp" Version="3.9.2" />
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.2" />
+    <PackageReference Include="ManagedNativeWifi" Version="2.7.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SharpDX.DirectInput" Version="4.2.0" />
     <PackageReference Include="SharpDX.XInput" Version="4.2.0" />
-    <PackageReference Include="System.Management" Version="8.0.0" />
-    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.20" />
+    <PackageReference Include="System.Management" Version="9.0.3" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
   </ItemGroup>
 
   <ItemGroup>

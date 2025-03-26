@@ -73,221 +73,239 @@ Public Class SetupGames
         'Add games from C:\Program Files (x86)
         If Directory.Exists("C:\Program Files (x86)\") Then
             For Each Executable In Directory.GetFiles("C:\Program Files (x86)\", "*.exe", SearchOption.AllDirectories)
+                Try
+                    Dim ExecutableDirectory As String = Path.GetDirectoryName(Executable)
+                    Dim NewGameListViewItem As New AppListViewItem()
+                    Dim AddToListView As Boolean = False
 
-                Dim ExecutableDirectory As String = Path.GetDirectoryName(Executable)
-                Dim NewGameListViewItem As New AppListViewItem()
-                Dim AddToListView As Boolean = False
-
-                'Try to detect games
-                If File.Exists(ExecutableDirectory + "\steam_api64.dll") Then
-                    AddToListView = True
-                ElseIf File.Exists(ExecutableDirectory + "\Engine\Binaries\Win64\CrashReportClient.exe") Then
-                    AddToListView = True
-                ElseIf File.Exists(ExecutableDirectory + "\embree.2.14.0.dll") Then
-                    AddToListView = True
-                ElseIf File.Exists(ExecutableDirectory + "\nvtt_64.dll") Then
-                    AddToListView = True
-                End If
-
-                If AddToListView Then
-
-                    Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(Executable)
-
-                    'Skip other executables that are shipped with the game
-                    If GameTitleList.Exists(Function(s) s.Equals(FileNameWithoutExtension, StringComparison.OrdinalIgnoreCase)) Then Continue For
-                    If FileNameWithoutExtension.Contains("crash", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("installer", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("Language", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("unins", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("UE3", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("Unreal", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("start", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("UbisoftConnect", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("UbisoftExtension", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("UbisoftGameLauncher", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("UplayService", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("UplayWebCore", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
+                    'Try to detect games
+                    If File.Exists(ExecutableDirectory + "\steam_api64.dll") Then
+                        AddToListView = True
+                    ElseIf File.Exists(ExecutableDirectory + "\Engine\Binaries\Win64\CrashReportClient.exe") Then
+                        AddToListView = True
+                    ElseIf File.Exists(ExecutableDirectory + "\embree.2.14.0.dll") Then
+                        AddToListView = True
+                    ElseIf File.Exists(ExecutableDirectory + "\nvtt_64.dll") Then
+                        AddToListView = True
                     End If
 
-                    Dim ExecutableFileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(Executable)
+                    If AddToListView Then
 
-                    'Set the icon
-                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(Executable))
+                        Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(Executable)
 
-                    'Set the title
-                    If String.IsNullOrEmpty(ExecutableFileVersionInfo.ProductName) Then
-                        NewGameListViewItem.AppTitle = FileNameWithoutExtension
-                        GameTitleList.Add(FileNameWithoutExtension)
-                    Else
-                        NewGameListViewItem.AppTitle = ExecutableFileVersionInfo.ProductName
-                        GameTitleList.Add(ExecutableFileVersionInfo.ProductName)
+                        'Skip other executables that are shipped with the game
+                        If GameTitleList.Exists(Function(s) s.Equals(FileNameWithoutExtension, StringComparison.OrdinalIgnoreCase)) Then Continue For
+
+                        If FileNameWithoutExtension.Contains("crash", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("installer", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("Language", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("unins", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("UE3", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("Unreal", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("start", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("UbisoftConnect", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("UbisoftExtension", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("UbisoftGameLauncher", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("UplayService", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("UplayWebCore", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        End If
+
+                        Dim ExecutableFileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(Executable)
+
+                        'Set the icon
+                        GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(Executable))
+
+                        'Set the title
+                        If String.IsNullOrEmpty(ExecutableFileVersionInfo.ProductName) Then
+                            NewGameListViewItem.AppTitle = FileNameWithoutExtension
+                            GameTitleList.Add(FileNameWithoutExtension)
+                        Else
+                            NewGameListViewItem.AppTitle = ExecutableFileVersionInfo.ProductName
+                            GameTitleList.Add(ExecutableFileVersionInfo.ProductName)
+                        End If
+
+                        'Set launch path and hide the selection (for now)
+                        NewGameListViewItem.AppLaunchPath = Executable
+                        NewGameListViewItem.IsAppSelected = Visibility.Hidden
+
+                        GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
+                        Thread.Sleep(150)
                     End If
 
-                    'Set launch path and hide the selection (for now)
-                    NewGameListViewItem.AppLaunchPath = Executable
-                    NewGameListViewItem.IsAppSelected = Visibility.Hidden
-
-                    GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
-                    Thread.Sleep(150)
-                End If
-
+                Catch UnauthorizedEx As UnauthorizedAccessException
+                    Continue For
+                Catch IOEx As IOException
+                    Continue For
+                Catch Ex As Exception
+                    Continue For
+                End Try
             Next
         End If
 
         If Directory.Exists("C:\Games\") Then
             'Add games from C:\Games (x86)
             For Each Executable In Directory.GetFiles("C:\Games\", "*.exe", SearchOption.AllDirectories)
+                Try
+                    Dim ExecutableDirectory As String = Path.GetDirectoryName(Executable)
+                    Dim NewGameListViewItem As New AppListViewItem()
+                    Dim AddToListView As Boolean = False
 
-                Dim ExecutableDirectory As String = Path.GetDirectoryName(Executable)
-                Dim NewGameListViewItem As New AppListViewItem()
-                Dim AddToListView As Boolean = False
-
-                'Try to detect games
-                If File.Exists(ExecutableDirectory + "\steam_api64.dll") Then
-                    AddToListView = True
-                ElseIf File.Exists(ExecutableDirectory + "\Engine\Binaries\Win64\CrashReportClient.exe") Then
-                    AddToListView = True
-                ElseIf File.Exists(ExecutableDirectory + "\embree.2.14.0.dll") Then
-                    AddToListView = True
-                ElseIf File.Exists(ExecutableDirectory + "\nvtt_64.dll") Then
-                    AddToListView = True
-                End If
-
-                If AddToListView Then
-
-                    Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(Executable)
-
-                    'Skip other executables that are shipped with the game
-                    If GameTitleList.Exists(Function(s) s.Equals(FileNameWithoutExtension, StringComparison.OrdinalIgnoreCase)) Then Continue For
-                    If FileNameWithoutExtension.Contains("crash", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("installer", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("Language", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("unins", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("UE3", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("Unreal", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
-                    ElseIf FileNameWithoutExtension.Contains("start", StringComparison.OrdinalIgnoreCase) Then
-                        Continue For
+                    'Try to detect games
+                    If File.Exists(ExecutableDirectory + "\steam_api64.dll") Then
+                        AddToListView = True
+                    ElseIf File.Exists(ExecutableDirectory + "\Engine\Binaries\Win64\CrashReportClient.exe") Then
+                        AddToListView = True
+                    ElseIf File.Exists(ExecutableDirectory + "\embree.2.14.0.dll") Then
+                        AddToListView = True
+                    ElseIf File.Exists(ExecutableDirectory + "\nvtt_64.dll") Then
+                        AddToListView = True
                     End If
 
-                    Dim ExecutableFileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(Executable)
+                    If AddToListView Then
 
-                    'Set the icon
-                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(Executable))
+                        Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(Executable)
 
-                    'Set the title
-                    If String.IsNullOrEmpty(ExecutableFileVersionInfo.ProductName) Then
-                        NewGameListViewItem.AppTitle = FileNameWithoutExtension
-                        GameTitleList.Add(FileNameWithoutExtension)
-                    Else
-                        NewGameListViewItem.AppTitle = ExecutableFileVersionInfo.ProductName
-                        GameTitleList.Add(ExecutableFileVersionInfo.ProductName)
+                        'Skip other executables that are shipped with the game
+                        If GameTitleList.Exists(Function(s) s.Equals(FileNameWithoutExtension, StringComparison.OrdinalIgnoreCase)) Then Continue For
+                        If FileNameWithoutExtension.Contains("crash", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("installer", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("Language", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("unins", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("UE3", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("Unreal", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        ElseIf FileNameWithoutExtension.Contains("start", StringComparison.OrdinalIgnoreCase) Then
+                            Continue For
+                        End If
+
+                        Dim ExecutableFileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(Executable)
+
+                        'Set the icon
+                        GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(Executable))
+
+                        'Set the title
+                        If String.IsNullOrEmpty(ExecutableFileVersionInfo.ProductName) Then
+                            NewGameListViewItem.AppTitle = FileNameWithoutExtension
+                            GameTitleList.Add(FileNameWithoutExtension)
+                        Else
+                            NewGameListViewItem.AppTitle = ExecutableFileVersionInfo.ProductName
+                            GameTitleList.Add(ExecutableFileVersionInfo.ProductName)
+                        End If
+
+                        'Set launch path and hide the selection (for now)
+                        NewGameListViewItem.AppLaunchPath = Executable
+                        NewGameListViewItem.IsAppSelected = Visibility.Hidden
+
+                        GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
+                        Thread.Sleep(150)
                     End If
 
-                    'Set launch path and hide the selection (for now)
-                    NewGameListViewItem.AppLaunchPath = Executable
-                    NewGameListViewItem.IsAppSelected = Visibility.Hidden
-
-                    GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
-                    Thread.Sleep(150)
-                End If
-
+                Catch UnauthorizedEx As UnauthorizedAccessException
+                    Continue For
+                Catch IOEx As IOException
+                    Continue For
+                Catch Ex As Exception
+                    Continue For
+                End Try
             Next
         End If
 
         'Add game launchers
-        If File.Exists("C:\Program Files (x86)\Steam\steam.exe") Then
-            Dim NewGameListViewItem As New AppListViewItem()
+        Try
+            If File.Exists("C:\Program Files (x86)\Steam\steam.exe") Then
+                Dim NewGameListViewItem As New AppListViewItem()
 
-            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png", UriKind.RelativeOrAbsolute)))
-            Else
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Steam\steam.exe"))
+                If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png") Then
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\Steam_icon.png", UriKind.RelativeOrAbsolute)))
+                Else
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Steam\steam.exe"))
+                End If
+
+                NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Steam\steam.exe")
+                NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Steam\steam.exe"
+                NewGameListViewItem.IsAppSelected = Visibility.Hidden
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
+                Thread.Sleep(150)
             End If
+            If File.Exists("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe") Then
+                Dim NewGameListViewItem As New AppListViewItem()
 
-            NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Steam\steam.exe")
-            NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Steam\steam.exe"
-            NewGameListViewItem.IsAppSelected = Visibility.Hidden
-            GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
-            Thread.Sleep(150)
-        End If
-        If File.Exists("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe") Then
-            Dim NewGameListViewItem As New AppListViewItem()
+                If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png") Then
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png", UriKind.RelativeOrAbsolute)))
+                Else
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"))
+                End If
 
-            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\BattleNet_icon.png", UriKind.RelativeOrAbsolute)))
-            Else
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"))
+                NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe")
+                NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"
+                NewGameListViewItem.IsAppSelected = Visibility.Hidden
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
+                Thread.Sleep(150)
             End If
+            If File.Exists("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe") Then
+                Dim NewGameListViewItem As New AppListViewItem()
 
-            NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe")
-            NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"
-            NewGameListViewItem.IsAppSelected = Visibility.Hidden
-            GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
-            Thread.Sleep(150)
-        End If
-        If File.Exists("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe") Then
-            Dim NewGameListViewItem As New AppListViewItem()
+                If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png") Then
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png", UriKind.RelativeOrAbsolute)))
+                Else
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe"))
+                End If
 
-            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EpicGamesLauncher_icon.png", UriKind.RelativeOrAbsolute)))
-            Else
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe"))
+                NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe")
+                NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe"
+                NewGameListViewItem.IsAppSelected = Visibility.Hidden
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
+                Thread.Sleep(150)
             End If
+            If File.Exists("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe") Then
+                Dim NewGameListViewItem As New AppListViewItem()
 
-            NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe")
-            NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe"
-            NewGameListViewItem.IsAppSelected = Visibility.Hidden
-            GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
-            Thread.Sleep(150)
-        End If
-        If File.Exists("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe") Then
-            Dim NewGameListViewItem As New AppListViewItem()
+                If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png") Then
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png", UriKind.RelativeOrAbsolute)))
+                Else
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe"))
+                End If
 
-            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\UbisoftConnect_icon.png", UriKind.RelativeOrAbsolute)))
-            Else
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe"))
+                NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe")
+                NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe"
+                NewGameListViewItem.IsAppSelected = Visibility.Hidden
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
+                Thread.Sleep(150)
             End If
+            If File.Exists("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe") Then
+                Dim NewGameListViewItem As New AppListViewItem()
 
-            NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe")
-            NewGameListViewItem.AppLaunchPath = "C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\UbisoftConnect.exe"
-            NewGameListViewItem.IsAppSelected = Visibility.Hidden
-            GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
-            Thread.Sleep(150)
-        End If
-        If File.Exists("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe") Then
-            Dim NewGameListViewItem As New AppListViewItem()
+                If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png") Then
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png", UriKind.RelativeOrAbsolute)))
+                Else
+                    GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"))
+                End If
 
-            If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png") Then
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = New BitmapImage(New Uri(FileIO.FileSystem.CurrentDirectory + "\Assets\GameIcons\EALauncher_icon.png", UriKind.RelativeOrAbsolute)))
-            Else
-                GamesLibrary.Dispatcher.BeginInvoke(Sub() NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"))
+                NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe")
+                NewGameListViewItem.AppLaunchPath = "C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"
+                NewGameListViewItem.IsAppSelected = Visibility.Hidden
+                GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
+                Thread.Sleep(150)
             End If
-
-            NewGameListViewItem.AppTitle = Path.GetFileNameWithoutExtension("C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe")
-            NewGameListViewItem.AppLaunchPath = "C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"
-            NewGameListViewItem.IsAppSelected = Visibility.Hidden
-            GamesLibrary.Dispatcher.BeginInvoke(Sub() GamesLibrary.Items.Add(NewGameListViewItem))
-            Thread.Sleep(150)
-        End If
+        Catch Ex As Exception
+        End Try
 
         'Create game directories (for roms) at default install location
         CreateGameDirectories()

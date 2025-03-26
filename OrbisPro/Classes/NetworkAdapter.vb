@@ -159,6 +159,7 @@ Namespace ROOT.CIMV2.Win32
 
         ' The ManagementPath of the underlying WMI object.
         <Browsable(True)>
+        <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Public Property Path As ManagementPath
             Get
                 If isEmbedded = False Then
