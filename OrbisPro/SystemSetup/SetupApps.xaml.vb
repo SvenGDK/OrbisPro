@@ -212,13 +212,15 @@ Public Class SetupApps
         EnterButton.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
         ContinueTextBlock.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
-        'Focus the first app
-        Dim FirstListViewItem As ListViewItem = CType(ApplicationLibrary.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
-        FirstListViewItem.Focus()
+        If ApplicationLibrary.Items.Count > 0 Then
+            'Focus the first app
+            Dim FirstListViewItem As ListViewItem = CType(ApplicationLibrary.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+            FirstListViewItem.Focus()
 
-        'Convert to FirstListViewItem to control the item's customized properties
-        Dim FirstSelectedItem As AppListViewItem = CType(FirstListViewItem.Content, AppListViewItem)
-        FirstSelectedItem.IsAppSelected = Visibility.Visible 'Show the selection border
+            'Convert to FirstListViewItem to control the item's customized properties
+            Dim FirstSelectedItem As AppListViewItem = CType(FirstListViewItem.Content, AppListViewItem)
+            FirstSelectedItem.IsAppSelected = Visibility.Visible 'Show the selection border
+        End If
 
         Try
             If SharedController1 IsNot Nothing Then Await ReadGamepadInputAsync(CTS.Token)
@@ -233,9 +235,10 @@ Public Class SetupApps
     Private Sub SetupApps_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
         If Not e.Key = LastKeyboardKey Then
             Dim FocusedItem = FocusManager.GetFocusedElement(Me)
-            If TypeOf FocusedItem Is ListViewItem Then
-                Select Case e.Key
-                    Case Key.A
+
+            Select Case e.Key
+                Case Key.A
+                    If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.SelectItem)
 
                         Dim SelectedApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
@@ -247,12 +250,13 @@ Public Class SetupApps
 
                         'Notify that the app has been added and add additional delay due to animation
                         Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
-                    Case Key.C
-                        ReturnToPreviousSetupStep()
-                    Case Key.X
-                        ContinueSetup()
-                End Select
-            End If
+                    End If
+                Case Key.C
+                    ReturnToPreviousSetupStep()
+                Case Key.X
+                    ContinueSetup()
+            End Select
+
         Else
             e.Handled = True
         End If
@@ -296,64 +300,74 @@ Public Class SetupApps
                 ElseIf MainGamepadButton_B_Button_Pressed Then
                     ReturnToPreviousSetupStep()
                 ElseIf MainGamepadButton_Y_Button_Pressed Then
-                    PlayBackgroundSound(Sounds.SelectItem)
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        PlayBackgroundSound(Sounds.SelectItem)
 
-                    Dim SelectedApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                        Dim SelectedApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
 
-                    'Add selected app to the library
-                    Using AppWriter As New StreamWriter(AppShortcuts, True)
-                        AppWriter.WriteLine("App;" + SelectedApp.AppTitle + ";" + SelectedApp.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                    End Using
+                        'Add selected app to the library
+                        Using AppWriter As New StreamWriter(AppShortcuts, True)
+                            AppWriter.WriteLine("App;" + SelectedApp.AppTitle + ";" + SelectedApp.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
+                        End Using
 
-                    'Notify that the app has been added and add additional delay due to animation
-                    Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
+                        'Notify that the app has been added and add additional delay due to animation
+                        Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
+                    End If
                 ElseIf MainGamepadButton_DPad_Left_Pressed Then
-                    PlayBackgroundSound(Sounds.Move)
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        PlayBackgroundSound(Sounds.Move)
 
-                    'Get the ListView of the selected item
-                    Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+                        'Get the ListView of the selected item
+                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
-                    Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
-                    Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex - 1
+                        Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
+                        Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex - 1
 
-                    If Not NextIndex = -1 Then
-                        ApplicationLibrary.SelectedIndex -= 1
+                        If Not NextIndex = -1 Then
+                            ApplicationLibrary.SelectedIndex -= 1
+                        End If
                     End If
                 ElseIf MainGamepadButton_DPad_Right_Pressed Then
-                    PlayBackgroundSound(Sounds.Move)
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        PlayBackgroundSound(Sounds.Move)
 
-                    'Get the ListView of the selected item
-                    Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+                        'Get the ListView of the selected item
+                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
-                    Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
-                    Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex + 1
+                        Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
+                        Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex + 1
 
-                    If Not NextIndex = ApplicationLibrary.Items.Count Then
-                        ApplicationLibrary.SelectedIndex += 1
+                        If Not NextIndex = ApplicationLibrary.Items.Count Then
+                            ApplicationLibrary.SelectedIndex += 1
+                        End If
                     End If
                 ElseIf MainGamepadButton_DPad_Up_Pressed Then
-                    PlayBackgroundSound(Sounds.Move)
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        PlayBackgroundSound(Sounds.Move)
 
-                    'Get the ListView of the selected item
-                    Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+                        'Get the ListView of the selected item
+                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
-                    Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
-                    Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex - 4
+                        Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
+                        Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex - 4
 
-                    If Not NextIndex <= -1 Then
-                        ApplicationLibrary.SelectedIndex -= 4
+                        If Not NextIndex <= -1 Then
+                            ApplicationLibrary.SelectedIndex -= 4
+                        End If
                     End If
                 ElseIf MainGamepadButton_DPad_Down_Pressed Then
-                    PlayBackgroundSound(Sounds.Move)
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        PlayBackgroundSound(Sounds.Move)
 
-                    'Get the ListView of the selected item
-                    Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
+                        'Get the ListView of the selected item
+                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
-                    Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
-                    Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex + 4
+                        Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
+                        Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex + 4
 
-                    If Not NextIndex = ApplicationLibrary.Items.Count Then
-                        ApplicationLibrary.SelectedIndex += 4
+                        If Not NextIndex = ApplicationLibrary.Items.Count Then
+                            ApplicationLibrary.SelectedIndex += 4
+                        End If
                     End If
                 ElseIf MainGamepadButton_RightThumbY_Up Then
                     ScrollUp()
