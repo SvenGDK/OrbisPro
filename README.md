@@ -103,7 +103,7 @@ Current display limitation: 100% scaling (no zoom).
   - Change the Username
   
 ## Font Note
-OrbisPro will use the SST font family ONLY if installed.<br>
+OrbisPro will use the [SST font family](https://font.download/font/sst) ONLY if installed.<br>
 It is NOT included in the repository nor in the final archive.
 
 ## ROG Ally Notes
