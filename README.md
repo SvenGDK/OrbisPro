@@ -19,14 +19,14 @@ Minimal
 - GPU: AMD HD 5000 series or newer / NVIDIA GTX 400 or newer / Intel HD Graphics 500 or newer (OpenGL 4.3 support recommended)
 - RAM: 8 GB RAM or better
 - OS: Windows 10 x64 or newer
-- [.NET Desktop Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [.NET Desktop Runtime 9.0.3 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x64-installer) or [.NET Desktop Runtime 9.0.3 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x86-installer)
 
 Recommended
 - CPU: AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
 - GPU: AMD RX 400 / NVIDIA GTX 900 or newer (With Vulkan API support)
 - RAM: 8 GB Dual Channel (2x4 GB)
 - OS: Windows 10 or 11 x64
-- [.NET Desktop Runtime 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [.NET Desktop Runtime 9.0.3 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x64-installer) or [.NET Desktop Runtime 9.0.3 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x86-installer)
 
 Current display limitation: 100% scaling (no zoom).
 
@@ -103,7 +103,7 @@ Current display limitation: 100% scaling (no zoom).
   - Change the Username
   
 ## Font Note
-OrbisPro will use the SST font family ONLY if installed.<br>
+OrbisPro will use the [SST font family](https://font.download/font/sst) ONLY if installed.<br>
 It is NOT included in the repository nor in the final archive.
 
 ## ROG Ally Notes
