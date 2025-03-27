@@ -108,11 +108,11 @@ Public Class OrbisInput
         End If
 
         'Set polling rates
-        If Not String.IsNullOrEmpty(ConfigFile.IniReadValue("Gamepads", "Gamepad1PollingRate")) Then
-            SharedController1PollingRate = CInt(ConfigFile.IniReadValue("Gamepads", "Gamepad1PollingRate"))
+        If Not String.IsNullOrEmpty(MainConfigFile.IniReadValue("Gamepads", "Gamepad1PollingRate")) Then
+            SharedController1PollingRate = CInt(MainConfigFile.IniReadValue("Gamepads", "Gamepad1PollingRate"))
         End If
-        If Not String.IsNullOrEmpty(ConfigFile.IniReadValue("Gamepads", "Gamepad2PollingRate")) Then
-            SharedController2PollingRate = CInt(ConfigFile.IniReadValue("Gamepads", "Gamepad2PollingRate"))
+        If Not String.IsNullOrEmpty(MainConfigFile.IniReadValue("Gamepads", "Gamepad2PollingRate")) Then
+            SharedController2PollingRate = CInt(MainConfigFile.IniReadValue("Gamepads", "Gamepad2PollingRate"))
         End If
 
         Return True

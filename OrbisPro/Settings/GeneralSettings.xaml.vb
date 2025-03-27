@@ -184,7 +184,7 @@ Public Class GeneralSettings
         Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
 
         'Get the value
-        Dim Username As String = ConfigFile.IniReadValue("System", "Username")
+        Dim Username As String = MainConfigFile.IniReadValue("System", "Username")
 
         'Declare the setting
         Dim ChangeUsernameSetting As New SettingsListViewItem With {.SettingsTitle = "Username",
@@ -211,8 +211,8 @@ Public Class GeneralSettings
         Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
 
         'Get the values
-        Dim DisableNotifications As Boolean = GetBoolValue(ConfigFile.IniReadValue("Notifications", "DisableNotifications"))
-        Dim NotificationDuration As String = ConfigFile.IniReadValue("Notifications", "NotificationDuration")
+        Dim DisableNotifications As Boolean = GetBoolValue(MainConfigFile.IniReadValue("Notifications", "DisableNotifications"))
+        Dim NotificationDuration As String = MainConfigFile.IniReadValue("Notifications", "NotificationDuration")
 
         'Declare the settings
         Dim DisableNotificationsSetting As New SettingsListViewItem With {.SettingsTitle = "Disable Notifications",
@@ -273,8 +273,8 @@ Public Class GeneralSettings
         Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
 
         'Get the values
-        Dim SystemVolume As String = ConfigFile.IniReadValue("Audio", "SystemVolume")
-        Dim SystemNavigationAudio As String = ConfigFile.IniReadValue("Audio", "Navigation Audio Pack")
+        Dim SystemVolume As String = MainConfigFile.IniReadValue("Audio", "SystemVolume")
+        Dim SystemNavigationAudio As String = MainConfigFile.IniReadValue("Audio", "Navigation Audio Pack")
 
         'Declare the settings
         Dim SystemVolumeSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Music.png", UriKind.RelativeOrAbsolute)),
@@ -309,7 +309,7 @@ Public Class GeneralSettings
         Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
 
         'Get the values
-        Dim DisplayResolution As String = ConfigFile.IniReadValue("System", "DisplayResolution")
+        Dim DisplayResolution As String = MainConfigFile.IniReadValue("System", "DisplayResolution")
 
         'Declare the settings
         Dim SelectedBackgroundSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/GalleryTransparent.png", UriKind.RelativeOrAbsolute)),
@@ -342,11 +342,11 @@ Public Class GeneralSettings
         Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
 
         'Get the values
-        Dim SelectedBackground As String = ConfigFile.IniReadValue("System", "Background")
-        Dim CustomBackgroundPath As String = ConfigFile.IniReadValue("System", "CustomBackgroundPath")
-        Dim EnableBackgroundAnimation As Boolean = GetBoolValue(ConfigFile.IniReadValue("System", "BackgroundAnimation"))
-        Dim EnableBackgroundMusic As Boolean = GetBoolValue(ConfigFile.IniReadValue("System", "BackgroundMusic"))
-        Dim EnableBackgroundSwitchingAnimation As Boolean = GetBoolValue(ConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation"))
+        Dim SelectedBackground As String = MainConfigFile.IniReadValue("System", "Background")
+        Dim CustomBackgroundPath As String = MainConfigFile.IniReadValue("System", "CustomBackgroundPath")
+        Dim EnableBackgroundAnimation As Boolean = GetBoolValue(MainConfigFile.IniReadValue("System", "BackgroundAnimation"))
+        Dim EnableBackgroundMusic As Boolean = GetBoolValue(MainConfigFile.IniReadValue("System", "BackgroundMusic"))
+        Dim EnableBackgroundSwitchingAnimation As Boolean = GetBoolValue(MainConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation"))
 
         'Declare the settings
         Dim SelectedBackgroundSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
@@ -445,8 +445,8 @@ Public Class GeneralSettings
         Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
 
         'Get the values
-        Dim ConnectToInternet As Boolean = GetBoolValue(ConfigFile.IniReadValue("Network", "ConnectToInternet"))
-        Dim DownloadPath As String = ConfigFile.IniReadValue("Network", "DownloadPath")
+        Dim ConnectToInternet As Boolean = GetBoolValue(MainConfigFile.IniReadValue("Network", "ConnectToInternet"))
+        Dim DownloadPath As String = MainConfigFile.IniReadValue("Network", "DownloadPath")
 
         'Declare the settings
         Dim ConnectToInternetSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
@@ -3133,9 +3133,9 @@ Public Class GeneralSettings
                     Case "Display Resolution"
 
                         If SelectedSettingValue = "AutoScaling" Then
-                            ConfigFile.IniWriteValue("System", "DisplayScaling", "AutoScaling")
+                            MainConfigFile.IniWriteValue("System", "DisplayScaling", "AutoScaling")
                         Else
-                            ConfigFile.IniWriteValue("System", "DisplayScaling", "Manual")
+                            MainConfigFile.IniWriteValue("System", "DisplayScaling", "Manual")
                         End If
 
                         'Update background
@@ -3855,9 +3855,9 @@ Public Class GeneralSettings
                 BooleanFalseValue = "false"
 
                 If SelectedConfig.IsSettingChecked Then
-                    ConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanFalseValue)
+                    MainConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanFalseValue)
                 Else
-                    ConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanTrueValue)
+                    MainConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanTrueValue)
                 End If
         End Select
 
@@ -3894,7 +3894,7 @@ Public Class GeneralSettings
                 'Future build
 
             Case "Account Management", "Audio", "Background", "Display", "Network", "Notifications", "System"
-                ConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
+                MainConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
         End Select
     End Sub
@@ -3903,7 +3903,7 @@ Public Class GeneralSettings
 
     Private Sub SetBackground()
         'Set the background
-        Select Case ConfigFile.IniReadValue("System", "Background")
+        Select Case MainConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
@@ -3911,7 +3911,7 @@ Public Class GeneralSettings
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
-                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
                 BackgroundMedia.Source = Nothing
         End Select
@@ -3922,19 +3922,19 @@ Public Class GeneralSettings
         End If
 
         'Go to first second of the background video and pause it if BackgroundAnimation = False
-        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
             BackgroundMedia.Position = New TimeSpan(0, 0, 1)
             BackgroundMedia.Pause()
         End If
 
         'Mute BackgroundMedia if BackgroundMusic = False
-        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
         End If
 
         'Set width & height
-        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+        If Not MainConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))
@@ -3942,7 +3942,7 @@ Public Class GeneralSettings
                 OrbisDisplay.SetScaling(SettingsWindow, SettingsCanvas, False, NewWidth, NewHeight)
             End If
         Else
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))

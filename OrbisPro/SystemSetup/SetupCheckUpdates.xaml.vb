@@ -2,12 +2,12 @@
 Imports OrbisPro.OrbisInput
 Imports OrbisPro.OrbisUtils
 Imports System.ComponentModel
-Imports System.Net
 Imports System.Windows.Media.Animation
 Imports System.Windows.Threading
 Imports SharpDX.XInput
 Imports System.Threading
 Imports System.Net.Http
+Imports System.IO
 
 Public Class SetupCheckUpdates
 
@@ -17,7 +17,6 @@ Public Class SetupCheckUpdates
     Private LastKeyboardKey As Key
     Public Opener As String = ""
 
-    Private WithEvents UpdateClient As New WebClient()
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
@@ -195,28 +194,31 @@ Public Class SetupCheckUpdates
         End If
     End Sub
 
-    Private Sub DownloadUpdate()
+    Private Async Sub DownloadUpdate()
         ProgressLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
         Try
-            UpdateClient.DownloadFileAsync(New Uri("http://89.58.2.209/OrbisProUpdate.exe"), FileIO.FileSystem.CurrentDirectory + "\OrbisProUpdate.exe")
+            Using UpdateClient As New HttpClient()
+                Dim NewHttpResponseMessage As HttpResponseMessage = Await UpdateClient.GetAsync("http://89.58.2.209/OrbisProUpdate.exe")
+                If NewHttpResponseMessage.IsSuccessStatusCode Then
+                    Dim NewStream As Stream = Await NewHttpResponseMessage.Content.ReadAsStreamAsync()
+                    Using NewFileStream As New FileStream("OrbisProUpdate.exe", FileMode.Create)
+                        NewStream.CopyTo(NewFileStream)
+                    End Using
+
+                    TopLabel.Text = "Update downloaded. OrbisPro will update now."
+                    FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
+                    LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
+                    ProgressLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
+
+                    UpdateWarningTimer.Start()
+                End If
+            End Using
+
         Catch ex As Exception
             PauseInput = True
             ExceptionDialog("System Error", ex.Message)
         End Try
-    End Sub
-
-    Private Sub UpdateClient_DownloadProgressChanged(sender As Object, e As DownloadProgressChangedEventArgs) Handles UpdateClient.DownloadProgressChanged
-        ProgressLabel.Text = "Progress: " + e.ProgressPercentage.ToString() + " %"
-    End Sub
-
-    Private Sub UpdateClient_DownloadFileCompleted(sender As Object, e As AsyncCompletedEventArgs) Handles UpdateClient.DownloadFileCompleted
-        TopLabel.Text = "Update downloaded. OrbisPro will update now."
-        FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
-        LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
-        ProgressLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
-
-        UpdateWarningTimer.Start()
     End Sub
 
     Private Sub ContinueSetup()
@@ -231,7 +233,7 @@ Public Class SetupCheckUpdates
 
     Private Sub SetBackground()
         'Set the background
-        Select Case ConfigFile.IniReadValue("System", "Background")
+        Select Case MainConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
@@ -239,7 +241,7 @@ Public Class SetupCheckUpdates
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
-                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
                 BackgroundMedia.Source = Nothing
         End Select
@@ -250,19 +252,19 @@ Public Class SetupCheckUpdates
         End If
 
         'Go to first second of the background video and pause it if BackgroundAnimation = False
-        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
             BackgroundMedia.Position = New TimeSpan(0, 0, 1)
             BackgroundMedia.Pause()
         End If
 
         'Mute BackgroundMedia if BackgroundMusic = False
-        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
         End If
 
         'Set width & height
-        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+        If Not MainConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))
@@ -270,7 +272,7 @@ Public Class SetupCheckUpdates
                 OrbisDisplay.SetScaling(CheckUpdatesWindow, CheckUpdatesCanvas, False, NewWidth, NewHeight)
             End If
         Else
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))

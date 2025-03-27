@@ -1,5 +1,4 @@
 ﻿Imports System.ComponentModel
-Imports System.Net
 
 Public Class DownloadListViewItem
 
@@ -13,9 +12,8 @@ Public Class DownloadListViewItem
     Public _AllDataLabel As String
     Public _DownloadProgress As String
     Public _SecondDownloadProgress As String
-    Public _ProgressValue As Integer
+    Public _ProgressValue As Double
     Public _InstalledOrUpdated As String
-    Private _AssociatedWebClient As WebClient
 
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
@@ -103,11 +101,11 @@ Public Class DownloadListViewItem
         End Set
     End Property
 
-    Public Property ProgressValue() As Integer
+    Public Property ProgressValue() As Double
         Get
             Return _ProgressValue
         End Get
-        Set(Value As Integer)
+        Set(Value As Double)
             _ProgressValue = Value
             NotifyPropertyChanged("ProgressValue")
         End Set
@@ -120,15 +118,6 @@ Public Class DownloadListViewItem
         Set(Value As String)
             _InstalledOrUpdated = Value
             NotifyPropertyChanged("InstalledOrUpdated")
-        End Set
-    End Property
-
-    Public Property AssociatedWebClient As WebClient
-        Get
-            Return _AssociatedWebClient
-        End Get
-        Set
-            _AssociatedWebClient = Value
         End Set
     End Property
 

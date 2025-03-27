@@ -250,7 +250,7 @@ Public Class SetupCustomize
 
             Select Case SelectedItem.Content.ToString()
                 Case "PS2", "PS3", "PS4", "PS5"
-                    ConfigFile.IniWriteValue("Audio", "Navigation Audio Pack", SelectedItem.Content.ToString())
+                    MainConfigFile.IniWriteValue("Audio", "Navigation Audio Pack", SelectedItem.Content.ToString())
             End Select
         End If
     End Sub
@@ -265,13 +265,13 @@ Public Class SetupCustomize
             Select Case SelectedItem.Content.ToString()
                 Case "Blue Bubbles"
                     BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
-                    ConfigFile.IniWriteValue("System", "Background", "Blue Bubbles")
+                    MainConfigFile.IniWriteValue("System", "Background", "Blue Bubbles")
                 Case "Orange/Red Gradient Waves"
                     BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
-                    ConfigFile.IniWriteValue("System", "Background", "Orange/Red Gradient Waves")
+                    MainConfigFile.IniWriteValue("System", "Background", "Orange/Red Gradient Waves")
                 Case "PS2 Dots"
                     BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
-                    ConfigFile.IniWriteValue("System", "Background", "PS2 Dots")
+                    MainConfigFile.IniWriteValue("System", "Background", "PS2 Dots")
             End Select
         End If
     End Sub
@@ -292,23 +292,23 @@ Public Class SetupCustomize
     Private Sub FinishSetup()
         'Save config
         If Not String.IsNullOrEmpty(UsernameTextBox.Text) Then
-            ConfigFile.IniWriteValue("System", "Username", UsernameTextBox.Text)
+            MainConfigFile.IniWriteValue("System", "Username", UsernameTextBox.Text)
         End If
         If BackgroundsComboBox.SelectedItem IsNot Nothing Then
             Select Case BackgroundsComboBox.SelectedValue.ToString()
                 Case "Blue Bubbles"
-                    ConfigFile.IniWriteValue("System", "Background", "Blue Bubbles")
+                    MainConfigFile.IniWriteValue("System", "Background", "Blue Bubbles")
                 Case "Orange/Red Gradient Waves"
-                    ConfigFile.IniWriteValue("System", "Background", "Orange/Red Gradient Waves")
+                    MainConfigFile.IniWriteValue("System", "Background", "Orange/Red Gradient Waves")
                 Case "PS2 Dots"
-                    ConfigFile.IniWriteValue("System", "Background", "PS2 Dots")
+                    MainConfigFile.IniWriteValue("System", "Background", "PS2 Dots")
             End Select
         End If
         If AudioPacksComboBox.SelectedItem IsNot Nothing Then
-            ConfigFile.IniWriteValue("Audio", "Navigation Audio Pack", AudioPacksComboBox.Text)
+            MainConfigFile.IniWriteValue("Audio", "Navigation Audio Pack", AudioPacksComboBox.Text)
         End If
 
-        ConfigFile.IniWriteValue("Setup", "Done", "True")
+        MainConfigFile.IniWriteValue("Setup", "Done", "True")
 
         'Continue to Home
         Dim OrbisProMainWindow As New MainWindow() With {.ShowActivated = True, .Top = Top, .Left = Left}
@@ -320,7 +320,7 @@ Public Class SetupCustomize
 
     Private Sub SetBackground()
         'Set the background
-        Select Case ConfigFile.IniReadValue("System", "Background")
+        Select Case MainConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
@@ -328,7 +328,7 @@ Public Class SetupCustomize
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
-                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
                 BackgroundMedia.Source = Nothing
         End Select
@@ -339,19 +339,19 @@ Public Class SetupCustomize
         End If
 
         'Go to first second of the background video and pause it if BackgroundAnimation = False
-        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
             BackgroundMedia.Position = New TimeSpan(0, 0, 1)
             BackgroundMedia.Pause()
         End If
 
         'Mute BackgroundMedia if BackgroundMusic = False
-        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
         End If
 
         'Set width & height
-        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+        If Not MainConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))
@@ -359,7 +359,7 @@ Public Class SetupCustomize
                 OrbisDisplay.SetScaling(SetupCustomizeWindow, SetupCustomizeCanvas, False, NewWidth, NewHeight)
             End If
         Else
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))

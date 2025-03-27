@@ -12,7 +12,8 @@ Imports System.Text.RegularExpressions
 Public Class OrbisUtils
 
     Private Declare Function DeleteObject Lib "gdi32.dll" (hObject As IntPtr) As Boolean
-    Public Shared Property ConfigFile As New INI.IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Settings.ini")
+    Public Shared Property MainConfigFile As New INI.IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Settings.ini")
+    Public Shared Property GameLibraryPath As String = FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt"
     Public Shared Property OrbisBackground As String
         Get
             Return _OrbisBackground
@@ -46,8 +47,6 @@ Public Class OrbisUtils
         SteamDeck
         LegionGo
     End Enum
-
-    Public Shared Property MainConfigFile As New INI.IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Settings.ini")
 
     Public Shared Async Function IsURLValidAsync(Url As String) As Task(Of Boolean)
         If NetworkInterface.GetIsNetworkAvailable Then

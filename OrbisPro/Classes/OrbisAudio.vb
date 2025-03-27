@@ -24,7 +24,7 @@ Public Class OrbisAudio
         Dim NewSoundPlayer As SoundPlayer
 
         'Get the selected 'Navigation Audio Pack' to play the correct sound effect
-        Dim AudioPack As String = ConfigFile.IniReadValue("Audio", "Navigation Audio Pack")
+        Dim AudioPack As String = MainConfigFile.IniReadValue("Audio", "Navigation Audio Pack")
 
         'Determine which sound to play - Some sound effects are still missing ...
         If Sound = Sounds.Start Then

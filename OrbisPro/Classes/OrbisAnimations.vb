@@ -10,9 +10,7 @@ Public Class OrbisAnimations
     Public Shared Sub Animate(UIElementToAnimate As UIElement, AnimationDependencyProperty As DependencyProperty, AnimateFrom As Double, AnimateTo As Double, AnimationDuration As Duration, Optional Reverse As Boolean = False)
         Dim NewDoubleAnimation As New DoubleAnimation With {.From = AnimateFrom, .To = AnimateTo, .Duration = AnimationDuration}
 
-        If Reverse = False Then
-            NewDoubleAnimation.AutoReverse = False
-        Else
+        If Reverse = True Then
             NewDoubleAnimation.AutoReverse = True
         End If
 

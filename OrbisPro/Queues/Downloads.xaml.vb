@@ -2,10 +2,12 @@
 Imports OrbisPro.OrbisInput
 Imports OrbisPro.OrbisUtils
 Imports System.ComponentModel
-Imports System.Net
 Imports System.Threading
 Imports System.Windows.Media.Animation
 Imports SharpDX.XInput
+Imports System.Net.Http
+Imports System.IO
+Imports System.Windows.Threading
 
 Public Class Downloads
 
@@ -15,6 +17,8 @@ Public Class Downloads
 
     Public Shared DownloadsList As New List(Of DownloadListViewItem)()
     Private DownloadPath As String
+    Public IsDownloadClientBusy As Boolean = False
+    Private DownloadClientCTS As CancellationTokenSource
 
     Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
@@ -28,32 +32,32 @@ Public Class Downloads
         'Set background
         SetBackground()
 
-        If Not ConfigFile.IniReadValue("Network", "DownloadPath") = "Default" Then
-            DownloadPath = ConfigFile.IniReadValue("Network", "DownloadPath")
+        If Not MainConfigFile.IniReadValue("Network", "DownloadPath") = "Default" Then
+            DownloadPath = MainConfigFile.IniReadValue("Network", "DownloadPath")
         End If
     End Sub
 
     Private Async Sub Downloads_ContentRendered(sender As Object, e As EventArgs) Handles Me.ContentRendered
 
-        'Select the first item if there's a download
-        If DownloadsList IsNot Nothing AndAlso PS3SetupDownload = False Then
+        'Start downloading a firmware if requested
+        If PS3SetupDownload Then
+            DownloadCurrentPS3Firmware()
+        End If
+        If PSVitaSetupDownload Then
+            DownloadCurrentPSVitaFirmware()
+        End If
+
+        'Select the first item if there's an active download
+        If DownloadsList.Count > 0 Then
             'Focus the first item
             Dim FirstListViewItem As ListViewItem = CType(DownloadsListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
             FirstListViewItem.Focus()
 
-            'Convert to FirstListViewItem to control the item's customized properties
+            'Convert FirstListViewItem to DownloadListViewItem to control the item's customized properties
             Dim FirstSelectedItem As DownloadListViewItem = CType(FirstListViewItem.Content, DownloadListViewItem)
             FirstSelectedItem.IsAppSelected = Visibility.Visible 'Show the selection border
         Else
             DownloadsListView.Focus()
-        End If
-
-        If PS3SetupDownload Then
-            DownloadCurrentPS3Firmware()
-        End If
-
-        If PSVitaSetupDownload Then
-            DownloadCurrentPSVitaFirmware()
         End If
 
         Try
@@ -161,17 +165,15 @@ Public Class Downloads
         Close()
     End Sub
 
-    Public Sub DownloadCurrentPS3Firmware()
+    Public Async Sub DownloadCurrentPS3Firmware()
 
         Dim ItemIndexOfNewDownload As Integer = 0
-        OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware Version", "4.91", "/Icons/rpcs3black.png")
+        OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware Version", "4.92", "/Icons/rpcs3black.png")
 
-        Dim NewWebClient As New WebClient()
         Dim NewDownload As New DownloadListViewItem() With {
-                          .AppName = "PS3 Firmware 4.91",
+                          .AppName = "PS3 Firmware 4.92",
                           .AppIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute)),
                           .AppIsDownloading = Visibility.Visible,
-                          .AssociatedWebClient = NewWebClient,
                           .IsAppSelected = Visibility.Visible,
                           .AllDataLabel = "All Data",
                           .AppDataLabel = "",
@@ -183,65 +185,117 @@ Public Class Downloads
         DownloadsListView.Items.Add(NewDownload)
         DownloadsListView.Items.Refresh()
 
-        If Not String.IsNullOrEmpty(DownloadPath) Then
-            NewWebClient.DownloadFileAsync(New Uri("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2024_0227_3694eb3fb8d9915c112e6ab41a60c69f/PS3UPDAT.PUP"), DownloadPath + "\PS3UPDAT.PUP", Stopwatch.StartNew)
-        Else
-            NewWebClient.DownloadFileAsync(New Uri("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2024_0227_3694eb3fb8d9915c112e6ab41a60c69f/PS3UPDAT.PUP"), FileIO.FileSystem.CurrentDirectory + "\System\Downloads\PS3UPDAT.PUP", Stopwatch.StartNew)
-        End If
+        If String.IsNullOrEmpty(DownloadPath) Then DownloadPath = FileIO.FileSystem.CurrentDirectory + "\System\Downloads"
 
-        AddHandler NewWebClient.DownloadProgressChanged, Sub(sender As Object, e As DownloadProgressChangedEventArgs)
-                                                             'Update values
-                                                             Dim ClientSender As WebClient = CType(sender, WebClient)
+        Try
+            Using NewHttpClient As New HttpClient()
+                Using NewHttpResponseMessage As HttpResponseMessage = Await NewHttpClient.GetAsync("http://dus01.ps3.update.playstation.net/update/ps3/image/us/2025_0305_c179ad173bbc08b55431d30947725a4b/PS3UPDAT.PUP", HttpCompletionOption.ResponseHeadersRead)
+                    If NewHttpResponseMessage.IsSuccessStatusCode Then
 
-                                                             For Each DownloadItem In DownloadsListView.Items
-                                                                 Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
-                                                                 If DLListViewItem.AssociatedWebClient Is ClientSender Then
-                                                                     DLListViewItem.DownloadProgress = (e.BytesReceived / (1024 * 1024)).ToString("0.000 MB") + "/" + (e.TotalBytesToReceive / (1024 * 1024)).ToString("0.000 MB")
-                                                                     DLListViewItem.ProgressValue = e.ProgressPercentage
-                                                                 End If
-                                                             Next
+                        'Set CancellationToken 
+                        DownloadClientCTS = New CancellationTokenSource()
+                        Dim DownloadCancellationToken As CancellationToken = DownloadClientCTS.Token
+                        IsDownloadClientBusy = True
 
-                                                         End Sub
+                        'Start downloading
+                        Dim TotalBytes As Long = NewHttpResponseMessage.Content.Headers.ContentLength.GetValueOrDefault(0)
+                        Using ResponseStream As Stream = Await NewHttpResponseMessage.Content.ReadAsStreamAsync(DownloadCancellationToken)
 
-        AddHandler NewWebClient.DownloadFileCompleted, Sub(sender As Object, e As AsyncCompletedEventArgs)
-                                                           Dim ClientSender As WebClient = CType(sender, WebClient)
+                            Using NewFileStream As New FileStream(DownloadPath + "\PS3UPDAT.PUP", FileMode.Create, FileAccess.Write, FileShare.None, 8192, True)
+                                Dim Buffer(8191) As Byte
+                                Dim TotalBytesRead As Long = 0
+                                Dim BytesRead As Integer
 
-                                                           'Update values
-                                                           For Each DownloadItem In DownloadsListView.Items
-                                                               Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
-                                                               If DLListViewItem.AssociatedWebClient Is ClientSender Then
-                                                                   DLListViewItem.AppIsDownloading = Visibility.Hidden
-                                                                   DLListViewItem.AllDataLabel = "Completed and ready to use."
-                                                                   DLListViewItem.DownloadProgress = ""
-                                                               End If
-                                                           Next
+                                Dim NewStopwatch As New Stopwatch()
+                                NewStopwatch.Start()
 
-                                                           'Let the installer know that the PS3 firmware download finished
-                                                           For Each Win In System.Windows.Application.Current.Windows()
-                                                               If Win.ToString = "OrbisPro.SetupPS3" Then
-                                                                   CType(Win, SetupPS3).FirmwareDownloadCompleted = True
-                                                                   Exit For
-                                                               End If
-                                                           Next
+                                Do
+                                    BytesRead = Await ResponseStream.ReadAsync(Buffer, DownloadCancellationToken)
+                                    If BytesRead = 0 Then Exit Do
 
-                                                           'Send notification when download did finish
-                                                           OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware", "DL Completed", "/Icons/rpcs3black.png")
-                                                           PlayBackgroundSound(Sounds.Trophy)
-                                                       End Sub
+                                    Await NewFileStream.WriteAsync(Buffer.AsMemory(0, BytesRead))
 
+                                    TotalBytesRead += BytesRead
+
+                                    Dim ElapsedSeconds As Double = NewStopwatch.Elapsed.TotalSeconds
+                                    Dim DownloadSpeed As Double = TotalBytesRead / ElapsedSeconds
+                                    Dim SpeedInKbps As Double = DownloadSpeed / 1024
+                                    Dim ETAInSeconds As Double = If(TotalBytes > 0, (TotalBytes - TotalBytesRead) / DownloadSpeed, 0)
+
+                                    'Display progress
+                                    If TotalBytes > 0 Then
+                                        Dim DLProgress As Double = TotalBytesRead * 100 / TotalBytes
+
+                                        If Dispatcher.CheckAccess() = False Then
+                                            Await Dispatcher.BeginInvoke(Sub()
+                                                                             For Each DownloadItem In DownloadsListView.Items
+                                                                                 Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                                                 If DLListViewItem.AppName = "PS3 Firmware 4.92" Then
+                                                                                     DLListViewItem.DownloadProgress = (TotalBytesRead / (1024 * 1024)).ToString("0.000 MB") + "/" + (TotalBytes / (1024 * 1024)).ToString("0.000 MB")
+                                                                                     DLListViewItem.ProgressValue = DLProgress
+                                                                                 End If
+                                                                             Next
+                                                                         End Sub)
+
+                                        Else
+                                            For Each DownloadItem In DownloadsListView.Items
+                                                Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                If DLListViewItem.AppName = "PS3 Firmware 4.92" Then
+                                                    DLListViewItem.DownloadProgress = (TotalBytesRead / (1024 * 1024)).ToString("0.000 MB") + "/" + (TotalBytes / (1024 * 1024)).ToString("0.000 MB")
+                                                    DLListViewItem.ProgressValue = DLProgress
+                                                End If
+                                            Next
+                                        End If
+
+                                    End If
+                                Loop
+
+                                NewStopwatch.Stop()
+
+                                'Update values
+                                For Each DownloadItem In DownloadsListView.Items
+                                    Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                    If DLListViewItem.AppName = "PS3 Firmware 4.92" Then
+                                        DLListViewItem.AppIsDownloading = Visibility.Hidden
+                                        DLListViewItem.AllDataLabel = "Completed and ready to use."
+                                        DLListViewItem.DownloadProgress = ""
+                                    End If
+                                Next
+
+                                'Let the installer know that the PS3 firmware download finished
+                                For Each Win In System.Windows.Application.Current.Windows()
+                                    If Win.ToString = "OrbisPro.SetupPS3" Then
+                                        CType(Win, SetupPS3).FirmwareDownloadCompleted = True
+                                        Exit For
+                                    End If
+                                Next
+
+                                'Send notification when download did finish
+                                OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware 4.92", "DL Completed", "/Icons/rpcs3black.png")
+                                PlayBackgroundSound(Sounds.Trophy)
+                            End Using
+                        End Using
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+        Finally
+            If DownloadClientCTS IsNot Nothing Then
+                DownloadClientCTS.Dispose()
+                DownloadClientCTS = Nothing
+            End If
+        End Try
     End Sub
 
-    Public Sub DownloadCurrentPSVitaFirmware()
+    Public Async Sub DownloadCurrentPSVitaFirmware()
 
         Dim ItemIndexOfNewDownload As Integer = 0
         OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS3 Firmware Version", "4.91", "/Icons/rpcs3black.png")
 
-        Dim NewWebClient As New WebClient()
         Dim NewDownload As New DownloadListViewItem() With {
                           .AppName = "PS Vita Firmware 3.74",
                           .AppIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute)),
                           .AppIsDownloading = Visibility.Visible,
-                          .AssociatedWebClient = NewWebClient,
                           .IsAppSelected = Visibility.Visible,
                           .AllDataLabel = "All Data",
                           .AppDataLabel = "",
@@ -253,56 +307,105 @@ Public Class Downloads
         DownloadsListView.Items.Add(NewDownload)
         DownloadsListView.Items.Refresh()
 
-        If Not String.IsNullOrEmpty(DownloadPath) Then
-            NewWebClient.DownloadFileAsync(New Uri("http://dus01.psv.update.playstation.net/update/psv/image/2022_0209/rel_f2c7b12fe85496ec88a0391b514d6e3b/PSVUPDAT.PUP"),
-                                           DownloadPath + "\PSVUPDAT.PUP",
-                                           Stopwatch.StartNew)
-        Else
-            NewWebClient.DownloadFileAsync(New Uri("http://dus01.psv.update.playstation.net/update/psv/image/2022_0209/rel_f2c7b12fe85496ec88a0391b514d6e3b/PSVUPDAT.PUP"),
-                                           FileIO.FileSystem.CurrentDirectory + "\System\Downloads\PSVUPDAT.PUP",
-                                           Stopwatch.StartNew)
-        End If
+        If String.IsNullOrEmpty(DownloadPath) Then DownloadPath = FileIO.FileSystem.CurrentDirectory + "\System\Downloads"
 
-        AddHandler NewWebClient.DownloadProgressChanged, Sub(sender As Object, e As DownloadProgressChangedEventArgs)
-                                                             'Update values
-                                                             Dim ClientSender As WebClient = CType(sender, WebClient)
+        Try
+            Using NewHttpClient As New HttpClient()
+                Using NewHttpResponseMessage As HttpResponseMessage = Await NewHttpClient.GetAsync("http://dus01.psv.update.playstation.net/update/psv/image/2022_0209/rel_f2c7b12fe85496ec88a0391b514d6e3b/PSVUPDAT.PUP", HttpCompletionOption.ResponseHeadersRead)
+                    If NewHttpResponseMessage.IsSuccessStatusCode Then
 
-                                                             For Each DownloadItem In DownloadsListView.Items
-                                                                 Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
-                                                                 If DLListViewItem.AssociatedWebClient Is ClientSender Then
-                                                                     DLListViewItem.DownloadProgress = (e.BytesReceived / (1024 * 1024)).ToString("0.000 MB") + "/" + (e.TotalBytesToReceive / (1024 * 1024)).ToString("0.000 MB")
-                                                                     DLListViewItem.ProgressValue = e.ProgressPercentage
-                                                                 End If
-                                                             Next
+                        'Set CancellationToken 
+                        DownloadClientCTS = New CancellationTokenSource()
+                        Dim DownloadCancellationToken As CancellationToken = DownloadClientCTS.Token
+                        IsDownloadClientBusy = True
 
-                                                         End Sub
+                        Dim TotalBytes As Long = NewHttpResponseMessage.Content.Headers.ContentLength.GetValueOrDefault(0)
+                        Using ResponseStream As Stream = Await NewHttpResponseMessage.Content.ReadAsStreamAsync(DownloadCancellationToken)
 
-        AddHandler NewWebClient.DownloadFileCompleted, Sub(sender As Object, e As AsyncCompletedEventArgs)
-                                                           Dim ClientSender As WebClient = CType(sender, WebClient)
+                            Using NewFileStream As New FileStream(DownloadPath + "\PSVUPDAT.PUP", FileMode.Create, FileAccess.Write, FileShare.None, 8192, True)
+                                Dim Buffer(8191) As Byte
+                                Dim TotalBytesRead As Long = 0
+                                Dim BytesRead As Integer
 
-                                                           'Update values
-                                                           For Each DownloadItem In DownloadsListView.Items
-                                                               Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
-                                                               If DLListViewItem.AssociatedWebClient Is ClientSender Then
-                                                                   DLListViewItem.AppIsDownloading = Visibility.Hidden
-                                                                   DLListViewItem.AllDataLabel = "Completed and ready to use."
-                                                                   DLListViewItem.DownloadProgress = ""
-                                                               End If
-                                                           Next
+                                Dim NewStopwatch As New Stopwatch()
+                                NewStopwatch.Start()
 
-                                                           'Let the installer know that the PS3 firmware download finished
-                                                           For Each Win In System.Windows.Application.Current.Windows()
-                                                               If Win.ToString = "OrbisPro.SetupPSVita" Then
-                                                                   CType(Win, SetupPSVita).FirmwareDownloadCompleted = True
-                                                                   Exit For
-                                                               End If
-                                                           Next
+                                Do
+                                    BytesRead = Await ResponseStream.ReadAsync(Buffer, DownloadCancellationToken)
+                                    If BytesRead = 0 Then Exit Do
 
-                                                           'Send notification when download did finish
-                                                           OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS Vita Firmware", "DL Completed", "/Icons/rpcs3black.png")
-                                                           PlayBackgroundSound(Sounds.Trophy)
-                                                       End Sub
+                                    Await NewFileStream.WriteAsync(Buffer.AsMemory(0, BytesRead))
 
+                                    TotalBytesRead += BytesRead
+
+                                    Dim ElapsedSeconds As Double = NewStopwatch.Elapsed.TotalSeconds
+                                    Dim DownloadSpeed As Double = TotalBytesRead / ElapsedSeconds
+                                    Dim SpeedInKbps As Double = DownloadSpeed / 1024
+                                    Dim ETAInSeconds As Double = If(TotalBytes > 0, (TotalBytes - TotalBytesRead) / DownloadSpeed, 0)
+
+                                    'Display progress
+                                    If TotalBytes > 0 Then
+                                        Dim DLProgress As Double = TotalBytesRead * 100 / TotalBytes
+
+                                        If Dispatcher.CheckAccess() = False Then
+                                            Await Dispatcher.BeginInvoke(Sub()
+                                                                             For Each DownloadItem In DownloadsListView.Items
+                                                                                 Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                                                 If DLListViewItem.AppName = "PS Vita Firmware 3.74" Then
+                                                                                     DLListViewItem.DownloadProgress = (TotalBytesRead / (1024 * 1024)).ToString("0.000 MB") + "/" + (TotalBytes / (1024 * 1024)).ToString("0.000 MB")
+                                                                                     DLListViewItem.ProgressValue = DLProgress
+                                                                                 End If
+                                                                             Next
+                                                                         End Sub)
+
+                                        Else
+                                            For Each DownloadItem In DownloadsListView.Items
+                                                Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                                If DLListViewItem.AppName = "PS Vita Firmware 3.74" Then
+                                                    DLListViewItem.DownloadProgress = (TotalBytesRead / (1024 * 1024)).ToString("0.000 MB") + "/" + (TotalBytes / (1024 * 1024)).ToString("0.000 MB")
+                                                    DLListViewItem.ProgressValue = DLProgress
+                                                End If
+                                            Next
+                                        End If
+
+                                    End If
+                                Loop
+
+                                NewStopwatch.Stop()
+
+                                'Update values
+                                For Each DownloadItem In DownloadsListView.Items
+                                    Dim DLListViewItem As DownloadListViewItem = CType(DownloadItem, DownloadListViewItem)
+                                    If DLListViewItem.AppName = "PS Vita Firmware 3.74" Then
+                                        DLListViewItem.AppIsDownloading = Visibility.Hidden
+                                        DLListViewItem.AllDataLabel = "Completed and ready to use."
+                                        DLListViewItem.DownloadProgress = ""
+                                    End If
+                                Next
+
+                                'Let the installer know that the PS Vita firmware download finished
+                                For Each Win In System.Windows.Application.Current.Windows()
+                                    If Win.ToString = "OrbisPro.SetupPSVita" Then
+                                        CType(Win, SetupPSVita).FirmwareDownloadCompleted = True
+                                        Exit For
+                                    End If
+                                Next
+
+                                'Send notification when download did finish
+                                OrbisNotifications.NotificationPopup(DownloadsCanvas, "PS Vita Firmware 3.74", "DL Completed", "/Icons/Update.png")
+                                PlayBackgroundSound(Sounds.Trophy)
+                            End Using
+                        End Using
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+        Finally
+            If DownloadClientCTS IsNot Nothing Then
+                DownloadClientCTS.Dispose()
+                DownloadClientCTS = Nothing
+            End If
+        End Try
     End Sub
 
 #Region "Input"
@@ -314,7 +417,13 @@ Public Class Downloads
                 If TypeOf FocusedItem Is ListViewItem Then
                     Dim SelectedDownloadItem As DownloadListViewItem = CType(FocusedItem, DownloadListViewItem)
                     Try
-                        SelectedDownloadItem.AssociatedWebClient.CancelAsync()
+
+                        If IsDownloadClientBusy AndAlso DownloadClientCTS IsNot Nothing Then
+                            DownloadClientCTS.Cancel()
+                            DownloadClientCTS.Dispose()
+                            DownloadClientCTS = Nothing
+                        End If
+
                         OrbisNotifications.NotificationPopup(DownloadsCanvas, SelectedDownloadItem.AppName, "Download aborted.", SelectedDownloadItem.AppIcon)
                         PlayBackgroundSound(Sounds.Trophy)
                     Catch ex As Exception
@@ -366,7 +475,13 @@ Public Class Downloads
                     If TypeOf FocusedItem Is ListViewItem Then
                         Dim SelectedDownloadItem As DownloadListViewItem = CType(FocusedItem, DownloadListViewItem)
                         Try
-                            SelectedDownloadItem.AssociatedWebClient.CancelAsync()
+
+                            If IsDownloadClientBusy AndAlso DownloadClientCTS IsNot Nothing Then
+                                DownloadClientCTS.Cancel()
+                                DownloadClientCTS.Dispose()
+                                DownloadClientCTS = Nothing
+                            End If
+
                             OrbisNotifications.NotificationPopup(DownloadsCanvas, SelectedDownloadItem.AppName, "Download aborted.", SelectedDownloadItem.AppIcon)
                             PlayBackgroundSound(Sounds.Trophy)
                         Catch ex As Exception
@@ -468,7 +583,7 @@ Public Class Downloads
 
     Private Sub SetBackground()
         'Set the background
-        Select Case ConfigFile.IniReadValue("System", "Background")
+        Select Case MainConfigFile.IniReadValue("System", "Background")
             Case "Blue Bubbles"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
             Case "Orange/Red Gradient Waves"
@@ -476,7 +591,7 @@ Public Class Downloads
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
             Case "Custom"
-                BackgroundMedia.Source = New Uri(ConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
+                BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
                 BackgroundMedia.Source = Nothing
         End Select
@@ -487,19 +602,19 @@ Public Class Downloads
         End If
 
         'Go to first second of the background video and pause it if BackgroundAnimation = False
-        If ConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundAnimation") = "false" Then
             BackgroundMedia.Position = New TimeSpan(0, 0, 1)
             BackgroundMedia.Pause()
         End If
 
         'Mute BackgroundMedia if BackgroundMusic = False
-        If ConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
+        If MainConfigFile.IniReadValue("System", "BackgroundMusic") = "false" Then
             BackgroundMedia.IsMuted = True
         End If
 
         'Set width & height
-        If Not ConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+        If Not MainConfigFile.IniReadValue("System", "DisplayScaling") = "AutoScaling" Then
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))
@@ -507,7 +622,7 @@ Public Class Downloads
                 OrbisDisplay.SetScaling(DownloadsWindow, DownloadsCanvas, False, NewWidth, NewHeight)
             End If
         Else
-            Dim SplittedValues As String() = ConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
+            Dim SplittedValues As String() = MainConfigFile.IniReadValue("System", "DisplayResolution").Split("x")
             If SplittedValues.Length <> 0 Then
                 Dim NewWidth As Double = CDbl(SplittedValues(0))
                 Dim NewHeight As Double = CDbl(SplittedValues(1))
