@@ -9,7 +9,6 @@ Imports System.Windows.Media.Animation
 Public Class SetupCustomize
 
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-
     Private LastKeyboardKey As Key
     Private FocusedComboBox As ComboBox = Nothing
 
@@ -318,6 +317,8 @@ Public Class SetupCustomize
         BeginAnimation(OpacityProperty, ClosingAnimation)
     End Sub
 
+#Region "Background"
+
     Private Sub SetBackground()
         'Set the background
         Select Case MainConfigFile.IniReadValue("System", "Background")
@@ -374,6 +375,8 @@ Public Class SetupCustomize
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

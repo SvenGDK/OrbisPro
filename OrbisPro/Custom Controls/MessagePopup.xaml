@@ -5,13 +5,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:OrbisPro"
              mc:Ignorable="d" 
-             d:DesignHeight="100" d:DesignWidth="535">
+             d:DesignHeight="100" d:DesignWidth="535" Width="535" Height="100">
     <UserControl.Effect>
-        <DropShadowEffect/>
+        <DropShadowEffect RenderingBias="Quality"/>
     </UserControl.Effect>
-    <Canvas x:Name="PopupCanvas" Width="535" Height="100" Background="White">
-        <Label x:Name="PopupTitle" Content="" Canvas.Left="185" Canvas.Top="8" Height="48" Width="330" FontFamily="SST Light" Foreground="Black" FontSize="30" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="0" Background="{x:Null}"/>
-        <Label x:Name="PopupDetail" Content="" Canvas.Left="185" Canvas.Top="45" Height="48" Width="330" FontFamily="SST Light" Foreground="#FF6B6B6B" FontSize="26" VerticalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="0" Background="{x:Null}"/>
-        <Image x:Name="PopupImage" Height="64" Canvas.Left="101" Canvas.Top="18" Width="64"/>
+    <Canvas x:Name="PopupCanvas" Background="White" Height="100" Width="535">
+        <Label x:Name="PopupTitle" Content="" Height="48" Width="330" FontFamily="SST Light" Foreground="Black" FontSize="30" VerticalContentAlignment="Center" Padding="0" Background="{x:Null}" HorizontalAlignment="Left" Canvas.Left="185" Canvas.Top="8" VerticalAlignment="Top"/>
+        <Label x:Name="PopupDetail" Content="" Height="48" Width="330" FontFamily="SST Light" Foreground="#FF6B6B6B" FontSize="26" VerticalContentAlignment="Center" Padding="0" Background="{x:Null}" HorizontalAlignment="Left" Canvas.Left="185" Canvas.Top="45" VerticalAlignment="Top"/>
+        <Image x:Name="PopupImage" Width="64" Height="64" HorizontalAlignment="Left" Canvas.Left="101" Canvas.Top="18" VerticalAlignment="Center"/>
     </Canvas>
 </UserControl>

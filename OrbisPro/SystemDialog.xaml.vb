@@ -8,14 +8,13 @@ Imports SharpDX.XInput
 
 Public Class SystemDialog
 
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
     Private LastKeyboardKey As Key
+
     Public Opener As String
     Public MessageTitle As String
     Public MessageDescription As String
     Public MessageType As SystemMessage
-
-    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
-
     Public SetupStep As Boolean = False
 
     'Controller input
@@ -273,6 +272,8 @@ Public Class SystemDialog
 
 #End Region
 
+#Region "Background"
+
     Private Sub SetBackground()
         'Set the background
         Select Case MainConfigFile.IniReadValue("System", "Background")
@@ -329,5 +330,7 @@ Public Class SystemDialog
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
 End Class

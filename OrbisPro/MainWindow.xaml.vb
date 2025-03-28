@@ -1,4 +1,5 @@
-﻿Imports OrbisPro.OrbisAnimations
+﻿#Region "Orbis Imports"
+Imports OrbisPro.OrbisAnimations
 Imports OrbisPro.OrbisAudio
 Imports OrbisPro.OrbisCDVDManager
 Imports OrbisPro.OrbisInput
@@ -7,6 +8,8 @@ Imports OrbisPro.OrbisPowerUtils
 Imports OrbisPro.OrbisStructures
 Imports OrbisPro.OrbisUtils
 Imports OrbisPro.ProcessUtils
+#End Region
+
 Imports SharpDX.XInput
 Imports System.ComponentModel
 Imports System.IO
@@ -19,15 +22,15 @@ Imports System.Threading
 
 Class MainWindow
 
-    'Used to show the current time
+    'Used for current time, border glowing, battery & WiFi info
     Private WithEvents ClockTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 5)}
     Private WithEvents SystemTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 45)}
 
     'Hook the 'Home' key
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
 
-    'Our background webbrowser to retrieve some game infos (covers, cd image, description, ...)
-    Private WithEvents PSXDatacenterBrowser As New WebBrowser()
+    'Background WebBrowser to retrieve some game infos (covers, cd image, description, ...)
+    Private WithEvents GameDataBrowser As New WebBrowser()
     Public GameDatabaseReturnedTitle As String
     Public SecondWebSearch As Boolean = False
 
@@ -245,7 +248,7 @@ Class MainWindow
 
                     If IsDeviceInterface = False Then
                         Dim Volume As DEV_BROADCAST_VOLUME
-                        Volume = DirectCast(Marshal.PtrToStructure(lparam, GetType(DEV_BROADCAST_VOLUME)), DEV_BROADCAST_VOLUME)
+                        Volume = Marshal.PtrToStructure(Of DEV_BROADCAST_VOLUME)(lparam)
                         Dim DriveLetter As String = GetDriveLetterFromMask(Volume.dbcv_unitmask) & ":\"
 
                         DiscCheck(DriveLetter)
@@ -253,7 +256,7 @@ Class MainWindow
                         IsDeviceInterface = False
 
                         Dim Volume As DEV_BROADCAST_VOLUME
-                        Volume = DirectCast(Marshal.PtrToStructure(lparam, GetType(DEV_BROADCAST_VOLUME)), DEV_BROADCAST_VOLUME)
+                        Volume = Marshal.PtrToStructure(Of DEV_BROADCAST_VOLUME)(lparam)
                         Dim DriveLetter As String = GetDriveLetterFromMask(Volume.dbcv_unitmask) & ":\"
 
                         Dispatcher.BeginInvoke(Sub() PopupDeviceNotification("USB " + DriveLetter, "Drive can now be used."))
@@ -270,7 +273,7 @@ Class MainWindow
                 ElseIf NewHDR.dbch_devicetype = DBT_DEVTYP_VOLUME Then
                     If IsDeviceInterface = False Then
                         Dim Volume As DEV_BROADCAST_VOLUME
-                        Volume = DirectCast(Marshal.PtrToStructure(lparam, GetType(DEV_BROADCAST_VOLUME)), DEV_BROADCAST_VOLUME)
+                        Volume = Marshal.PtrToStructure(Of DEV_BROADCAST_VOLUME)(lparam)
                         Dim DriveLetter As String = GetDriveLetterFromMask(Volume.dbcv_unitmask) & ":\"
 
                         Dispatcher.BeginInvoke(Sub() PopupDeviceNotification("Disc " + DriveLetter, "Disc removed.", True))
@@ -278,7 +281,7 @@ Class MainWindow
                         IsDeviceInterface = False
 
                         Dim Volume As DEV_BROADCAST_VOLUME
-                        Volume = DirectCast(Marshal.PtrToStructure(lparam, GetType(DEV_BROADCAST_VOLUME)), DEV_BROADCAST_VOLUME)
+                        Volume = Marshal.PtrToStructure(Of DEV_BROADCAST_VOLUME)(lparam)
                         Dim DriveLetter As String = GetDriveLetterFromMask(Volume.dbcv_unitmask) & ":\"
 
                         Dispatcher.BeginInvoke(Sub() PopupDeviceNotification("USB " + DriveLetter, "Drive removed."))
@@ -294,9 +297,9 @@ Class MainWindow
 
     Private Sub PopupDeviceNotification(NotificationTitle As String, NotificationMessage As String, Optional IsDisc As Boolean = False)
         If IsDisc Then
-            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, NotificationTitle, NotificationMessage, "/Icons/Media-CD-icon.png"))
+            OrbisNotifications.NotificationPopup(MainCanvas, NotificationTitle, NotificationMessage, "/Icons/Media-CD-icon.png")
         Else
-            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, NotificationTitle, NotificationMessage, "/Icons/usb-icon.png"))
+            OrbisNotifications.NotificationPopup(MainCanvas, NotificationTitle, NotificationMessage, "/Icons/usb-icon.png")
         End If
     End Sub
 
@@ -336,13 +339,13 @@ Class MainWindow
             DiscContentType = "PS2"
             DiscDriveName = DriveLetter
             DiscGameID = CheckCDVDContent(DriveLetter).GameID
-            Dispatcher.BeginInvoke(Sub() PSXDatacenterBrowser.Navigate("https://psxdatacenter.com/psx2/games2/" + DiscGameID + ".html"))
+            Dispatcher.BeginInvoke(Sub() GameDataBrowser.Navigate("https://psxdatacenter.com/psx2/games2/" + DiscGameID + ".html"))
         ElseIf CheckCDVDContent(DriveLetter).Platform = "PS1" Then
             'Handle PS1 disc
             DiscContentType = "PS1"
             DiscDriveName = DriveLetter
             DiscGameID = CheckCDVDContent(DriveLetter).GameID.ToUpper
-            Dispatcher.BeginInvoke(Sub() PSXDatacenterBrowser.Navigate("https://psxdatacenter.com/plist.html"))
+            Dispatcher.BeginInvoke(Sub() GameDataBrowser.Navigate("https://psxdatacenter.com/plist.html"))
         ElseIf CheckCDVDContent(DriveLetter).Platform = "PCE" Then
             'Handle PC-Engine disc
             DiscContentType = "PCE"
@@ -350,7 +353,7 @@ Class MainWindow
 
             'The game id is a bit harder to retrieve and we got almost no infos about the disc ... it's compatible anyway so add it as default disc on the main menu
             'DiscContentType is the var here that chooses the right emulator afterwards
-            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, DriveLetter, "PC-Engine CD-ROM ready.", "/Icons/Media-CD-icon.png"))
+            OrbisNotifications.NotificationPopup(MainCanvas, DriveLetter, "PC-Engine CD-ROM ready.", "/Icons/Media-CD-icon.png")
             Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = DriveLetter,
                                                            .AppIconPath = "/Icons/Media-CD-icon.png",
                                                            .AppExecutable = "Start Disc",
@@ -369,7 +372,7 @@ Class MainWindow
 
     Private WithEvents GameStartAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(2))}
 
-    'The animation when entering Home
+    'Animation shown when entering Home
     Private Sub HomeAnimation()
         Dim AnimDuration = New Duration(TimeSpan.FromMilliseconds(500))
 
@@ -415,7 +418,7 @@ Class MainWindow
         AppStartLabel.Visibility = Visibility.Visible
     End Sub
 
-    'The animation when returning to Home
+    'Animation shown when returning to Home
     Public Sub ReturnAnimation()
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
@@ -471,7 +474,7 @@ Class MainWindow
         End If
     End Sub
 
-    'Animation when starting a game
+    'Animation shown when starting a game
     Private Sub StartGameAnimation(SelectedApp As Image)
 
         'Get game infos
@@ -525,7 +528,7 @@ Class MainWindow
         GameStarter.StartGame(GameInfos.AppPath)
     End Sub
 
-    'Animation when starting an internal application
+    'Animation shown when starting an internal application
     Private Sub SimpleAppStartAnimation(SelectedApp As Image)
 
         'Get the details about the selected application
@@ -565,7 +568,7 @@ Class MainWindow
 
     End Sub
 
-    'Animation when adding a the disc application on the main menu
+    'Animation shown when adding a the disc application on the main menu
     Public Sub AddDiscToHome(DiscInfos As AppDetails)
 
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
@@ -616,7 +619,7 @@ Class MainWindow
 
     End Sub
 
-    'Animation when removing the disc application on the main menu
+    'Animation shown when removing the disc application on the main menu
     Public Sub RemoveDiscFromHome()
 
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
@@ -689,6 +692,162 @@ Class MainWindow
         DiscApp.Visibility = Visibility.Hidden
     End Sub
 
+    'Animation shown when adding a new app on the main menu
+    Public Sub AddNewApp(AppTitle As String, AppFolderOrFile As String)
+
+        'Get the count of displayed apps
+        Dim InstalledAppsOnMenu As Integer = 0
+
+        If HomeAppsCount = 0 Then
+            For Each AppImage In MainCanvas.Children
+                If TypeOf AppImage Is Image Then
+                    Dim Img As Image = CType(AppImage, Image)
+                    If Img.Name.StartsWith("App") Then
+                        InstalledAppsOnMenu += 1
+                    End If
+                End If
+            Next
+        Else
+            'Speed up the next addition
+            InstalledAppsOnMenu = HomeAppsCount
+        End If
+
+        'Declare the new app
+        Dim NewAppImage As New Image With {
+            .Height = 200,
+            .Width = 200,
+            .Stretch = Stretch.Uniform,
+            .StretchDirection = StretchDirection.Both,
+            .Name = "App" + (InstalledAppsOnMenu + 1).ToString, 'Here the new app get it's number, so the code can iterate through it
+            .Focusable = True,
+            .FocusVisualStyle = Nothing,
+            .Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute)),
+            .Tag = New AppDetails() With {.AppTitle = AppTitle, .AppExecutable = "Start", .AppPath = AppFolderOrFile}
+        }
+
+        'Set app image to executable icon or existing asset file (if exists)
+        If Path.GetExtension(AppFolderOrFile) = ".exe" Then
+            If Not String.IsNullOrEmpty(CheckForExistingIconAsset(AppFolderOrFile)) Then
+                NewAppImage.Source = New BitmapImage(New Uri(CheckForExistingIconAsset(AppFolderOrFile), UriKind.RelativeOrAbsolute))
+            Else
+                NewAppImage.Source = GetExecutableIconAsImageSource(AppFolderOrFile)
+            End If
+        End If
+
+        'Get the last app on the main menu
+        Dim LastAppInMenu As Image = CType(MainCanvas.FindName("App" + InstalledAppsOnMenu.ToString()), Image)
+        HomeAppsCount = InstalledAppsOnMenu + 1
+
+        'Set the position of the new app
+        If LastAppInMenu.Name = "App8" Then
+            'Move the first added game/app to the correct position
+            'Case 1561 happens the very first time when the animation is probably finished but the canvas did not receive it's new location yet
+            Select Case Canvas.GetLeft(App8)
+                Case 1890
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 210)
+                Case 1680
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 420)
+                Case 1561
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 540)
+                Case 1470
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 630)
+                Case 1260
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 840)
+                Case 1050
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1050)
+                Case 840
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1260)
+                Case 630
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1470)
+                Case 285
+                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1805)
+            End Select
+        Else
+            Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastAppInMenu) + 210)
+        End If
+        Canvas.SetTop(NewAppImage, Canvas.GetTop(LastAppInMenu))
+
+        'Important, otherwise it can't find the new app
+        RegisterName(NewAppImage.Name, NewAppImage)
+
+        'Add the new app on the canvas
+        MainCanvas.Children.Add(NewAppImage)
+    End Sub
+
+    'Animation shown when reloading Home
+    Public Sub ReloadHome()
+        'Reset
+        HomeAppsCount = 0
+
+        'Get UIElements to remove
+        Dim AppsToRemove As New List(Of UIElement)()
+        For Each App In MainCanvas.Children
+            If TypeOf App Is Image Then
+
+                Dim TheApp As Image = CType(App, Image)
+
+                Select Case TheApp.Name
+                    Case "App1", "App2", "App3", "App4", "App5", "App6", "App7", "App8"
+                        Continue For
+                    Case Else
+                        'Remove only apps that have been added during runtime from the canvas
+                        If TheApp.Name.StartsWith("App") Then
+                            AppsToRemove.Add(TheApp)
+                            UnregisterName(TheApp.Name)
+                        End If
+                End Select
+
+            End If
+        Next
+        'Remove the UIElements from the canvas (removing while iterating will throw an exception)
+        For Each AppToRemove In AppsToRemove
+            MainCanvas.Children.Remove(AppToRemove)
+        Next
+
+        'Restore window and background (if hidden)
+        If Width = 0 Then
+            NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
+            ClockTimer.Start()
+            SystemTimer.Start()
+        End If
+
+        SetBackground()
+
+        'Reload custom applications & games
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
+            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
+                If LineWithApp.StartsWith("App") AndAlso LineWithApp.Split("="c)(1).Split(";"c).Length = 3 Then
+                    AddNewApp(LineWithApp.Split("="c)(1).Split(";"c)(0), LineWithApp.Split("="c)(1).Split(";"c)(1))
+                End If
+            Next
+        End If
+
+        If File.Exists(GameLibraryPath) Then
+            For Each Game In File.ReadAllLines(GameLibraryPath)
+                If Game.StartsWith("PS1Game") Then
+                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
+                ElseIf Game.StartsWith("PS2Game") Then
+                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
+                ElseIf Game.StartsWith("PS3Game") Then
+                    'For PS3 games show the folder name
+                    Dim PS3GameFolderName = Directory.GetParent(Game.Split("="c)(1).Split(";"c)(0))
+                    AddNewApp(PS3GameFolderName.Parent.Parent.Name, Game.Split("="c)(1).Split(";"c)(0))
+                ElseIf Game.StartsWith("PC") Then
+                    AddNewApp(Game.Split(";"c)(1), Game.Split(";"c)(2))
+                End If
+            Next
+        End If
+
+        App1.Focus()
+    End Sub
+
+#Region "Animation Events"
+
+    Private Sub GameStartAnimation_Completed(sender As Object, e As EventArgs) Handles GameStartAnimation.Completed
+        Dim DiscInfos = CType(DiscApp.Tag, AppDetails)
+        StartCDVD(DiscContentType, DiscInfos.AppPath)
+    End Sub
+
     Private Sub LastUIMoveAnimation_Completed(sender As Object, e As EventArgs) Handles LastUIMoveAnimation.Completed
         DidAnimate = True
     End Sub
@@ -701,8 +860,11 @@ Class MainWindow
         DidAnimate = True
     End Sub
 
-#Region "UI Browsing"
+#End Region
 
+#Region "UI Browsing Animations"
+
+    'Animation shown when going to the right on the main menu, moves items to the left
     Private Sub MoveAppsRight(SelectedApp As Image, NextApp As Image)
 
         Dim MoveDuration = New Duration(TimeSpan.FromMilliseconds(100))
@@ -766,6 +928,7 @@ Class MainWindow
         NextApp.Focus()
     End Sub
 
+    'Animation shown when going to the left on the main menu, moves items to the right
     Private Sub MoveAppsLeft(SelectedApp As Image, NextApp As Image)
 
         Dim MoveDuration = New Duration(TimeSpan.FromMilliseconds(100))
@@ -867,7 +1030,7 @@ Class MainWindow
                                 StartGameAnimation(FocusedApp)
                             End If
                         Else
-                            Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png"))
+                            OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png")
                         End If
 
                     End If
@@ -1045,7 +1208,7 @@ Class MainWindow
 
                                 LastFocusedApp = FocusedApp
                             Else
-                                Await Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png"))
+                                OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png")
                             End If
 
                         End If
@@ -1204,6 +1367,7 @@ Class MainWindow
             End If
         Else
             If WiFiIndicatorImage.Source IsNot Nothing Then
+                WiFiNetworkNameStrenghtTextBlock.Text = ""
                 WiFiIndicatorImage.Source = Nothing
             End If
         End If
@@ -1211,7 +1375,7 @@ Class MainWindow
 
 #End Region
 
-#Region "Background Functions"
+#Region "Background"
 
     Public Sub SetBackground()
         'Set the background
@@ -1300,7 +1464,9 @@ Class MainWindow
 
 #End Region
 
-    Private Sub PSXDatacenterBrowser_DocumentCompleted(sender As Object, e As WebBrowserDocumentCompletedEventArgs) Handles PSXDatacenterBrowser.DocumentCompleted
+#Region "Game Disc Info & Cover Loading"
+
+    Private Sub PSXDatacenterBrowser_DocumentCompleted(sender As Object, e As WebBrowserDocumentCompletedEventArgs) Handles GameDataBrowser.DocumentCompleted
 
         Dim CoverImgSrc As BitmapImage = Nothing
 
@@ -1308,7 +1474,7 @@ Class MainWindow
 
             If SecondWebSearch = False Then
                 'Load game properties site first
-                Dim TableRows As HtmlElementCollection = PSXDatacenterBrowser.Document.GetElementsByTagName("tr")
+                Dim TableRows As HtmlElementCollection = GameDataBrowser.Document.GetElementsByTagName("tr")
                 Dim TableGameIDs As New List(Of String)
 
                 For Each Row As HtmlElement In TableRows
@@ -1319,7 +1485,7 @@ Class MainWindow
                             Dim GameURL As String = Row.GetElementsByTagName("td")(0).GetElementsByTagName("a")(0).GetAttribute("href")
                             SecondWebSearch = True
 
-                            PSXDatacenterBrowser.Navigate(GameURL)
+                            GameDataBrowser.Navigate(GameURL)
                         End If
 
                     Catch ex As ArgumentOutOfRangeException
@@ -1329,7 +1495,7 @@ Class MainWindow
             Else
 
                 'Get the game infos
-                Dim InfoRows As HtmlElementCollection = PSXDatacenterBrowser.Document.GetElementsByTagName("tr")
+                Dim InfoRows As HtmlElementCollection = GameDataBrowser.Document.GetElementsByTagName("tr")
 
                 'Game Title
                 If InfoRows.Item(4).InnerText IsNot Nothing Then
@@ -1339,18 +1505,18 @@ Class MainWindow
                 End If
 
                 'Game Cover
-                If PSXDatacenterBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src") IsNot Nothing Then
-                    CoverImgSrc = New BitmapImage(New Uri(PSXDatacenterBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src")))
+                If GameDataBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src") IsNot Nothing Then
+                    CoverImgSrc = New BitmapImage(New Uri(GameDataBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src")))
                 End If
 
                 If CoverImgSrc IsNot Nothing Then
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri))
+                    OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri)
                     Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                .AppIconPath = CoverImgSrc.UriSource.AbsoluteUri,
                                                                .AppExecutable = "Start Disc",
                                                                .AppPath = DiscDriveName}))
                 Else
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", "/Icons/Media-PS1-icon.png"))
+                    OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", "/Icons/Media-PS1-icon.png")
                     Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                .AppIconPath = "/Icons/Media-PS1-icon.png",
                                                                .AppExecutable = "Start Disc",
@@ -1365,7 +1531,7 @@ Class MainWindow
 
             If SecondWebSearch = False Then
                 'Get the game infos
-                Dim InfoRows As HtmlElementCollection = PSXDatacenterBrowser.Document.GetElementsByTagName("tr")
+                Dim InfoRows As HtmlElementCollection = GameDataBrowser.Document.GetElementsByTagName("tr")
 
                 'Game Title
                 If InfoRows.Item(4).InnerText IsNot Nothing Then
@@ -1375,30 +1541,30 @@ Class MainWindow
                 End If
 
                 'Game Cover
-                If PSXDatacenterBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src") IsNot Nothing Then
-                    CoverImgSrc = New BitmapImage(New Uri(PSXDatacenterBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src")))
+                If GameDataBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src") IsNot Nothing Then
+                    CoverImgSrc = New BitmapImage(New Uri(GameDataBrowser.Document.GetElementById("table2").GetElementsByTagName("img")(1).GetAttribute("src")))
                 End If
 
                 If CoverImgSrc IsNot Nothing Then
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri))
+                    OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri)
                 Else
-                    Dispatcher.BeginInvoke(Sub() OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", "/Icons/Media-DVD-icon.png"))
+                    OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS2 DVD-ROM is now ready.", "/Icons/Media-DVD-icon.png")
                 End If
 
                 'Check if a PS2 disc image exists
-                If PSXDatacenterBrowser.Document.GetElementById("table29").GetElementsByTagName("tr")(2).GetElementsByTagName("a")(0).GetAttribute("href") IsNot Nothing Then
-                    Dim GameDiscImageSrc = PSXDatacenterBrowser.Document.GetElementById("table29").GetElementsByTagName("tr")(2).GetElementsByTagName("a")(0).GetAttribute("href")
+                If GameDataBrowser.Document.GetElementById("table29").GetElementsByTagName("tr")(2).GetElementsByTagName("a")(0).GetAttribute("href") IsNot Nothing Then
+                    Dim GameDiscImageSrc = GameDataBrowser.Document.GetElementById("table29").GetElementsByTagName("tr")(2).GetElementsByTagName("a")(0).GetAttribute("href")
 
                     'Do a second web browser navigation to get the game disc image
                     SecondWebSearch = True
-                    PSXDatacenterBrowser.Navigate(GameDiscImageSrc)
+                    GameDataBrowser.Navigate(GameDiscImageSrc)
                 End If
 
             Else
 
                 'Get the game disc image (if exists)
-                If PSXDatacenterBrowser.Document.GetElementsByTagName("img")(2).GetAttribute("src") IsNot Nothing Then
-                    Dim GameDiscImage = New BitmapImage(New Uri(PSXDatacenterBrowser.Document.GetElementsByTagName("img")(2).GetAttribute("src")))
+                If GameDataBrowser.Document.GetElementsByTagName("img")(2).GetAttribute("src") IsNot Nothing Then
+                    Dim GameDiscImage = New BitmapImage(New Uri(GameDataBrowser.Document.GetElementsByTagName("img")(2).GetAttribute("src")))
                     Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle, .AppIconPath = GameDiscImage.UriSource.AbsoluteUri, .AppExecutable = "Start"}))
                 Else
                     'If it doesn't exists, add the previous found cover, if this one is also not present then add a default disc image
@@ -1422,91 +1588,7 @@ Class MainWindow
 
     End Sub
 
-    Public Sub AddNewApp(AppTitle As String, AppFolderOrFile As String)
-
-        'Get the count of displayed apps
-        Dim InstalledAppsOnMenu As Integer = 0
-
-        If HomeAppsCount = 0 Then
-            For Each AppImage In MainCanvas.Children
-                If TypeOf AppImage Is Image Then
-                    Dim Img As Image = CType(AppImage, Image)
-                    If Img.Name.StartsWith("App") Then
-                        InstalledAppsOnMenu += 1
-                    End If
-                End If
-            Next
-        Else
-            'Speed up the next addition
-            InstalledAppsOnMenu = HomeAppsCount
-        End If
-
-        'Declare the new app
-        Dim NewAppImage As New Image With {
-            .Height = 200,
-            .Width = 200,
-            .Stretch = Stretch.Uniform,
-            .StretchDirection = StretchDirection.Both,
-            .Name = "App" + (InstalledAppsOnMenu + 1).ToString, 'Here the new app get it's number, so the code can iterate through it
-            .Focusable = True,
-            .FocusVisualStyle = Nothing,
-            .Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute)),
-            .Tag = New AppDetails() With {.AppTitle = AppTitle, .AppExecutable = "Start", .AppPath = AppFolderOrFile}
-        }
-
-        'Set app image to executable icon or existing asset file (if exists)
-        If Path.GetExtension(AppFolderOrFile) = ".exe" Then
-            If Not String.IsNullOrEmpty(CheckForExistingIconAsset(AppFolderOrFile)) Then
-                NewAppImage.Source = New BitmapImage(New Uri(CheckForExistingIconAsset(AppFolderOrFile), UriKind.RelativeOrAbsolute))
-            Else
-                NewAppImage.Source = GetExecutableIconAsImageSource(AppFolderOrFile)
-            End If
-        End If
-
-        'Get the last app on the main menu
-        Dim LastAppInMenu As Image = CType(MainCanvas.FindName("App" + InstalledAppsOnMenu.ToString()), Image)
-        HomeAppsCount = InstalledAppsOnMenu + 1
-
-        'Set the position of the new app
-        If LastAppInMenu.Name = "App8" Then
-            'Move the first added game/app to the correct position
-            'Case 1561 happens the very first time when the animation is probably finished but the canvas did not receive it's new location yet
-            Select Case Canvas.GetLeft(App8)
-                Case 1890
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 210)
-                Case 1680
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 420)
-                Case 1561
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 540)
-                Case 1470
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 630)
-                Case 1260
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 840)
-                Case 1050
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1050)
-                Case 840
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1260)
-                Case 630
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1470)
-                Case 285
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1805)
-            End Select
-        Else
-            Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastAppInMenu) + 210)
-        End If
-        Canvas.SetTop(NewAppImage, Canvas.GetTop(LastAppInMenu))
-
-        'Important, otherwise it can't find the new app
-        RegisterName(NewAppImage.Name, NewAppImage)
-
-        'Add the new app on the canvas
-        MainCanvas.Children.Add(NewAppImage)
-    End Sub
-
-    Private Sub GameStartAnimation_Completed(sender As Object, e As EventArgs) Handles GameStartAnimation.Completed
-        Dim DiscInfos = CType(DiscApp.Tag, AppDetails)
-        StartCDVD(DiscContentType, DiscInfos.AppPath)
-    End Sub
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
@@ -1520,72 +1602,6 @@ Class MainWindow
 
         NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
         NewSystemDialog.Show()
-    End Sub
-
-    Public Sub ReloadHome()
-        'Reset
-        HomeAppsCount = 0
-
-        'Get UIElements to remove
-        Dim AppsToRemove As New List(Of UIElement)()
-        For Each App In MainCanvas.Children
-            If TypeOf App Is Image Then
-
-                Dim TheApp As Image = CType(App, Image)
-
-                Select Case TheApp.Name
-                    Case "App1", "App2", "App3", "App4", "App5", "App6", "App7", "App8"
-                        Continue For
-                    Case Else
-                        'Remove only apps that have been added during runtime from the canvas
-                        If TheApp.Name.StartsWith("App") Then
-                            AppsToRemove.Add(TheApp)
-                            UnregisterName(TheApp.Name)
-                        End If
-                End Select
-
-            End If
-        Next
-        'Remove the UIElements from the canvas (removing while iterating will throw an exception)
-        For Each AppToRemove In AppsToRemove
-            MainCanvas.Children.Remove(AppToRemove)
-        Next
-
-        'Restore window and background (if hidden)
-        If Width = 0 Then
-            NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
-            ClockTimer.Start()
-            SystemTimer.Start()
-        End If
-
-        SetBackground()
-
-        'Reload custom applications & games
-        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                If LineWithApp.StartsWith("App") AndAlso LineWithApp.Split("="c)(1).Split(";"c).Length = 3 Then
-                    AddNewApp(LineWithApp.Split("="c)(1).Split(";"c)(0), LineWithApp.Split("="c)(1).Split(";"c)(1))
-                End If
-            Next
-        End If
-
-        If File.Exists(GameLibraryPath) Then
-            For Each Game In File.ReadAllLines(GameLibraryPath)
-                If Game.StartsWith("PS1Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS2Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS3Game") Then
-                    'For PS3 games show the folder name
-                    Dim PS3GameFolderName = Directory.GetParent(Game.Split("="c)(1).Split(";"c)(0))
-                    AddNewApp(PS3GameFolderName.Parent.Parent.Name, Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PC") Then
-                    AddNewApp(Game.Split(";"c)(1), Game.Split(";"c)(2))
-                End If
-            Next
-        End If
-
-        App1.Focus()
     End Sub
 
     Public Sub ReduceUsage()

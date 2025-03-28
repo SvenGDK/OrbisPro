@@ -10,15 +10,14 @@ Imports System.Windows.Threading
 
 Public Class SetupPS3
 
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents PS3Emulator As Process
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
-
     Private LastKeyboardKey As Key
+
     Public Opener As String = ""
     Public RequirementsRead As Boolean = False
     Public FirmwareDownloadCompleted As Boolean = False
-
-    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
@@ -303,6 +302,8 @@ Public Class SetupPS3
 
 #End Region
 
+#Region "Navigation"
+
     Private Sub MoveUp()
         PlayBackgroundSound(Sounds.Move)
 
@@ -331,19 +332,9 @@ Public Class SetupPS3
         End If
     End Sub
 
-    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
-        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
-            .Top = 0,
-            .Left = 0,
-            .Opacity = 0,
-            .SetupStep = True,
-            .Opener = "SetupPS3",
-            .MessageTitle = MessageTitle,
-            .MessageDescription = MessageDescription}
+#End Region
 
-        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-        NewSystemDialog.Show()
-    End Sub
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -400,6 +391,22 @@ Public Class SetupPS3
         'Loop the background media
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
+    End Sub
+
+#End Region
+
+    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
+        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
+            .Top = 0,
+            .Left = 0,
+            .Opacity = 0,
+            .SetupStep = True,
+            .Opener = "SetupPS3",
+            .MessageTitle = MessageTitle,
+            .MessageDescription = MessageDescription}
+
+        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSystemDialog.Show()
     End Sub
 
 End Class

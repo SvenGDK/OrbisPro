@@ -11,14 +11,13 @@ Imports System.Windows.Threading
 
 Public Class SetupGames
 
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents GameCollectionWorker As New BackgroundWorker() With {.WorkerReportsProgress = True}
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
     Private WaitedFor As Integer = 0
     Private LastKeyboardKey As Key
 
     Private GameTitleList As New List(Of String)()
-
-    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
@@ -66,6 +65,28 @@ Public Class SetupGames
             GameCollectionWorker.RunWorkerAsync()
         End If
     End Sub
+
+    Private Sub ContinueSetup()
+        PlayBackgroundSound(Sounds.SelectItem)
+
+        Dim NewSetupApps As New SetupApps() With {.ShowActivated = True, .Top = Top, .Left = Left, .Opacity = 0}
+        NewSetupApps.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSetupApps.Show()
+
+        BeginAnimation(OpacityProperty, ClosingAnimation)
+    End Sub
+
+    Private Sub ReturnToPreviousSetupStep()
+        PlayBackgroundSound(Sounds.Back)
+
+        Dim NewSetupCheckUpdates As New SetupCheckUpdates() With {.ShowActivated = True, .Top = Top, .Left = Left}
+        NewSetupCheckUpdates.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSetupCheckUpdates.Show()
+
+        BeginAnimation(OpacityProperty, ClosingAnimation)
+    End Sub
+
+#Region "Game Loader"
 
     Private Sub GameCollectionWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles GameCollectionWorker.DoWork
 
@@ -346,6 +367,8 @@ Public Class SetupGames
         End Try
     End Sub
 
+#End Region
+
 #Region "Input"
 
     Private Sub SetupGames_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
@@ -362,8 +385,7 @@ Public Class SetupGames
                             GameWriter.WriteLine("PC;" + SelectedGame.AppTitle + ";" + SelectedGame.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
                         End Using
 
-                        'Notify that the game has been added
-                        Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupGamesCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon))
+                        NotificationPopup(SetupGamesCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon)
                     End If
                 Case Key.C
                     ReturnToPreviousSetupStep()
@@ -426,7 +448,7 @@ Public Class SetupGames
                         End Using
 
                         'Notify that the game has been added and add additional delay due to animation
-                        Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupGamesCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon))
+                        NotificationPopup(SetupGamesCanvas, SelectedGame.AppTitle, "Added to Games Library", SelectedGame.AppIcon)
                     End If
                 ElseIf MainGamepadButton_DPad_Left_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
@@ -515,25 +537,7 @@ Public Class SetupGames
 
 #End Region
 
-    Private Sub ContinueSetup()
-        PlayBackgroundSound(Sounds.SelectItem)
-
-        Dim NewSetupApps As New SetupApps() With {.ShowActivated = True, .Top = Top, .Left = Left, .Opacity = 0}
-        NewSetupApps.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-        NewSetupApps.Show()
-
-        BeginAnimation(OpacityProperty, ClosingAnimation)
-    End Sub
-
-    Private Sub ReturnToPreviousSetupStep()
-        PlayBackgroundSound(Sounds.Back)
-
-        Dim NewSetupCheckUpdates As New SetupCheckUpdates() With {.ShowActivated = True, .Top = Top, .Left = Left}
-        NewSetupCheckUpdates.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-        NewSetupCheckUpdates.Show()
-
-        BeginAnimation(OpacityProperty, ClosingAnimation)
-    End Sub
+#Region "Navigation"
 
     Private Sub GamesLibrary_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles GamesLibrary.SelectionChanged
         If GamesLibrary.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
@@ -559,6 +563,10 @@ Public Class SetupGames
         Dim VerticalOffset As Double = GamesListViewScrollViewer.VerticalOffset
         GamesListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 70)
     End Sub
+
+#End Region
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -616,6 +624,8 @@ Public Class SetupGames
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

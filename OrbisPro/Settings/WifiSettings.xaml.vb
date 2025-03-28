@@ -12,16 +12,16 @@ Imports System.Windows.Media.Animation
 
 Public Class WifiSettings
 
-    Private LastKeyboardKey As Key
-    Public Opener As String = ""
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-
+    Private LastKeyboardKey As Key
     Private PasswordInputBox As New PSInputBox("WiFi Password :", True)
     Private WiFiNetworkToHandle As WiFiNetworkListViewItem
     Private WiFiNetworkListViewIndex As Integer = 0
     Private IsWiFiConnected As Boolean = False
     Private ConnectedWifi As NetworkIdentifier
+
+    Public Opener As String = ""
 
     'Controller input
     Private MainController As Controller
@@ -457,6 +457,8 @@ Public Class WifiSettings
 
 #End Region
 
+#Region "Navigation"
+
     Private Sub WiFiNetworksListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles WiFiNetworksListView.SelectionChanged
         If WiFiNetworksListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
             PlayBackgroundSound(Sounds.Move)
@@ -487,6 +489,10 @@ Public Class WifiSettings
         Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
         OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
     End Sub
+
+#End Region
+
+#Region "WiFi Connection Events"
 
     Private Sub RefreshWiFiNetworks()
         WiFiNetworksListView.Items.Clear()
@@ -619,6 +625,10 @@ Public Class WifiSettings
         End If
     End Function
 
+#End Region
+
+#Region "Background"
+
     Private Sub SetBackground()
         'Set the background
         Select Case MainConfigFile.IniReadValue("System", "Background")
@@ -675,6 +685,8 @@ Public Class WifiSettings
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

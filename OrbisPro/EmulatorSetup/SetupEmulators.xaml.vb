@@ -10,6 +10,7 @@ Public Class SetupEmulators
 
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private LastKeyboardKey As Key
+
     Public Opener As String = ""
 
     'Controller input
@@ -170,6 +171,8 @@ Public Class SetupEmulators
 
 #End Region
 
+#Region "Navigation"
+
     Private Sub MoveUp()
         PlayBackgroundSound(Sounds.Move)
 
@@ -190,6 +193,8 @@ Public Class SetupEmulators
         End If
     End Sub
 
+#End Region
+
     Public Sub OpenPS3Setup()
         PlayBackgroundSound(Sounds.SelectItem)
 
@@ -209,6 +214,8 @@ Public Class SetupEmulators
         NewPSVitaSetup.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
         NewPSVitaSetup.Show()
     End Sub
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -266,6 +273,8 @@ Public Class SetupEmulators
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

@@ -23,6 +23,7 @@ Public Class WelcomeToSetup
 #Region "Window Events"
 
     Private Sub WelcomeToSetup_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
+
         If MainConfigFile.IniReadValue("Setup", "Done") = "True" Then
 
             'Read config
@@ -110,25 +111,6 @@ Public Class WelcomeToSetup
     End Sub
 
 #End Region
-
-    Private Sub BackgroundMedia_MediaEnded(sender As Object, e As RoutedEventArgs) Handles BackgroundMedia.MediaEnded
-        Select Case SharedDeviceModel
-            Case DeviceModel.PC
-
-            Case DeviceModel.ROGAlly
-                'Change the background
-                BackgroundMedia.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
-                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
-                BackgroundMedia.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
-
-                'Continue setup
-                SetupAllyPart2()
-            Case DeviceModel.SteamDeck
-
-            Case DeviceModel.LegionGo
-
-        End Select
-    End Sub
 
     Private Sub ClosingAnimation_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
         Close()
@@ -266,6 +248,27 @@ Public Class WelcomeToSetup
 
 #End Region
 
+#Region "Background"
+
+    Private Sub BackgroundMedia_MediaEnded(sender As Object, e As RoutedEventArgs) Handles BackgroundMedia.MediaEnded
+        Select Case SharedDeviceModel
+            Case DeviceModel.PC
+
+            Case DeviceModel.ROGAlly
+                'Change the background
+                BackgroundMedia.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\bluecircles.mp4", UriKind.Absolute)
+                BackgroundMedia.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(300))})
+
+                'Continue setup
+                SetupAllyPart2()
+            Case DeviceModel.SteamDeck
+
+            Case DeviceModel.LegionGo
+
+        End Select
+    End Sub
+
     Private Sub SetBackground()
         'Set the background
         Select Case MainConfigFile.IniReadValue("System", "Background")
@@ -313,6 +316,8 @@ Public Class WelcomeToSetup
             End If
         End If
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

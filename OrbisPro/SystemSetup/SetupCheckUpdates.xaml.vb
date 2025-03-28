@@ -11,13 +11,13 @@ Imports System.IO
 
 Public Class SetupCheckUpdates
 
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
     Private WithEvents UpdateWarningTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 2)}
     Private WaitedFor As Integer = 0
     Private LastKeyboardKey As Key
-    Public Opener As String = ""
 
-    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Public Opener As String = ""
 
     'Controller input
     Private MainController As Controller
@@ -231,6 +231,8 @@ Public Class SetupCheckUpdates
         BeginAnimation(OpacityProperty, ClosingAnimation)
     End Sub
 
+#Region "Background"
+
     Private Sub SetBackground()
         'Set the background
         Select Case MainConfigFile.IniReadValue("System", "Background")
@@ -287,6 +289,8 @@ Public Class SetupCheckUpdates
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

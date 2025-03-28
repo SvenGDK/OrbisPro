@@ -8,9 +8,10 @@ Imports System.ComponentModel
 
 Public Class SystemWebBrowser
 
-    Private LastKeyboardKey As Key
-    Public Opener As String
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Private LastKeyboardKey As Key
+
+    Public Opener As String
 
     'Controller input
     Private MainController As Controller
@@ -51,6 +52,10 @@ Public Class SystemWebBrowser
     End Sub
 
 #End Region
+
+    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
+        Close()
+    End Sub
 
 #Region "WebView2 Events"
 
@@ -160,9 +165,55 @@ Public Class SystemWebBrowser
 
 #End Region
 
-    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
-        Close()
+#Region "Navigation"
+
+    Private Sub MoveUp()
+        If WebNavigationBarTextBox.IsFocused Then
+            InternalBrowser.Focus()
+        ElseIf WebSearchTextBox.IsFocused Then
+            InternalBrowser.Focus()
+        End If
     End Sub
+
+    Private Sub MoveDown()
+        If WebNavigationBarTextBox.IsFocused Then
+            InternalBrowser.Focus()
+        ElseIf WebSearchTextBox.IsFocused Then
+            InternalBrowser.Focus()
+        End If
+    End Sub
+
+    Private Sub MoveRight()
+        If WebNavigationBarTextBox.IsFocused Then
+            WebSearchTextBox.Focus()
+        ElseIf WebSearchTextBox.IsFocused Then
+            WebNavigationBarTextBox.Focus()
+        End If
+    End Sub
+
+    Private Sub MoveLeft()
+        If WebNavigationBarTextBox.IsFocused Then
+            WebSearchTextBox.Focus()
+        ElseIf WebSearchTextBox.IsFocused Then
+            WebSearchTextBox.Focus()
+        End If
+    End Sub
+
+    Private Sub ScrollUp()
+        Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(InternalBrowser)
+        Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
+        OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset - 50)
+    End Sub
+
+    Private Sub ScrollDown()
+        Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(InternalBrowser)
+        Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
+        OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
+    End Sub
+
+#End Region
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -221,6 +272,8 @@ Public Class SystemWebBrowser
         BackgroundMedia.Play()
     End Sub
 
+#End Region
+
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
             .Top = 0,
@@ -234,53 +287,5 @@ Public Class SystemWebBrowser
         NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
         NewSystemDialog.Show()
     End Sub
-
-#Region "Navigation"
-
-    Private Sub MoveUp()
-        If WebNavigationBarTextBox.IsFocused Then
-            InternalBrowser.Focus()
-        ElseIf WebSearchTextBox.IsFocused Then
-            InternalBrowser.Focus()
-        End If
-    End Sub
-
-    Private Sub MoveDown()
-        If WebNavigationBarTextBox.IsFocused Then
-            InternalBrowser.Focus()
-        ElseIf WebSearchTextBox.IsFocused Then
-            InternalBrowser.Focus()
-        End If
-    End Sub
-
-    Private Sub MoveRight()
-        If WebNavigationBarTextBox.IsFocused Then
-            WebSearchTextBox.Focus()
-        ElseIf WebSearchTextBox.IsFocused Then
-            WebNavigationBarTextBox.Focus()
-        End If
-    End Sub
-
-    Private Sub MoveLeft()
-        If WebNavigationBarTextBox.IsFocused Then
-            WebSearchTextBox.Focus()
-        ElseIf WebSearchTextBox.IsFocused Then
-            WebSearchTextBox.Focus()
-        End If
-    End Sub
-
-    Private Sub ScrollUp()
-        Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(InternalBrowser)
-        Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
-        OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset - 50)
-    End Sub
-
-    Private Sub ScrollDown()
-        Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(InternalBrowser)
-        Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
-        OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
-    End Sub
-
-#End Region
 
 End Class

@@ -14,7 +14,6 @@ Imports InTheHand.Net.Sockets
 
 Public Class BluetoothSettings
 
-    Public Opener As String = ""
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
@@ -31,6 +30,8 @@ Public Class BluetoothSettings
     Private UnpairingSuccess As Boolean = False
     Private ConnectionSuccess As Boolean = False
     Private DisonnectionSuccess As Boolean = False
+
+    Public Opener As String = ""
 
     'Controller input
     Private MainController As Controller
@@ -337,6 +338,8 @@ Public Class BluetoothSettings
 
 #End Region
 
+#Region "Bluetooth Connection Events"
+
     Private Sub BluetoothWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles BluetoothWorker.DoWork
 
         Select Case e.Argument.ToString()
@@ -482,6 +485,10 @@ Public Class BluetoothSettings
         DisonnectionSuccess = False
     End Sub
 
+#End Region
+
+#Region "Navigation"
+
     Private Sub BluetoothDevicesListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles BluetoothDevicesListView.SelectionChanged
         If BluetoothDevicesListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
             PlayBackgroundSound(Sounds.Move)
@@ -518,6 +525,10 @@ Public Class BluetoothSettings
         Dim VerticalOffset As Double = OpenWindowsListViewScrollViewer.VerticalOffset
         OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
     End Sub
+
+#End Region
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -575,6 +586,8 @@ Public Class BluetoothSettings
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

@@ -9,11 +9,12 @@ Imports System.Windows.Media.Animation
 
 Public Class OpenWindows
 
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Private WithEvents SwitchAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private LastKeyboardKey As Key
-    Public Opener As String
 
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
-    Dim WithEvents SwitchAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Public Opener As String
+    Public OtherProcess As String
 
     'Controller input
     Private MainController As Controller
@@ -21,8 +22,6 @@ Public Class OpenWindows
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
-
-    Public OtherProcess As String
 
 #Region "Window Events"
 
@@ -91,6 +90,8 @@ Public Class OpenWindows
     End Sub
 
 #End Region
+
+#Region "Animations"
 
     Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
         PlayBackgroundSound(Sounds.Back)
@@ -173,6 +174,8 @@ Public Class OpenWindows
         PlayBackgroundSound(Sounds.Back)
         Close()
     End Sub
+
+#End Region
 
 #Region "Input"
 
@@ -388,6 +391,8 @@ Public Class OpenWindows
 
 #End Region
 
+#Region "Navigation"
+
     Private Sub OpenWindowsListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles OpenWindowsListView.SelectionChanged
         If OpenWindowsListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
 
@@ -416,19 +421,28 @@ Public Class OpenWindows
         OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
     End Sub
 
-    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
-        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
-            .Top = 0,
-            .Left = 0,
-            .Opacity = 0,
-            .SetupStep = True,
-            .Opener = "OpenWindows",
-            .MessageTitle = MessageTitle,
-            .MessageDescription = MessageDescription}
+#End Region
 
-        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-        NewSystemDialog.Show()
+#Region "Navigation Helpers"
+
+    Private Sub RefocusFirstItem()
+        If OpenWindowsListView.Items.Count > 0 Then
+            'Focus the first item
+            Dim LastSelectedListViewItem As ListViewItem = CType(OpenWindowsListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+            LastSelectedListViewItem.Focus()
+
+            'Convert to OpenWindowListViewItem to set the border visibility on the first item
+            Dim LastSelectedItem As OpenWindowListViewItem = CType(LastSelectedListViewItem.Content, OpenWindowListViewItem)
+            LastSelectedItem.IsItemSelected = Visibility.Visible
+
+            Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(OpenWindowsListView)
+            OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(0)
+        End If
     End Sub
+
+#End Region
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -487,19 +501,20 @@ Public Class OpenWindows
         BackgroundMedia.Play()
     End Sub
 
-    Private Sub RefocusFirstItem()
-        If OpenWindowsListView.Items.Count > 0 Then
-            'Focus the first item
-            Dim LastSelectedListViewItem As ListViewItem = CType(OpenWindowsListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
-            LastSelectedListViewItem.Focus()
+#End Region
 
-            'Convert to OpenWindowListViewItem to set the border visibility on the first item
-            Dim LastSelectedItem As OpenWindowListViewItem = CType(LastSelectedListViewItem.Content, OpenWindowListViewItem)
-            LastSelectedItem.IsItemSelected = Visibility.Visible
+    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
+        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
+            .Top = 0,
+            .Left = 0,
+            .Opacity = 0,
+            .SetupStep = True,
+            .Opener = "OpenWindows",
+            .MessageTitle = MessageTitle,
+            .MessageDescription = MessageDescription}
 
-            Dim OpenWindowsListViewScrollViewer As ScrollViewer = FindScrollViewer(OpenWindowsListView)
-            OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(0)
-        End If
+        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSystemDialog.Show()
     End Sub
 
 End Class

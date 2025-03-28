@@ -10,15 +10,16 @@ Imports System.Text
 
 Public Class GameLibrary
 
-    Public Opener As String
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private LastKeyboardKey As Key
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Options menu animations
-    Dim OptionsBoxLeftAnim As New DoubleAnimation With {.From = 1920, .To = 1430, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
-    Dim ButtonsBoxLeftAnim As New DoubleAnimation With {.From = 1930, .To = 1438, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
-    Dim OptionsBoxRightAnim As New DoubleAnimation With {.From = 1430, .To = 1930, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
-    Dim ButtonsBoxRightAnim As New DoubleAnimation With {.From = 1438, .To = 1930, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
+    Private OptionsBoxLeftAnim As New DoubleAnimation With {.From = 1920, .To = 1430, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
+    Private ButtonsBoxLeftAnim As New DoubleAnimation With {.From = 1930, .To = 1438, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
+    Private OptionsBoxRightAnim As New DoubleAnimation With {.From = 1430, .To = 1930, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
+    Private ButtonsBoxRightAnim As New DoubleAnimation With {.From = 1438, .To = 1930, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
+
+    Public Opener As String
 
     'Controller input
     Private MainController As Controller
@@ -135,6 +136,10 @@ Public Class GameLibrary
     End Sub
 
 #End Region
+
+    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
+        Close()
+    End Sub
 
 #Region "Input"
 
@@ -444,9 +449,7 @@ Public Class GameLibrary
 
 #End Region
 
-    Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
-        Close()
-    End Sub
+#Region "Game Library Options"
 
     Private Sub LaunchGameOrApplication(SelectedApp As AppListViewItem)
         'Play 'start' sound effect
@@ -498,6 +501,10 @@ Public Class GameLibrary
             FirstSelectedItem.IsAppSelected = Visibility.Visible
         End If
     End Sub
+
+#End Region
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -555,6 +562,8 @@ Public Class GameLibrary
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

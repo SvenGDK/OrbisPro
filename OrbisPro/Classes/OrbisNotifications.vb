@@ -3,7 +3,7 @@
 Public Class OrbisNotifications
 
     Private Shared _DisablePopups As Boolean = False
-    Private Shared _NotificationDuration As Double = 3.0
+    Private Shared _NotificationDuration As Double = 2.0
 
     Public Shared Property NotificationDuration As Double
         Get
@@ -34,12 +34,27 @@ Public Class OrbisNotifications
         'Add to the window where it should pop up
         CanvasToPopup.Children.Add(NewNotification)
 
-        'Animate the NewNotification
-        If NewNotification.Dispatcher.CheckAccess() = True Then
-            NewNotification.BeginAnimation(Canvas.LeftProperty, New DoubleAnimation With {.From = -535, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(NotificationDuration)), .AutoReverse = True})
+        'Setup the DoubleAnimation
+        Dim NotificationDoubleAnimation As New DoubleAnimation() With {
+            .From = -535,
+            .To = 0,
+            .Duration = New Duration(TimeSpan.FromSeconds(NotificationDuration)),
+            .AutoReverse = True
+        }
+
+        'Animate the NewNotification on the CanvasToPopup
+        If CanvasToPopup.Dispatcher.CheckAccess() = True Then
+            NewNotification.BeginAnimation(Canvas.LeftProperty, NotificationDoubleAnimation)
         Else
-            NewNotification.Dispatcher.BeginInvoke(Sub() NewNotification.BeginAnimation(Canvas.LeftProperty, New DoubleAnimation With {.From = -535, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(NotificationDuration)), .AutoReverse = True}))
+            CanvasToPopup.Dispatcher.BeginInvoke(Sub()
+                                                     NewNotification.BeginAnimation(Canvas.LeftProperty, NotificationDoubleAnimation)
+                                                 End Sub)
         End If
+
+        'Catch completion
+        'AddHandler NotificationDoubleAnimation.Completed, Sub(sender As Object, e As EventArgs)
+
+        '                                                  End Sub
     End Sub
 
     Public Shared Sub NotificationPopup(CanvasToPopup As Canvas, NotificationTitle As String, NotificationDetails As String, NotificationImage As ImageSource)
@@ -53,12 +68,27 @@ Public Class OrbisNotifications
         'Add to the window where it should pop up
         CanvasToPopup.Children.Add(NewNotification)
 
-        'Animate the NewNotification
-        If NewNotification.Dispatcher.CheckAccess() = True Then
-            NewNotification.BeginAnimation(Canvas.LeftProperty, New DoubleAnimation With {.From = -535, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(NotificationDuration)), .AutoReverse = True})
+        'Setup the DoubleAnimation
+        Dim NotificationDoubleAnimation As New DoubleAnimation() With {
+            .From = -535,
+            .To = 0,
+            .Duration = New Duration(TimeSpan.FromSeconds(NotificationDuration)),
+            .AutoReverse = True
+        }
+
+        'Animate the NewNotification on the CanvasToPopup
+        If CanvasToPopup.Dispatcher.CheckAccess() = True Then
+            NewNotification.BeginAnimation(Canvas.LeftProperty, NotificationDoubleAnimation)
         Else
-            NewNotification.Dispatcher.BeginInvoke(Sub() NewNotification.BeginAnimation(Canvas.LeftProperty, New DoubleAnimation With {.From = -535, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(NotificationDuration)), .AutoReverse = True}))
+            CanvasToPopup.Dispatcher.BeginInvoke(Sub()
+                                                     NewNotification.BeginAnimation(Canvas.LeftProperty, NotificationDoubleAnimation)
+                                                 End Sub)
         End If
+
+        'Catch completion
+        'AddHandler NotificationDoubleAnimation.Completed, Sub(sender As Object, e As EventArgs)
+
+        '                                                  End Sub
     End Sub
 
 End Class

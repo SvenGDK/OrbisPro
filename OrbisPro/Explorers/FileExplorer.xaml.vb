@@ -11,13 +11,13 @@ Imports SharpDX.XInput
 
 Public Class FileExplorer
 
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Private LastKeyboardKey As Key
+
     Public Opener As String
     Public LastPath As String 'Keep track of the last path
     Public LastSelectedIndex As Integer
     Public SelectedItemToCopy As FileBrowserListViewItem
-    Private LastKeyboardKey As Key
-
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
@@ -103,6 +103,8 @@ Public Class FileExplorer
 
 #End Region
 
+#Region "Animations"
+
     Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
         PlayBackgroundSound(Sounds.Back)
 
@@ -172,8 +174,6 @@ Public Class FileExplorer
 
         Close()
     End Sub
-
-#Region "Animations"
 
     'This is the main animation while browsing through the folders
     Private Sub ShowListAnimation()
@@ -1436,6 +1436,21 @@ Public Class FileExplorer
         OpenWindowsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
     End Sub
 
+    Private Sub SelectNextListViewItem()
+        Dim TotalListViewItems As Integer = FilesFoldersListView.Items.Count
+        Dim CurrentIndex As Integer = FilesFoldersListView.SelectedIndex
+
+        If CurrentIndex + 1 <= TotalListViewItems Then
+            'Simply select the next item in the collection
+            FilesFoldersListView.SelectedIndex = CurrentIndex + 1
+        Else
+            'Check if there any items in the collection and select the previous item
+            If TotalListViewItems > 0 AndAlso CurrentIndex - 1 < TotalListViewItems Then
+                FilesFoldersListView.SelectedIndex = CurrentIndex - 1
+            End If
+        End If
+    End Sub
+
 #End Region
 
 #Region "Selection Changes"
@@ -1510,6 +1525,8 @@ Public Class FileExplorer
     End Sub
 
 #End Region
+
+#Region "File Explorer Options"
 
     Public Sub CopyFile(CopyFrom As String, CopyTo As String, Optional TransferIcon As ImageSource = Nothing)
         Dim NewCopyWindow As New CopyWindow() With {.ShowActivated = True, .Top = Top, .Left = Left}
@@ -1800,21 +1817,6 @@ Public Class FileExplorer
         FilesFoldersListView.Items.Refresh()
     End Function
 
-    Private Sub SelectNextListViewItem()
-        Dim TotalListViewItems As Integer = FilesFoldersListView.Items.Count
-        Dim CurrentIndex As Integer = FilesFoldersListView.SelectedIndex
-
-        If CurrentIndex + 1 <= TotalListViewItems Then
-            'Simply select the next item in the collection
-            FilesFoldersListView.SelectedIndex = CurrentIndex + 1
-        Else
-            'Check if there any items in the collection and select the previous item
-            If TotalListViewItems > 0 AndAlso CurrentIndex - 1 < TotalListViewItems Then
-                FilesFoldersListView.SelectedIndex = CurrentIndex - 1
-            End If
-        End If
-    End Sub
-
     Private Sub LaunchGameOrApplication(SelectedFile As FileBrowserListViewItem)
         'Play 'start' sound effect
         PlayBackgroundSound(Sounds.SelectItem)
@@ -1830,6 +1832,10 @@ Public Class FileExplorer
         StartGame(SelectedFile.FileFolderName)
         BeginAnimation(OpacityProperty, ClosingAnimation)
     End Sub
+
+#End Region
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -1888,6 +1894,10 @@ Public Class FileExplorer
         BackgroundMedia.Play()
     End Sub
 
+#End Region
+
+#Region "Error Handling"
+
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
             .Top = 0,
@@ -1901,5 +1911,7 @@ Public Class FileExplorer
         NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
         NewSystemDialog.Show()
     End Sub
+
+#End Region
 
 End Class

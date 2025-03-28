@@ -38,4 +38,9 @@ Public Class OrbisDisplay
         CanvasToScale.LayoutTransform = New ScaleTransform(SystemPrimaryScreenWidth / 1920, SystemPrimaryScreenHeight / 1080)
     End Sub
 
+    Public Shared Function GetRenderCapability() As Integer
+        Dim DeviceRenderCapability As Integer = RenderCapability.Tier >> 16
+        Return DeviceRenderCapability
+    End Function
+
 End Class

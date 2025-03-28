@@ -11,22 +11,24 @@ Imports System.Windows.Threading
 
 Public Class Downloads
 
-    Public Opener As String
-    Public PS3SetupDownload As Boolean = False
-    Public PSVitaSetupDownload As Boolean = False
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
-    Public Shared DownloadsList As New List(Of DownloadListViewItem)()
+    Private Shared DownloadsList As New List(Of DownloadListViewItem)()
     Private DownloadPath As String
     Public IsDownloadClientBusy As Boolean = False
     Private DownloadClientCTS As CancellationTokenSource
 
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
+    Public Opener As String
+    Public PS3SetupDownload As Boolean = False
+    Public PSVitaSetupDownload As Boolean = False
 
     'Controller input
     Private MainController As Controller
     Private RemoteController As Controller
     Private CTS As New CancellationTokenSource()
     Public PauseInput As Boolean = True
+
+#Region "Window Events"
 
     Private Sub Downloads_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
         'Set background
@@ -77,6 +79,8 @@ Public Class Downloads
         MainController = Nothing
         RemoteController = Nothing
     End Sub
+
+#End Region
 
     Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
         PlayBackgroundSound(Sounds.Back)
@@ -523,6 +527,8 @@ Public Class Downloads
 
 #End Region
 
+#Region "Navigation"
+
     Private Sub DownloadsListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles DownloadsListView.SelectionChanged
         If DownloadsListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
             Dim PreviousItem As DownloadListViewItem = CType(e.RemovedItems(0), DownloadListViewItem)
@@ -567,19 +573,9 @@ Public Class Downloads
         DownloadsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 70)
     End Sub
 
-    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
-        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
-            .Top = 0,
-            .Left = 0,
-            .Opacity = 0,
-            .SetupStep = True,
-            .Opener = "Downloads",
-            .MessageTitle = MessageTitle,
-            .MessageDescription = MessageDescription}
+#End Region
 
-        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-        NewSystemDialog.Show()
-    End Sub
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -636,6 +632,22 @@ Public Class Downloads
         'Loop the background media
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
+    End Sub
+
+#End Region
+
+    Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
+        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
+            .Top = 0,
+            .Left = 0,
+            .Opacity = 0,
+            .SetupStep = True,
+            .Opener = "Downloads",
+            .MessageTitle = MessageTitle,
+            .MessageDescription = MessageDescription}
+
+        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSystemDialog.Show()
     End Sub
 
 End Class

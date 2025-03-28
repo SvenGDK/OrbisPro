@@ -15,10 +15,9 @@ Imports System.Text
 
 Public Class GeneralSettings
 
-    Public Opener As String = ""
-    Private LastKeyboardKey As Key
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
+    Private LastKeyboardKey As Key
 
     'Keep last selection index
     Private LastGeneralSettingsIndex As Integer
@@ -39,6 +38,8 @@ Public Class GeneralSettings
 
     Private NewInputBox As New PSInputBox("Enter a new value :")
     Private SettingToChange As SettingsListViewItem
+
+    Public Opener As String = ""
 
     'Controller input
     Private MainController As Controller
@@ -143,6 +144,8 @@ Public Class GeneralSettings
     End Sub
 
 #End Region
+
+#Region "Main Settings"
 
     Public Sub LoadGeneralSettings()
         WindowTitle.Text = "Settings"
@@ -483,6 +486,8 @@ Public Class GeneralSettings
 
         GeneralSettingsListView.Items.Refresh()
     End Sub
+
+#End Region
 
 #Region "PS1 (ePSXe) Emulator Settings"
 
@@ -3901,6 +3906,8 @@ Public Class GeneralSettings
 
 #End Region
 
+#Region "Background"
+
     Private Sub SetBackground()
         'Set the background
         Select Case MainConfigFile.IniReadValue("System", "Background")
@@ -3957,6 +3964,8 @@ Public Class GeneralSettings
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

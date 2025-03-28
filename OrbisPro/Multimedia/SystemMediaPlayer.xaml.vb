@@ -11,11 +11,12 @@ Public Class SystemMediaPlayer
 
     Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
+    Private LastKeyboardKey As Key
+
     Private IsMediaPlayerVideoViewReady As Boolean = False
     Private WithEvents NewLibVLC As LibVLC
     Private WithEvents NewMediaPlayer As MediaPlayer
 
-    Private LastKeyboardKey As Key
     Public Opener As String = ""
     Public VideoFile As String = String.Empty
 
@@ -93,6 +94,8 @@ Public Class SystemMediaPlayer
         Close()
     End Sub
 
+#Region "Media Player Loading"
+
     Private Sub MediaPlayerVideoView_Loaded(sender As Object, e As RoutedEventArgs) Handles MediaPlayerVideoView.Loaded
         'Init LibVLC after MediaPlayerVideoView is loaded
         NewLibVLC = New LibVLC(False, Nothing)
@@ -111,6 +114,8 @@ Public Class SystemMediaPlayer
             End If
         End If
     End Sub
+
+#End Region
 
 #Region "Input"
 
@@ -193,6 +198,8 @@ Public Class SystemMediaPlayer
 
 #End Region
 
+#Region "Media Player Options"
+
     Private Sub PlayNewVideoFile(InputVideoFile As String)
         Using NewMedia = New Media(NewLibVLC, New Uri(InputVideoFile, UriKind.RelativeOrAbsolute), Nothing)
             MediaPlayerVideoView.MediaPlayer.Play(NewMedia)
@@ -232,6 +239,8 @@ Public Class SystemMediaPlayer
             End If
         End If
     End Sub
+
+#End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,

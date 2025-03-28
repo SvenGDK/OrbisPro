@@ -13,14 +13,13 @@ Imports System.Windows.Threading
 
 Public Class SetupApps
 
+    Private WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
     Private WithEvents AppCollectionWorker As New BackgroundWorker() With {.WorkerReportsProgress = True}
     Private WithEvents WaitTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 1)}
     Private WaitedFor As Integer = 0
     Private LastKeyboardKey As Key
 
     Private AppShortcuts As String = FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt"
-
-    Dim WithEvents ClosingAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(500))}
 
     'Controller input
     Private MainController As Controller
@@ -68,6 +67,8 @@ Public Class SetupApps
             AppCollectionWorker.RunWorkerAsync()
         End If
     End Sub
+
+#Region "App Loader"
 
     Private Sub AppCollectionWorker_DoWork(sender As Object, e As DoWorkEventArgs) Handles AppCollectionWorker.DoWork
         Try
@@ -182,18 +183,6 @@ Public Class SetupApps
         End Try
     End Sub
 
-    Private Function ItemAlreadyExists(DisplayName As String) As Boolean
-        Dim Found As Boolean = False
-        For Each LVItem In ApplicationLibrary.Items
-            Dim AsAppListViewItem As AppListViewItem = CType(LVItem, AppListViewItem)
-            If AsAppListViewItem.AppTitle = DisplayName Then
-                Found = True
-                Exit For
-            End If
-        Next
-        Return Found
-    End Function
-
     Private Async Sub AppCollectionWorker_RunWorkerCompleted(sender As Object, e As RunWorkerCompletedEventArgs) Handles AppCollectionWorker.RunWorkerCompleted
         'Hide loading indicator
         FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
@@ -230,6 +219,8 @@ Public Class SetupApps
         End Try
     End Sub
 
+#End Region
+
 #Region "Input"
 
     Private Sub SetupApps_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
@@ -249,7 +240,7 @@ Public Class SetupApps
                         End Using
 
                         'Notify that the app has been added and add additional delay due to animation
-                        Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
+                        NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon)
                     End If
                 Case Key.C
                     ReturnToPreviousSetupStep()
@@ -311,7 +302,7 @@ Public Class SetupApps
                         End Using
 
                         'Notify that the app has been added and add additional delay due to animation
-                        Await Dispatcher.BeginInvoke(Sub() NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon))
+                        NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon)
                     End If
                 ElseIf MainGamepadButton_DPad_Left_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
@@ -420,6 +411,8 @@ Public Class SetupApps
         BeginAnimation(OpacityProperty, ClosingAnimation)
     End Sub
 
+#Region "Navigation"
+
     Private Sub ApplicationLibrary_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles ApplicationLibrary.SelectionChanged
         If ApplicationLibrary.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
 
@@ -444,6 +437,10 @@ Public Class SetupApps
         Dim VerticalOffset As Double = AppsListViewScrollViewer.VerticalOffset
         AppsListViewScrollViewer.ScrollToVerticalOffset(VerticalOffset + 50)
     End Sub
+
+#End Region
+
+#Region "Background"
 
     Private Sub SetBackground()
         'Set the background
@@ -501,6 +498,20 @@ Public Class SetupApps
         BackgroundMedia.Position = TimeSpan.FromSeconds(0)
         BackgroundMedia.Play()
     End Sub
+
+#End Region
+
+    Private Function ItemAlreadyExists(DisplayName As String) As Boolean
+        Dim Found As Boolean = False
+        For Each LVItem In ApplicationLibrary.Items
+            Dim AsAppListViewItem As AppListViewItem = CType(LVItem, AppListViewItem)
+            If AsAppListViewItem.AppTitle = DisplayName Then
+                Found = True
+                Exit For
+            End If
+        Next
+        Return Found
+    End Function
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
