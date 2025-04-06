@@ -1,6 +1,6 @@
 # Update v0.3.1
 
-- In order to use OrbisPro with this update you will need the [.NET Desktop Runtime 9.0.3 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x64-installer) or [.NET Desktop Runtime 9.0.3 x86]
+- In order to use OrbisPro with this update you will need the [.NET Desktop Runtime 9.0.3 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x64-installer) or [.NET Desktop Runtime 9.0.3 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x86-installer)
 
 # Updates
 - Upgrade to .NET 9
