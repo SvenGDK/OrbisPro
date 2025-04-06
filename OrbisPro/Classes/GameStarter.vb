@@ -368,7 +368,7 @@ Public Class GameStarter
             AliasName = "SonicSuperstars"
         ElseIf Path.GetFileName(ExecutableFileName) = "SquirrelGun.exe" Then
             AliasName = "Swag"
-        ElseIf Path.GetFileName(ExecutableFileName) = "Tekken 8.exe" Then
+        ElseIf Path.GetFileName(ExecutableFileName) = "TEKKEN 8.exe" Then
             AliasName = "Tekken8"
         ElseIf Path.GetFileName(ExecutableFileName) = "tlou-i.exe" Then
             AliasName = "TLOUP1"

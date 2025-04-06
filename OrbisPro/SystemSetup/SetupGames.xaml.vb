@@ -103,15 +103,11 @@ Public Class SetupGames
                         AddToListView = True
                     ElseIf File.Exists(ExecutableDirectory + "\steam_api.dll") Then
                         AddToListView = True
-                    ElseIf File.Exists(ExecutableDirectory + "\d3compiler_47.dll") Then
-                        AddToListView = True
                     ElseIf File.Exists(ExecutableDirectory + "\d3d8.dll") Then
                         AddToListView = True
                     ElseIf File.Exists(ExecutableDirectory + "\ddraw.dll") Then
                         AddToListView = True
                     ElseIf File.Exists(ExecutableDirectory + "\Denuvo.dll") Then
-                        AddToListView = True
-                    ElseIf File.Exists(ExecutableDirectory + "\dxcompiler.dll") Then
                         AddToListView = True
                     ElseIf File.Exists(ExecutableDirectory + "\Engine\Binaries\Win64\CrashReportClient.exe") Then
                         AddToListView = True

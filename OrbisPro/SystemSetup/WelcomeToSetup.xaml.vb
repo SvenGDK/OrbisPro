@@ -55,7 +55,7 @@ Public Class WelcomeToSetup
             Close()
         Else
 
-            If MsgBox("Welcome to the OrbisPro v0.2 Beta." +
+            If MsgBox("Welcome to the OrbisPro Beta." +
                       vbCrLf +
                       vbCrLf +
                       "This application is still in development and you may encouter some bugs while using it." +
