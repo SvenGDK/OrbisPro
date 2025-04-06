@@ -163,7 +163,7 @@
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <ComboBox x:Name="BackgroundsComboBox" Canvas.Left="585" Canvas.Top="588" Width="750" FontFamily="SST Ultra Light" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Top" Style="{DynamicResource ComboBoxFlatStyle}" Foreground="White" SelectedIndex="0">
+        <ComboBox x:Name="BackgroundsComboBox" Canvas.Left="585" Canvas.Top="588" Width="750" FontFamily="SST Ultra Light" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Top" Style="{DynamicResource ComboBoxFlatStyle}" Foreground="White" SelectedIndex="1">
             <ComboBoxItem Content="Blue Bubbles"/>
             <ComboBoxItem Content="Orange/Red Gradient Waves"/>
             <ComboBoxItem Content="PS2 Dots"/>

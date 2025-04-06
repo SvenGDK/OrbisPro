@@ -444,6 +444,8 @@ Public Class SetupGames
         FontAwesome.Sharp.Awesome.SetSpin(LoadingIndicator, False)
         LoadingIndicator.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
 
+        'Adjust top label
+        Canvas.SetLeft(TopLabel, Canvas.GetLeft(TopLabel) - 225)
         TopLabel.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromMilliseconds(100)), .AutoReverse = True})
         TopLabel.Text = "Select the games that you want to add to the Games Library"
 

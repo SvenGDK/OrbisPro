@@ -198,6 +198,16 @@ Public Class OpenWindows
 
                                 'Kill the process
                                 FoundProcess.Kill()
+
+                                'Let the main window know that the OtherProcess got killed
+                                For Each Win In System.Windows.Application.Current.Windows()
+                                    If Win.ToString = "OrbisPro.MainWindow" Then
+                                        CType(Win, MainWindow).StartedGameExecutable = ""
+                                        Exit For
+                                    End If
+                                Next
+
+                                'Close this window
                                 Close()
                             End If
                         Else

@@ -18,7 +18,7 @@
         </TextBlock>
         <Separator x:Name="TopSeparator" Height="10" Canvas.Top="130" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-        <TextBlock x:Name="TopLabel" Text="Collecting installed games, please wait ..." Canvas.Left="508" Canvas.Top="170" Height="64" Width="904" FontFamily="SST Light" Foreground="White" FontSize="48" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <TextBlock x:Name="TopLabel" Text="Collecting installed games, please wait ..." Canvas.Top="170" Height="64" FontFamily="SST Light" Foreground="White" FontSize="48" VerticalAlignment="Center" TextAlignment="Center" HorizontalAlignment="Left" Canvas.Left="500">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>

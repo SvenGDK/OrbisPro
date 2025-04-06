@@ -19,7 +19,7 @@
         </TextBlock>
         <Separator x:Name="TopSeparator" Height="10" Canvas.Top="132" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-        <TextBlock x:Name="TopLabel" Text="Collecting installed applications, please wait ..." Canvas.Left="452" Canvas.Top="170" Height="64" Width="1016" FontFamily="SST Light" Foreground="White" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <TextBlock x:Name="TopLabel" Text="Collecting installed applications, please wait ..." Canvas.Left="450" Canvas.Top="170" Height="64" FontFamily="SST Light" Foreground="White" FontSize="48" HorizontalAlignment="Left" VerticalAlignment="Top" TextAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>

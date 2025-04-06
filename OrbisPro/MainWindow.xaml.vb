@@ -904,8 +904,10 @@ Class MainWindow
                     PlayBackgroundSound(Sounds.Options)
                     PauseInput = True
 
+                    'Open the Open Windows Manager
                     Dim OpenWindowsManager As New OpenWindows() With {.Top = 0, .Left = 0, .ShowActivated = True, .Opacity = 0, .Opener = "MainWindow"}
 
+                    'Let the Open Windows Manager know there is an active process running
                     If Not String.IsNullOrEmpty(StartedGameExecutable) Then
                         OpenWindowsManager.OtherProcess = StartedGameExecutable
                     End If
@@ -917,7 +919,7 @@ Class MainWindow
 
                         If String.IsNullOrEmpty(StartedGameExecutable) Then
                             Dim FocusedApp As Image = TryCast(FocusedItem, Image)
-                            Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppPath
+                            Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppPath 'FocusedAppPath = Executable path
 
                             PauseInput = True
 
@@ -987,10 +989,10 @@ Class MainWindow
                 Case Key.F1
                     DidAnimate = False
                     ReloadHome()
-                Case Key.F2
-                    MasterVolumeDown() 'Testing
-                Case Key.F3
-                    MasterVolumeUp() 'Testing
+                Case Key.VolumeDown
+                    MasterVolumeDown()
+                Case Key.VolumeUp
+                    MasterVolumeUp()
             End Select
 
             LastKeyboardKey = e.Key
