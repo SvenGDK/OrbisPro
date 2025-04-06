@@ -131,7 +131,7 @@ Public Class SetupApps
                 NewGameListViewItem.IsAppSelected = Visibility.Hidden
 
                 ApplicationLibrary.Dispatcher.BeginInvoke(Sub() ApplicationLibrary.Items.Add(NewGameListViewItem))
-                Thread.Sleep(150)
+                Thread.Sleep(125)
             Next
 
             'Add applications from Uninstall
@@ -168,7 +168,7 @@ Public Class SetupApps
                                 NewGameListViewItem.IsAppSelected = Visibility.Hidden
 
                                 ApplicationLibrary.Dispatcher.BeginInvoke(Sub() ApplicationLibrary.Items.Add(NewGameListViewItem))
-                                Thread.Sleep(150)
+                                Thread.Sleep(125)
                             End If
 
                         End If

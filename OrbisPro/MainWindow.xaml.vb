@@ -25,6 +25,7 @@ Class MainWindow
     'Used for current time, border glowing, battery & WiFi info
     Private WithEvents ClockTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 5)}
     Private WithEvents SystemTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 45)}
+    Private WithEvents DelayTimer As New DispatcherTimer With {.Interval = New TimeSpan(0, 0, 3)}
 
     'Hook the 'Home' key
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
@@ -44,7 +45,7 @@ Class MainWindow
     Private DidAnimate As Boolean = False
 
     'Animations
-    Dim WithEvents LastHomeAnimation As New DoubleAnimation With {.From = 175, .To = 410, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
+    Dim WithEvents FirstHomeAnimation As New DoubleAnimation With {.From = 175, .To = 410, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
     Dim WithEvents LastHomeRestoreAnimation As New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
     Dim WithEvents LastUIMoveAnimation As New DoubleAnimation With {.From = 410, .To = 200, .Duration = New Duration(TimeSpan.FromMilliseconds(100)), .AutoReverse = True}
 
@@ -58,83 +59,24 @@ Class MainWindow
 #Region "Window Events"
 
     Private Sub MainWindow_Loaded(sender As Object, e As RoutedEventArgs) Handles Me.Loaded
-
         If Not String.IsNullOrEmpty(MainConfigFile.IniReadValue("System", "Username")) Then
             UsernameTextBlock.Text = MainConfigFile.IniReadValue("System", "Username")
         End If
 
-        'Set background color & video (if set)
+        'Set background
         MainCanvas.Background = New SolidColorBrush(Colors.Black)
         SetBackground()
-
-        'Version Banner
-        NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
-
-        'Clock
-        SystemClock.Text = Date.Now.ToString("HH:mm")
-        ClockTimer.Start()
-
-        HomeAnimation()
-
-        'Add default and custom applications
-        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                If Not LineWithApp.Split("="c)(1).Split(";"c).Length = 3 Then
-                    If LineWithApp.StartsWith("App") Then
-                        If App1.Tag Is Nothing Then
-                            App1.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                            AppTitle.Text = LineWithApp.Split("="c)(1).Split(";"c)(0)
-                        ElseIf App2.Tag Is Nothing Then
-                            App2.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        ElseIf App3.Tag Is Nothing Then
-                            App3.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        ElseIf App4.Tag Is Nothing Then
-                            App4.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        ElseIf App5.Tag Is Nothing Then
-                            App5.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        ElseIf App6.Tag Is Nothing Then
-                            App6.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        ElseIf App7.Tag Is Nothing Then
-                            App7.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        ElseIf App8.Tag Is Nothing Then
-                            App8.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        End If
-                    End If
-                Else
-                    If LineWithApp.StartsWith("App") Then
-                        AddNewApp(LineWithApp.Split("="c)(1).Split(";"c)(0), LineWithApp.Split("="c)(1).Split(";"c)(1))
-                    End If
-                End If
-            Next
-        End If
-
-        'Add games
-        If File.Exists(GameLibraryPath) Then
-            For Each Game In File.ReadAllLines(GameLibraryPath)
-                If Game.StartsWith("PS1Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS2Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS3Game") Then
-                    'For PS3 games show the folder name
-                    Dim PS3GameFolderName = Directory.GetParent(Game.Split("="c)(1).Split(";"c)(0))
-                    AddNewApp(PS3GameFolderName.Parent.Parent.Name, Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PC") Then
-                    AddNewApp(Game.Split(";"c)(1), Game.Split(";"c)(2))
-                End If
-            Next
-        End If
-
-        App1.Focus()
-        CurrentMenu = "AppMenu"
     End Sub
 
     Private Async Sub MainWindow_ContentRendered(sender As Object, e As EventArgs) Handles Me.ContentRendered
+
+        'Run Home animation after background properties have been set
+        HomeAnimation()
+
         Try
             'Check for gamepads
             If GetAndSetGamepads() Then MainController = SharedController1
             If SharedController1 IsNot Nothing Then Await ReadGamepadInputAsync(CTS.Token)
-            SystemTimer.Start()
         Catch ex As Exception
             PauseInput = True
             ExceptionDialog("System Error", ex.Message)
@@ -406,13 +348,9 @@ Class MainWindow
         Animate(App7, WidthProperty, 150, 200, AnimDuration)
         Animate(App7, HeightProperty, 150, 200, AnimDuration)
 
-        Animate(App8, Canvas.LeftProperty, 1561, 1890, AnimDuration)
-        Animate(App8, WidthProperty, 150, 200, AnimDuration)
-        Animate(App8, HeightProperty, 150, 200, AnimDuration)
-
         Animate(SelectedAppBorder, Canvas.LeftProperty, 456, 280, AnimDuration)
         Animate(SelectedAppBorder, WidthProperty, 175, 340, AnimDuration)
-        SelectedAppBorder.BeginAnimation(HeightProperty, LastHomeAnimation)
+        SelectedAppBorder.BeginAnimation(HeightProperty, FirstHomeAnimation)
 
         AppTitle.Visibility = Visibility.Visible
         AppStartLabel.Visibility = Visibility.Visible
@@ -547,6 +485,8 @@ Class MainWindow
                 Dim NewFileExplorer As New FileExplorer() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "MainWindow"}
                 NewFileExplorer.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
                 NewFileExplorer.Show()
+            Case "Gallery"
+
             Case "Library"
                 Dim NewGameLibrary As New GameLibrary() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "MainWindow"}
                 NewGameLibrary.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
@@ -714,60 +654,37 @@ Class MainWindow
 
         'Declare the new app
         Dim NewAppImage As New Image With {
-            .Height = 200,
-            .Width = 200,
-            .Stretch = Stretch.Uniform,
-            .StretchDirection = StretchDirection.Both,
             .Name = "App" + (InstalledAppsOnMenu + 1).ToString, 'Here the new app get it's number, so the code can iterate through it
             .Focusable = True,
             .FocusVisualStyle = Nothing,
-            .Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute)),
             .Tag = New AppDetails() With {.AppTitle = AppTitle, .AppExecutable = "Start", .AppPath = AppFolderOrFile}
         }
 
         'Set app image to executable icon or existing asset file (if exists)
         If Path.GetExtension(AppFolderOrFile) = ".exe" Then
-            If Not String.IsNullOrEmpty(CheckForExistingIconAsset(AppFolderOrFile)) Then
-                NewAppImage.Source = New BitmapImage(New Uri(CheckForExistingIconAsset(AppFolderOrFile), UriKind.RelativeOrAbsolute))
+            If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(AppFolderOrFile)) Then
+                NewAppImage.Source = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(AppFolderOrFile), UriKind.RelativeOrAbsolute))
             Else
                 NewAppImage.Source = GetExecutableIconAsImageSource(AppFolderOrFile)
             End If
+        Else
+            NewAppImage.Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
         End If
+
+        NewAppImage.Height = 200
+        NewAppImage.Width = 200
+        NewAppImage.Stretch = Stretch.Uniform
+        NewAppImage.StretchDirection = StretchDirection.Both
 
         'Get the last app on the main menu
         Dim LastAppInMenu As Image = CType(MainCanvas.FindName("App" + InstalledAppsOnMenu.ToString()), Image)
         HomeAppsCount = InstalledAppsOnMenu + 1
 
         'Set the position of the new app
-        If LastAppInMenu.Name = "App8" Then
-            'Move the first added game/app to the correct position
-            'Case 1561 happens the very first time when the animation is probably finished but the canvas did not receive it's new location yet
-            Select Case Canvas.GetLeft(App8)
-                Case 1890
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 210)
-                Case 1680
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 420)
-                Case 1561
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 540)
-                Case 1470
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 630)
-                Case 1260
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 840)
-                Case 1050
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1050)
-                Case 840
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1260)
-                Case 630
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1470)
-                Case 285
-                    Canvas.SetLeft(NewAppImage, Canvas.GetLeft(App8) + 1805)
-            End Select
-        Else
-            Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastAppInMenu) + 210)
-        End If
+        Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastAppInMenu) + 210)
         Canvas.SetTop(NewAppImage, Canvas.GetTop(LastAppInMenu))
 
-        'Important, otherwise it can't find the new app
+        'Register new app
         RegisterName(NewAppImage.Name, NewAppImage)
 
         'Add the new app on the canvas
@@ -778,8 +695,9 @@ Class MainWindow
     Public Sub ReloadHome()
         'Reset
         HomeAppsCount = 0
+        DidAnimate = False
 
-        'Get UIElements to remove
+        'Get UIElements (apps) to remove
         Dim AppsToRemove As New List(Of UIElement)()
         For Each App In MainCanvas.Children
             If TypeOf App Is Image Then
@@ -787,7 +705,7 @@ Class MainWindow
                 Dim TheApp As Image = CType(App, Image)
 
                 Select Case TheApp.Name
-                    Case "App1", "App2", "App3", "App4", "App5", "App6", "App7", "App8"
+                    Case "App1", "App2", "App3", "App4", "App5", "App6", "App7"
                         Continue For
                     Case Else
                         'Remove only apps that have been added during runtime from the canvas
@@ -804,41 +722,9 @@ Class MainWindow
             MainCanvas.Children.Remove(AppToRemove)
         Next
 
-        'Restore window and background (if hidden)
-        If Width = 0 Then
-            NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
-            ClockTimer.Start()
-            SystemTimer.Start()
-        End If
-
+        'Restore Home
         SetBackground()
-
-        'Reload custom applications & games
-        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                If LineWithApp.StartsWith("App") AndAlso LineWithApp.Split("="c)(1).Split(";"c).Length = 3 Then
-                    AddNewApp(LineWithApp.Split("="c)(1).Split(";"c)(0), LineWithApp.Split("="c)(1).Split(";"c)(1))
-                End If
-            Next
-        End If
-
-        If File.Exists(GameLibraryPath) Then
-            For Each Game In File.ReadAllLines(GameLibraryPath)
-                If Game.StartsWith("PS1Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS2Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS3Game") Then
-                    'For PS3 games show the folder name
-                    Dim PS3GameFolderName = Directory.GetParent(Game.Split("="c)(1).Split(";"c)(0))
-                    AddNewApp(PS3GameFolderName.Parent.Parent.Name, Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PC") Then
-                    AddNewApp(Game.Split(";"c)(1), Game.Split(";"c)(2))
-                End If
-            Next
-        End If
-
-        App1.Focus()
+        HomeAnimation()
     End Sub
 
 #Region "Animation Events"
@@ -852,8 +738,19 @@ Class MainWindow
         DidAnimate = True
     End Sub
 
-    Private Sub LastHomeAnimation_Completed(sender As Object, e As EventArgs) Handles LastHomeAnimation.Completed
-        DidAnimate = True
+    Private Sub FirstHomeAnimation_Completed(sender As Object, e As EventArgs) Handles FirstHomeAnimation.Completed
+        'Version Banner
+        NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
+        NotificationBannerTextBlock.Dispatcher.Invoke(Sub() NotificationBannerTextBlock.Text = "Initializing library, please wait")
+
+        'Clock
+        SystemClock.Text = Date.Now.ToString("HH:mm")
+        ClockTimer.Start()
+        SystemTimer.Start()
+        DelayTimer.Start()
+
+        App1.Focus()
+        CurrentMenu = "AppMenu"
     End Sub
 
     Private Sub LastHomeRestoreAnimation_Completed(sender As Object, e As EventArgs) Handles LastHomeRestoreAnimation.Completed
@@ -1088,6 +985,7 @@ Class MainWindow
                         End If
                     End If
                 Case Key.F1
+                    DidAnimate = False
                     ReloadHome()
                 Case Key.F2
                     MasterVolumeDown() 'Testing
@@ -1184,6 +1082,7 @@ Class MainWindow
 
                     If MainGamepadButton_L_Button_Pressed AndAlso MainGamepadButton_R_Button_Pressed Then
 
+                        DidAnimate = False
                         ReloadHome()
 
                         'Do not leave the buttons in a pressed state
@@ -1373,6 +1272,63 @@ Class MainWindow
         End If
     End Sub
 
+    Private Sub DelayTimer_Tick(sender As Object, e As EventArgs) Handles DelayTimer.Tick
+
+        DelayTimer.Stop()
+        NotificationBannerTextBlock.Dispatcher.Invoke(Sub() NotificationBannerTextBlock.Text = "Loading library, please wait")
+
+        'Add default and custom applications from \Apps\AppsList.txt
+        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
+            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
+                'Internal applications
+                If LineWithApp.EndsWith(".png") Then
+                    If App1.Tag Is Nothing Then
+                        App1.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
+                        AppTitle.Text = LineWithApp.Split("="c)(1).Split(";"c)(0)
+                    ElseIf App2.Tag Is Nothing Then
+                        App2.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
+                    ElseIf App3.Tag Is Nothing Then
+                        App3.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
+                    ElseIf App4.Tag Is Nothing Then
+                        App4.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
+                    ElseIf App5.Tag Is Nothing Then
+                        App5.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
+                    ElseIf App6.Tag Is Nothing Then
+                        App6.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
+                    ElseIf App7.Tag Is Nothing Then
+                        App7.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
+                    End If
+                Else
+                    'Custom applications
+                    If LineWithApp.StartsWith("App") Then
+                        AddNewApp(LineWithApp.Split("="c)(1).Split(";"c)(0), LineWithApp.Split("="c)(1).Split(";"c)(1))
+                        Thread.Sleep(125)
+                    End If
+                End If
+            Next
+        End If
+
+        'Add games from \Games\GameList.txt
+        If File.Exists(GameLibraryPath) Then
+            For Each Game In File.ReadAllLines(GameLibraryPath)
+                If Game.StartsWith("PS1Game") Then
+                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
+                ElseIf Game.StartsWith("PS2Game") Then
+                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
+                ElseIf Game.StartsWith("PS3Game") Then
+                    'For PS3 games show the folder name
+                    Dim PS3GameFolderName = Directory.GetParent(Game.Split("="c)(1).Split(";"c)(0))
+                    AddNewApp(PS3GameFolderName.Parent.Parent.Name, Game.Split("="c)(1).Split(";"c)(0))
+                ElseIf Game.StartsWith("PC") Then
+                    AddNewApp(Game.Split(";"c)(1), Game.Split(";"c)(2))
+                End If
+            Next
+        End If
+
+        DidAnimate = True 'Accept input from this point
+        NotificationBannerTextBlock.Dispatcher.Invoke(Sub() NotificationBannerTextBlock.Text = "OrbisPro BETA")
+    End Sub
+
 #End Region
 
 #Region "Background"
@@ -1438,7 +1394,7 @@ Class MainWindow
         If MainConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation") = "true" Then
             'Change background animation
             If Path.GetExtension(AppFilePath) = ".exe" Then
-                If Not String.IsNullOrEmpty(CheckForExistingBackgroundAsset(AppFilePath)) Then
+                If Not String.IsNullOrEmpty(GameStarter.CheckForExistingBackgroundAsset(AppFilePath)) Then
                     Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
                     Dispatcher.BeginInvoke(Sub()
@@ -1446,12 +1402,16 @@ Class MainWindow
                                                TempBitmapImage.BeginInit()
                                                TempBitmapImage.CacheOption = BitmapCacheOption.OnLoad
                                                TempBitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache
-                                               TempBitmapImage.UriSource = New Uri(CheckForExistingBackgroundAsset(AppFilePath), UriKind.RelativeOrAbsolute)
+                                               TempBitmapImage.UriSource = New Uri(GameStarter.CheckForExistingBackgroundAsset(AppFilePath), UriKind.RelativeOrAbsolute)
                                                TempBitmapImage.EndInit()
                                                BackgroundImage.Source = TempBitmapImage
                                            End Sub)
 
                     Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                Else
+                    BackgroundImage.Source = Nothing
+                    Animate(BackgroundImage, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
                 End If
             Else
                 If BackgroundMedia.Opacity = 0 Then

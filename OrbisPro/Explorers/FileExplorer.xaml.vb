@@ -807,13 +807,17 @@ Public Class FileExplorer
 
                 ShowListAnimation()
 
-                'Focus the first item
-                Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
-                LastSelectedListViewItem.Focus()
+                If FilesFoldersListView.Items.Count > 0 Then
+                    'Focus the first item
+                    Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+                    LastSelectedListViewItem.Focus()
 
-                'Convert to FileBrowserListViewItem to set the border visibility on the first item
-                Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
-                LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+                    'Convert to FileBrowserListViewItem to set the border visibility on the first item
+                    Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+                    LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+                Else
+                    FilesFoldersListView.Focus()
+                End If
 
             ElseIf CurrentListView.Name = "FilesFoldersListView" Then
                 Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
@@ -1090,11 +1094,17 @@ Public Class FileExplorer
 
                     ShowListAnimation()
 
-                    Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
-                    LastSelectedListViewItem.Focus()
+                    If FilesFoldersListView.Items.Count > 0 Then
+                        'Focus the first item
+                        Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+                        LastSelectedListViewItem.Focus()
 
-                    Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
-                    LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+                        Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+                        LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+                    Else
+                        FilesFoldersListView.Focus()
+                    End If
+
                 End If
 
             End If
@@ -1310,11 +1320,16 @@ Public Class FileExplorer
 
                     ShowListAnimation()
 
-                    Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
-                    LastSelectedListViewItem.Focus()
+                    If FilesFoldersListView.Items.Count > 0 Then
+                        'Focus the first item
+                        Dim LastSelectedListViewItem As ListViewItem = CType(FilesFoldersListView.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
+                        LastSelectedListViewItem.Focus()
 
-                    Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
-                    LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+                        Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+                        LastSelectedItem.IsFileFolderSelected = Visibility.Visible
+                    Else
+                        FilesFoldersListView.Focus()
+                    End If
 
                 End If
 

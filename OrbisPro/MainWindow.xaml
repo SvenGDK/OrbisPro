@@ -45,7 +45,7 @@
         <Image x:Name="FriendsBannerImage" Height="48" Canvas.Left="720" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_friends.png"/>
         <Image x:Name="OnlineIndicatorImage" Height="48" Canvas.Left="800" Canvas.Top="78" Width="48" Source="/Icons/online.png"/>
         <Image x:Name="BatteryIndicatorImage" Height="48" Canvas.Left="1500" Canvas.Top="78" Width="48" Source="/Icons/Battery/BatteryFull.png"/>
-        <TextBlock x:Name="NotificationBannerTextBlock" Text="OrbisPro Beta 0.2" Canvas.Left="150" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30" HorizontalAlignment="Left" VerticalAlignment="Center">
+        <TextBlock x:Name="NotificationBannerTextBlock" Text="OrbisPro Beta" Canvas.Left="150" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
@@ -81,10 +81,9 @@
         <Image x:Name="App2" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="631" Canvas.Top="209" Source="/Icons/Browser.png" />
         <Image x:Name="App3" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="786" Canvas.Top="209" Source="/Icons/gallery.png" />
         <Image x:Name="App4" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="941" Canvas.Top="209" Source="/Icons/Library.png" />
-        <Image x:Name="App5" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1096" Canvas.Top="209" Source="/Icons/USBMedia.png" />
-        <Image x:Name="App6" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1251" Canvas.Top="209" Source="/Icons/Explorer.png" />
-        <Image x:Name="App7" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1406" Canvas.Top="209" Source="/Icons/Settings.png" />
-        <Image x:Name="App8" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1561" Canvas.Top="209" Source="/Icons/OrbisUpdate.png" />
+        <Image x:Name="App5" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1096" Canvas.Top="209" Source="/Icons/Explorer.png" />
+        <Image x:Name="App6" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1251" Canvas.Top="209" Source="/Icons/Settings.png" />
+        <Image x:Name="App7" Height="150" Width="150" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="1406" Canvas.Top="209" Source="/Icons/OrbisUpdate.png" />
         <TextBlock x:Name="AppTitle" FontFamily="SST Light" FontSize="60" Foreground="White" Canvas.Left="635" Canvas.Top="533" HorizontalAlignment="Left" VerticalAlignment="Center" Background="{x:Null}" Visibility="Hidden">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1"/>

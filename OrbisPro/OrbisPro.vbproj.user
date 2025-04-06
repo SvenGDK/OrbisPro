@@ -10,6 +10,9 @@
     <Compile Update="Classes\NetworkAdapter.vb">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="Multimedia\SystemGallery.xaml.vb">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Custom Controls\MessagePopup.xaml">

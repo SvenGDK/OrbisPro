@@ -69,8 +69,8 @@ Public Class GameLibrary
                         .AppLaunchPath = Game.Split(";"c)(2),
                         .IsGame = True}
 
-                    If Not String.IsNullOrEmpty(CheckForExistingIconAsset(Game.Split(";"c)(2))) Then
-                        NewGameListViewItem.AppIcon = New BitmapImage(New Uri(CheckForExistingIconAsset(Game.Split(";"c)(2)), UriKind.RelativeOrAbsolute))
+                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(Game.Split(";"c)(2))) Then
+                        NewGameListViewItem.AppIcon = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(Game.Split(";"c)(2)), UriKind.RelativeOrAbsolute))
                     Else
                         NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(Game.Split(";"c)(2))
                     End If
@@ -90,8 +90,8 @@ Public Class GameLibrary
                         .IsGame = False,
                         .IsAppSelected = Visibility.Hidden}
 
-                    If Not String.IsNullOrEmpty(CheckForExistingIconAsset(LineWithApp.Split("="c)(1).Split(";"c)(1))) Then
-                        NewAppListViewItem.AppIcon = New BitmapImage(New Uri(CheckForExistingIconAsset(LineWithApp.Split("="c)(1).Split(";"c)(1)), UriKind.RelativeOrAbsolute))
+                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(LineWithApp.Split("="c)(1).Split(";"c)(1))) Then
+                        NewAppListViewItem.AppIcon = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(LineWithApp.Split("="c)(1).Split(";"c)(1)), UriKind.RelativeOrAbsolute))
                     Else
                         NewAppListViewItem.AppIcon = GetExecutableIconAsImageSource(LineWithApp.Split("="c)(1).Split(";"c)(1))
                     End If
@@ -109,6 +109,8 @@ Public Class GameLibrary
             'Convert to FirstListViewItem to control the item's customized properties
             Dim FirstSelectedItem As AppListViewItem = CType(FirstListViewItem.Content, AppListViewItem)
             FirstSelectedItem.IsAppSelected = Visibility.Visible 'Show the selection border
+        Else
+            ApplicationLibrary.Focus()
         End If
     End Sub
 
@@ -499,6 +501,8 @@ Public Class GameLibrary
 
             Dim FirstSelectedItem As AppListViewItem = CType(FirstListViewItem.Content, AppListViewItem)
             FirstSelectedItem.IsAppSelected = Visibility.Visible
+        Else
+            ApplicationLibrary.Focus()
         End If
     End Sub
 
