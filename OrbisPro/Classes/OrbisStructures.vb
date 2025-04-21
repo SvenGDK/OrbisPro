@@ -1,12 +1,17 @@
 ﻿Public Class OrbisStructures
 
     Public Structure AppDetails
+
         Private _AppTitle As String
         Private _AppFolder As String
-        Private _AppExecutable As String
+        Private _AppButtonExecutionString As String
         Private _AppIconPath As String
         Private _AppBackgroundPath As String
-        Private _AppPath As String
+        Private _AppExecutableFilePath As String
+        Private _IsFolder As Boolean
+        Private _FolderName As String
+        Private _IsGame As Boolean
+        Private _AppPlatform As String
 
         Public Property AppTitle As String
             Get
@@ -26,12 +31,12 @@
             End Set
         End Property
 
-        Public Property AppExecutable As String
+        Public Property AppButtonExecutionString As String
             Get
-                Return _AppExecutable
+                Return _AppButtonExecutionString
             End Get
             Set
-                _AppExecutable = Value
+                _AppButtonExecutionString = Value
             End Set
         End Property
 
@@ -53,14 +58,51 @@
             End Set
         End Property
 
-        Public Property AppPath As String
+        Public Property AppExecutableFilePath As String
             Get
-                Return _AppPath
+                Return _AppExecutableFilePath
             End Get
             Set
-                _AppPath = Value
+                _AppExecutableFilePath = Value
             End Set
         End Property
+
+        Public Property IsFolder As Boolean
+            Get
+                Return _IsFolder
+            End Get
+            Set
+                _IsFolder = Value
+            End Set
+        End Property
+
+        Public Property FolderName As String
+            Get
+                Return _FolderName
+            End Get
+            Set
+                _FolderName = Value
+            End Set
+        End Property
+
+        Public Property IsGame As Boolean
+            Get
+                Return _IsGame
+            End Get
+            Set
+                _IsGame = Value
+            End Set
+        End Property
+
+        Public Property AppPlatform As String
+            Get
+                Return _AppPlatform
+            End Get
+            Set
+                _AppPlatform = Value
+            End Set
+        End Property
+
     End Structure
 
     Public Structure GameAppInstallerWorkerArgs

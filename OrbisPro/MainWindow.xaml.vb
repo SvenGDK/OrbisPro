@@ -1,4 +1,12 @@
-﻿#Region "Orbis Imports"
+﻿Imports System.ComponentModel
+Imports System.IO
+Imports System.Runtime.InteropServices
+Imports System.Threading
+Imports System.Windows.Forms
+Imports System.Windows.Interop
+Imports System.Windows.Media.Animation
+Imports System.Windows.Threading
+Imports Newtonsoft.Json
 Imports OrbisPro.OrbisAnimations
 Imports OrbisPro.OrbisAudio
 Imports OrbisPro.OrbisCDVDManager
@@ -8,17 +16,7 @@ Imports OrbisPro.OrbisPowerUtils
 Imports OrbisPro.OrbisStructures
 Imports OrbisPro.OrbisUtils
 Imports OrbisPro.ProcessUtils
-#End Region
-
 Imports SharpDX.XInput
-Imports System.ComponentModel
-Imports System.IO
-Imports System.Runtime.InteropServices
-Imports System.Windows.Forms
-Imports System.Windows.Interop
-Imports System.Windows.Media.Animation
-Imports System.Windows.Threading
-Imports System.Threading
 
 Class MainWindow
 
@@ -36,13 +34,17 @@ Class MainWindow
     Public SecondWebSearch As Boolean = False
 
     'Used to keep track of some variables
-    Public CurrentMenu As String
     Public HomeAppsCount As Integer = 0
-    Private IsDeviceInterface As Boolean = False
-    Private LastKeyboardKey As Key
-    Public LastFocusedApp As Image
+    Public HomeGroupAppsCount As Integer = 0
+    Public GroupAppsOnHome As Boolean = False
+    Public LastFocusedApp As Image = Nothing
     Public StartedGameExecutable As String
-    Private DidAnimate As Boolean = False
+
+    Private IsBatteryPresent As Boolean = False
+    Private IsWiFiAvailable As Boolean = False
+    Private IsDeviceInterface As Boolean = False
+    Private LastKeyboardKey As Key = Nothing
+    Public DidAnimate As Boolean = False
 
     'Animations
     Dim WithEvents FirstHomeAnimation As New DoubleAnimation With {.From = 175, .To = 410, .Duration = New Duration(TimeSpan.FromMilliseconds(400))}
@@ -245,36 +247,6 @@ Class MainWindow
         End If
     End Sub
 
-    'Private Function GetPartitionAndDriveLetter() As String()
-    '    Dim USBPartition As String = ""
-    '    Dim USBLetter As String = ""
-
-    '    For Each DiskDrive In New ManagementObjectSearcher("select * from Win32_DiskDrive where InterfaceType='USB'").Get()
-    '        For Each DiskPartition As ManagementObject In New ManagementObjectSearcher("ASSOCIATORS OF {Win32_DiskDrive.DeviceID='" + DiskDrive("DeviceID").ToString + "'} WHERE AssocClass = Win32_DiskDriveToDiskPartition").Get()
-    '            USBPartition = DiskPartition("Name").ToString()
-    '            For Each Disk In New ManagementObjectSearcher("ASSOCIATORS OF {Win32_DiskPartition.DeviceID='" + DiskPartition("DeviceID").ToString + "'} WHERE AssocClass =Win32_LogicalDiskToPartition").Get()
-    '                USBLetter = Disk("Name").ToString()
-    '            Next
-    '        Next
-    '    Next
-
-    '    If Not String.IsNullOrEmpty(USBPartition) AndAlso Not String.IsNullOrEmpty(USBLetter) Then
-    '        Return {USBPartition, USBLetter}
-    '    Else
-    '        Return {"", ""}
-    '    End If
-    'End Function
-
-    Private Function GetDriveLetterFromMask(ByRef Unit As Integer) As Char
-        Dim NewChar As Char = Nothing
-        For i As Integer = 0 To 25
-            If Unit = (2 ^ i) Then
-                NewChar = Chr(Asc("A") + i)
-            End If
-        Next
-        Return NewChar
-    End Function
-
     Private Sub DiscCheck(DriveLetter As String)
         If CheckCDVDContent(DriveLetter).Platform = "PS2" Then
             'Handle PS2 disc
@@ -298,8 +270,8 @@ Class MainWindow
             OrbisNotifications.NotificationPopup(MainCanvas, DriveLetter, "PC-Engine CD-ROM ready.", "/Icons/Media-CD-icon.png")
             Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = DriveLetter,
                                                            .AppIconPath = "/Icons/Media-CD-icon.png",
-                                                           .AppExecutable = "Start Disc",
-                                                           .AppPath = DiscDriveName}))
+                                                           .AppButtonExecutionString = "Start Disc",
+                                                           .AppExecutableFilePath = DiscDriveName}))
         Else
             Dispatcher.BeginInvoke(Sub() PopupDeviceNotification("Disc " + DriveLetter, "Disc can now be used.", True))
         End If
@@ -311,14 +283,15 @@ Class MainWindow
 
     'Distance App1 - App2 = 345 (330 image size + 15 space to next app)
     'Distance App2 - App3 = 210 (200 image size + 10 space To Next app)
+    'GroupApp Top default = 650 / On home = 209
 
     Private WithEvents GameStartAnimation As New DoubleAnimation With {.From = 1, .To = 0, .Duration = New Duration(TimeSpan.FromSeconds(2))}
 
     'Animation shown when entering Home
-    Private Sub HomeAnimation()
+    Private Sub HomeAnimation(Optional WithSound As Boolean = True)
         Dim AnimDuration = New Duration(TimeSpan.FromMilliseconds(500))
 
-        PlayBackgroundSound(Sounds.Start)
+        If WithSound Then PlayBackgroundSound(Sounds.Start)
 
         Animate(App1, Canvas.LeftProperty, 461, 285, AnimDuration)
         Animate(App1, WidthProperty, 165, 330, AnimDuration)
@@ -354,6 +327,7 @@ Class MainWindow
 
         AppTitle.Visibility = Visibility.Visible
         AppStartLabel.Visibility = Visibility.Visible
+        StartRect.Visibility = Visibility.Visible
     End Sub
 
     'Animation shown when returning to Home
@@ -461,14 +435,13 @@ Class MainWindow
         SelectedAppBorder.Visibility = Visibility.Hidden
 
         'Start the game
-        StartedGameExecutable = GameInfos.AppPath
+        StartedGameExecutable = GameInfos.AppExecutableFilePath
         ReduceUsage()
-        GameStarter.StartGame(GameInfos.AppPath)
+        GameStarter.StartGame(GameInfos.AppExecutableFilePath, Platform:=GameInfos.AppPlatform)
     End Sub
 
     'Animation shown when starting an internal application
     Private Sub SimpleAppStartAnimation(SelectedApp As Image)
-
         'Get the details about the selected application
         Dim SelectedAppInfos As AppDetails = CType(SelectedApp.Tag, AppDetails)
 
@@ -486,7 +459,12 @@ Class MainWindow
                 NewFileExplorer.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
                 NewFileExplorer.Show()
             Case "Gallery"
+                Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True, .Top = 0, .Left = 0, .Opacity = 0, .Opener = "MainWindow",
+                    .MessageTitle = "Image/Picture Gallery",
+                    .MessageDescription = "This Image/Picture Gallery application is not available yet. The File Explorer allows opening image files."}
 
+                NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                NewSystemDialog.Show()
             Case "Library"
                 Dim NewGameLibrary As New GameLibrary() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "MainWindow"}
                 NewGameLibrary.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
@@ -505,7 +483,6 @@ Class MainWindow
                 NewSystemWebBrowser.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
                 NewSystemWebBrowser.Show()
         End Select
-
     End Sub
 
     'Animation shown when adding a the disc application on the main menu
@@ -590,7 +567,7 @@ Class MainWindow
             Animate(App1, HeightProperty, 200, 330, AnimDuration)
 
             AppTitle.Text = CType(App1.Tag, AppDetails).AppTitle
-            AppStartLabel.Text = CType(App1.Tag, AppDetails).AppExecutable
+            AppStartLabel.Text = CType(App1.Tag, AppDetails).AppButtonExecutionString
             App1.Focus()
 
             'Move every app back to the origin position 
@@ -633,7 +610,7 @@ Class MainWindow
     End Sub
 
     'Animation shown when adding a new app on the main menu
-    Public Sub AddNewApp(AppTitle As String, AppFolderOrFile As String)
+    Public Sub AddNewApp(AppTitle As String, ExecutableFilePath As String, Optional IsFolder As Boolean = False, Optional FolderName As String = "", Optional BackgroundPath As String = "", Optional IconPath As String = "", Optional Platform As String = "")
 
         'Get the count of displayed apps
         Dim InstalledAppsOnMenu As Integer = 0
@@ -657,18 +634,106 @@ Class MainWindow
             .Name = "App" + (InstalledAppsOnMenu + 1).ToString, 'Here the new app get it's number, so the code can iterate through it
             .Focusable = True,
             .FocusVisualStyle = Nothing,
-            .Tag = New AppDetails() With {.AppTitle = AppTitle, .AppExecutable = "Start", .AppPath = AppFolderOrFile}
-        }
+            .Tag = New AppDetails() With {
+            .AppTitle = AppTitle,
+            .AppButtonExecutionString = "Start",
+            .AppExecutableFilePath = ExecutableFilePath,
+            .FolderName = FolderName,
+            .IsFolder = IsFolder,
+            .AppBackgroundPath = BackgroundPath,
+            .AppIconPath = IconPath,
+            .AppPlatform = Platform}}
 
         'Set app image to executable icon or existing asset file (if exists)
-        If Path.GetExtension(AppFolderOrFile) = ".exe" Then
-            If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(AppFolderOrFile)) Then
-                NewAppImage.Source = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(AppFolderOrFile), UriKind.RelativeOrAbsolute))
+        If Not String.IsNullOrEmpty(ExecutableFilePath) Then
+            If Path.GetExtension(ExecutableFilePath) = ".exe" Then
+                If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(ExecutableFilePath)) Then
+                    NewAppImage.Source = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(ExecutableFilePath), UriKind.RelativeOrAbsolute))
+                Else
+                    NewAppImage.Source = GetExecutableIconAsImageSource(ExecutableFilePath)
+                End If
             Else
-                NewAppImage.Source = GetExecutableIconAsImageSource(AppFolderOrFile)
+                If Not String.IsNullOrEmpty(IconPath) Then
+                    NewAppImage.Source = New BitmapImage(New Uri(IconPath, UriKind.RelativeOrAbsolute))
+                Else
+                    NewAppImage.Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                End If
             End If
-        Else
-            NewAppImage.Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+        End If
+
+        If IsFolder AndAlso Not String.IsNullOrEmpty(FolderName) Then
+            If File.Exists(AppLibraryPath) AndAlso File.Exists(GameLibraryPath) Then
+                Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+                Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+                Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+                Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+
+                'Get some executable paths to find some images for the folder
+                Dim ListOfMatches As New List(Of String)()
+
+                'Check the Apps list
+                For Each RegisteredApp In AppsList.Apps()
+                    If RegisteredApp.Group = FolderName Then
+                        If Not String.IsNullOrEmpty(RegisteredApp.IconPath) Then
+                            ListOfMatches.Add(RegisteredApp.IconPath)
+                            Continue For 'Skip to next app if IconPath is present
+                        ElseIf Not String.IsNullOrEmpty(RegisteredApp.ExecutablePath) Then
+                            ListOfMatches.Add(RegisteredApp.ExecutablePath)
+                        End If
+                    End If
+                Next
+
+                'Check the Games list
+                For Each RegisteredGame In GamesList.Games()
+                    If RegisteredGame.Group = FolderName Then
+                        'Check if an IconPath exists first
+                        If Not String.IsNullOrEmpty(RegisteredGame.IconPath) Then
+                            ListOfMatches.Add(RegisteredGame.IconPath)
+                            Continue For 'Skip to next game if IconPath is present
+                        ElseIf Not String.IsNullOrEmpty(RegisteredGame.ExecutablePath) Then
+                            ListOfMatches.Add(RegisteredGame.ExecutablePath)
+                        End If
+                    End If
+                Next
+
+                If ListOfMatches.Count > 0 Then
+                    Dim BitmapImage1 As BitmapImage = Nothing
+                    Dim BitmapImage2 As BitmapImage = Nothing
+                    Dim BitmapImage3 As BitmapImage = Nothing
+                    Dim BitmapImage4 As BitmapImage = Nothing
+
+                    For Each FoundMatch In ListOfMatches
+                        If Path.GetExtension(FoundMatch) = ".exe" Then
+                            'Get icon from assets
+                            If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(FoundMatch)) Then
+                                If BitmapImage1 Is Nothing Then
+                                    BitmapImage1 = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(FoundMatch), UriKind.RelativeOrAbsolute))
+                                ElseIf BitmapImage2 Is Nothing Then
+                                    BitmapImage2 = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(FoundMatch), UriKind.RelativeOrAbsolute))
+                                ElseIf BitmapImage3 Is Nothing Then
+                                    BitmapImage3 = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(FoundMatch), UriKind.RelativeOrAbsolute))
+                                ElseIf BitmapImage4 Is Nothing Then
+                                    BitmapImage4 = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(FoundMatch), UriKind.RelativeOrAbsolute))
+                                End If
+                            End If
+                        Else
+                            'Use IconPath
+                            If BitmapImage1 Is Nothing Then
+                                BitmapImage1 = New BitmapImage(New Uri(FoundMatch, UriKind.RelativeOrAbsolute))
+                            ElseIf BitmapImage2 Is Nothing Then
+                                BitmapImage2 = New BitmapImage(New Uri(FoundMatch, UriKind.RelativeOrAbsolute))
+                            ElseIf BitmapImage3 Is Nothing Then
+                                BitmapImage3 = New BitmapImage(New Uri(FoundMatch, UriKind.RelativeOrAbsolute))
+                            ElseIf BitmapImage4 Is Nothing Then
+                                BitmapImage4 = New BitmapImage(New Uri(FoundMatch, UriKind.RelativeOrAbsolute))
+                            End If
+                        End If
+                    Next
+
+                    'Set the folder image
+                    NewAppImage.Source = CreateFolderImage(BitmapImage1, BitmapImage2, BitmapImage3, BitmapImage4)
+                End If
+            End If
         End If
 
         NewAppImage.Height = 200
@@ -712,11 +777,15 @@ Class MainWindow
                         If TheApp.Name.StartsWith("App") Then
                             AppsToRemove.Add(TheApp)
                             UnregisterName(TheApp.Name)
+                        ElseIf TheApp.Name.StartsWith("GroupApp") Then
+                            AppsToRemove.Add(TheApp)
+                            UnregisterName(TheApp.Name)
                         End If
                 End Select
 
             End If
         Next
+
         'Remove the UIElements from the canvas (removing while iterating will throw an exception)
         For Each AppToRemove In AppsToRemove
             MainCanvas.Children.Remove(AppToRemove)
@@ -724,33 +793,149 @@ Class MainWindow
 
         'Restore Home
         SetBackground()
-        HomeAnimation()
+        HomeAnimation(False)
+    End Sub
+
+    Public Sub ShowGroupAppsOnHome()
+        Dim AnimDuration As New Duration(TimeSpan.FromMilliseconds(150))
+
+        'Animate apps on the main menu
+        For Each App In MainCanvas.Children
+            If TypeOf App Is Image Then
+                Dim AppImage As Image = CType(App, Image)
+                If AppImage.Name.StartsWith("App") Then
+                    Animate(AppImage, OpacityProperty, 1, 0, AnimDuration)
+                    Animate(AppImage, Canvas.TopProperty, 209, -300, AnimDuration)
+                ElseIf AppImage.Name.StartsWith("GroupApp") Then
+                    Animate(AppImage, OpacityProperty, 0, 1, AnimDuration)
+                    Animate(AppImage, Canvas.TopProperty, 650, 209, AnimDuration)
+                End If
+            End If
+        Next
+
+        'Fix layout
+        Dim TheGroupApp1 As Image = Nothing
+        For Each App In MainCanvas.Children
+            If TypeOf App Is Image Then
+
+                Dim TheGroupApp As Image = CType(App, Image)
+                If TheGroupApp.Name = "GroupApp1" Then
+                    TheGroupApp1 = TheGroupApp
+                    Animate(TheGroupApp, Canvas.LeftProperty, 350, 285, AnimDuration)
+                    Animate(TheGroupApp, WidthProperty, 200, 330, AnimDuration)
+                    Animate(TheGroupApp, HeightProperty, 200, 330, AnimDuration)
+                ElseIf TheGroupApp.Name.StartsWith("GroupApp") AndAlso TheGroupApp.Name IsNot "GroupApp1" Then
+                    Canvas.SetLeft(TheGroupApp, Canvas.GetLeft(TheGroupApp) + 75)
+                End If
+            End If
+        Next
+
+        AppTitle.Text = CType(TheGroupApp1.Tag, AppDetails).AppTitle
+        AppStartLabel.Text = CType(TheGroupApp1.Tag, AppDetails).AppButtonExecutionString
+        TheGroupApp1.Focus()
+    End Sub
+
+    Public Sub RemoveGroupAppsOnHome()
+        Dim AnimDuration As New Duration(TimeSpan.FromMilliseconds(150))
+
+        'Animate apps on the main menu
+        For Each App In MainCanvas.Children
+            If TypeOf App Is Image Then
+                Dim AppImage As Image = CType(App, Image)
+                If AppImage.Name.StartsWith("App") Then
+                    Animate(AppImage, OpacityProperty, 0, 1, AnimDuration)
+                    Animate(AppImage, Canvas.TopProperty, -300, 209, AnimDuration)
+                ElseIf AppImage.Name = "GroupApp1" Then
+                    Animate(AppImage, WidthProperty, 330, 200, AnimDuration)
+                    Animate(AppImage, HeightProperty, 330, 200, AnimDuration)
+                    Animate(AppImage, Canvas.LeftProperty, 285, 350, AnimDuration)
+                    Animate(AppImage, Canvas.TopProperty, 209, 650, AnimDuration)
+                ElseIf AppImage.Name.StartsWith("GroupApp") AndAlso AppImage.Name IsNot "GroupApp1" Then
+                    Animate(AppImage, Canvas.TopProperty, 209, 650, AnimDuration)
+                End If
+            End If
+        Next
+
+        'Fix layout
+        For Each App In MainCanvas.Children
+            If TypeOf App Is Image Then
+                Dim TheGroupApp As Image = CType(App, Image)
+                If TheGroupApp.Name.StartsWith("GroupApp") AndAlso TheGroupApp.Name IsNot "GroupApp1" Then
+                    Canvas.SetLeft(TheGroupApp, Canvas.GetLeft(TheGroupApp) - 75)
+                End If
+            End If
+        Next
+
+        AppTitle.Text = CType(LastFocusedApp.Tag, AppDetails).FolderName
+        AppStartLabel.Text = "↓"
+        LastFocusedApp.Focus()
     End Sub
 
 #Region "Animation Events"
-
-    Private Sub GameStartAnimation_Completed(sender As Object, e As EventArgs) Handles GameStartAnimation.Completed
-        Dim DiscInfos = CType(DiscApp.Tag, AppDetails)
-        StartCDVD(DiscContentType, DiscInfos.AppPath)
-    End Sub
-
-    Private Sub LastUIMoveAnimation_Completed(sender As Object, e As EventArgs) Handles LastUIMoveAnimation.Completed
-        DidAnimate = True
-    End Sub
 
     Private Sub FirstHomeAnimation_Completed(sender As Object, e As EventArgs) Handles FirstHomeAnimation.Completed
         'Version Banner
         NotificationBannerTextBlock.BeginAnimation(Canvas.LeftProperty, NotificationBannerAnimation)
         NotificationBannerTextBlock.Dispatcher.Invoke(Sub() NotificationBannerTextBlock.Text = "Initializing library, please wait")
 
+        'Check for battery info
+        If IsMobileDevice() Then
+
+            IsBatteryPresent = True
+
+            Dim NewBatteryInfo As BatteryInfo = GetBatteryInfo()
+            If NewBatteryInfo.BatteryStatus = Forms.BatteryChargeStatus.Charging Then
+                BatteryPercentageTextBlock.Text = (NewBatteryInfo.BatteryPercentage * 100).ToString() + "%"
+                BatteryIndicatorImage.Source = GetBatteryImage(NewBatteryInfo.BatteryPercentage, True)
+            Else
+                BatteryPercentageTextBlock.Text = (NewBatteryInfo.BatteryPercentage * 100).ToString() + "%"
+                BatteryIndicatorImage.Source = GetBatteryImage(NewBatteryInfo.BatteryPercentage, False)
+            End If
+        Else
+            If BatteryIndicatorImage.Source IsNot Nothing Then
+                BatteryPercentageTextBlock.Text = ""
+                BatteryIndicatorImage.Source = Nothing
+            End If
+        End If
+
+        'Check for WiFi info
+        If IsWiFiRadioOn() Then
+
+            IsWiFiAvailable = True
+
+            Dim SignalStrenght As Integer = GetWiFiSignalStrenght()
+            If SignalStrenght <> 0 Then
+                WiFiNetworkNameStrenghtTextBlock.Text = GetConnectedWiFiNetworkSSID().ToString() + " - " + SignalStrenght.ToString() + "%"
+                WiFiIndicatorImage.Source = GetWiFiSignalImage(SignalStrenght)
+            End If
+        Else
+            If WiFiIndicatorImage.Source IsNot Nothing Then
+                WiFiNetworkNameStrenghtTextBlock.Text = ""
+                WiFiIndicatorImage.Source = Nothing
+            End If
+        End If
+
         'Clock
         SystemClock.Text = Date.Now.ToString("HH:mm")
         ClockTimer.Start()
-        SystemTimer.Start()
+
+        'Battery & WiFi status background timer (do not start when no battery or WiFi available)
+        If IsBatteryPresent Or IsWiFiAvailable Then
+            SystemTimer.Start()
+        End If
+
         DelayTimer.Start()
 
         App1.Focus()
-        CurrentMenu = "AppMenu"
+    End Sub
+
+    Private Sub GameStartAnimation_Completed(sender As Object, e As EventArgs) Handles GameStartAnimation.Completed
+        Dim DiscInfos = CType(DiscApp.Tag, AppDetails)
+        StartCDVD(DiscContentType, DiscInfos.AppExecutableFilePath)
+    End Sub
+
+    Private Sub LastUIMoveAnimation_Completed(sender As Object, e As EventArgs) Handles LastUIMoveAnimation.Completed
+        DidAnimate = True
     End Sub
 
     Private Sub LastHomeRestoreAnimation_Completed(sender As Object, e As EventArgs) Handles LastHomeRestoreAnimation.Completed
@@ -768,7 +953,6 @@ Class MainWindow
         PlayBackgroundSound(Sounds.Move)
 
         For Each App In MainCanvas.Children
-
             If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
 
                 Dim TheApp As Image = CType(App, Image)
@@ -791,8 +975,16 @@ Class MainWindow
                     End If
                 End If
 
-            End If
+            ElseIf TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("GroupApp") Then
 
+                Dim TheApp As Image = CType(App, Image)
+
+                'If the app is not the selected one and also not the next one, move - 210
+                If TheApp.Name IsNot SelectedApp.Name AndAlso TheApp.Name IsNot NextApp.Name Then
+                    Dim NewAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(TheApp), .To = Canvas.GetLeft(TheApp) - 210, .Duration = MoveDuration}
+                    Dispatcher.BeginInvoke(Sub() TheApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
+                End If
+            End If
         Next
 
         Dim NextAppLeftAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(NextApp), .To = Canvas.GetLeft(NextApp) - 345, .Duration = MoveDuration}
@@ -818,9 +1010,171 @@ Class MainWindow
                                    SelectedAppBorder.BeginAnimation(HeightProperty, LastUIMoveAnimation)
                                End Sub)
 
-        'Set the selected application title and start label shown on the main menu and focus the app
-        AppTitle.Text = CType(NextApp.Tag, AppDetails).AppTitle
-        AppStartLabel.Text = CType(NextApp.Tag, AppDetails).AppExecutable
+        'Remove previous group view if exists
+        If Not NextApp.Name.StartsWith("GroupApp") Then
+            If MainCanvas.FindName("GroupApp1") IsNot Nothing Then
+                Dim GroupAppsToRemove As New List(Of UIElement)()
+
+                'Get all GroupApps
+                For Each GroupApp In MainCanvas.Children
+                    If TypeOf GroupApp Is Image Then
+                        Dim TheGroupApp As Image = CType(GroupApp, Image)
+                        If TheGroupApp.Name.StartsWith("GroupApp") Then
+                            GroupAppsToRemove.Add(TheGroupApp)
+                            UnregisterName(TheGroupApp.Name)
+                        End If
+                    End If
+                Next
+
+                'Remove the UIElements from the canvas (removing while iterating will throw an exception)
+                For Each AppToRemove In GroupAppsToRemove
+                    MainCanvas.Children.Remove(AppToRemove)
+                Next
+
+                HomeGroupAppsCount = 0
+            End If
+        End If
+
+        'Show group items when next items is a folder
+        If CType(NextApp.Tag, AppDetails).IsFolder Then
+            If File.Exists(AppLibraryPath) AndAlso File.Exists(GameLibraryPath) Then
+
+                Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+                Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+                Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+                Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+
+                If AppsList IsNot Nothing AndAlso GamesList IsNot Nothing Then
+
+                    'Check the Apps list
+                    For Each RegisteredApp In AppsList.Apps()
+                        'Check if the next selected app is within a group
+                        If RegisteredApp.Group = CType(NextApp.Tag, AppDetails).FolderName Then
+
+                            'Declare new group app
+                            Dim NewAppImage As New Image With {
+                                        .Name = "GroupApp" + (HomeGroupAppsCount + 1).ToString, 'Here the new GroupApp get it's number, so the code can iterate through it
+                                        .Focusable = True,
+                                        .FocusVisualStyle = Nothing,
+                                        .Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .AppExecutableFilePath = RegisteredApp.ExecutablePath}
+                                    }
+
+                            'Set app image to executable icon or existing asset file (if exists)
+                            If Not String.IsNullOrEmpty(RegisteredApp.ExecutablePath) Then
+                                If Path.GetExtension(RegisteredApp.ExecutablePath) = ".exe" Then
+                                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(RegisteredApp.ExecutablePath)) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(RegisteredApp.ExecutablePath), UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = GetExecutableIconAsImageSource(RegisteredApp.ExecutablePath)
+                                    End If
+                                Else
+                                    If Not String.IsNullOrEmpty(RegisteredApp.IconPath) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(RegisteredApp.IconPath, UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                    End If
+                                End If
+                            End If
+
+                            NewAppImage.Height = 200
+                            NewAppImage.Width = 200
+                            NewAppImage.Stretch = Stretch.Uniform
+                            NewAppImage.StretchDirection = StretchDirection.Both
+
+                            If HomeGroupAppsCount = 0 Then
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, 350)
+                                Canvas.SetTop(NewAppImage, 650)
+
+                            Else
+                                'Get the last app on the main menu
+                                Dim LastGroupAppInMenu As Image = CType(MainCanvas.FindName("GroupApp" + HomeGroupAppsCount.ToString()), Image)
+
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastGroupAppInMenu) + 205)
+                                Canvas.SetTop(NewAppImage, Canvas.GetTop(LastGroupAppInMenu))
+                            End If
+
+                            HomeGroupAppsCount += 1
+
+                            'Register new app
+                            RegisterName(NewAppImage.Name, NewAppImage)
+
+                            'Add the new app on the canvas
+                            MainCanvas.Children.Add(NewAppImage)
+                            Dispatcher.BeginInvoke(Sub() NewAppImage.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(200))}))
+                        End If
+                    Next
+
+                    'Check the Games list
+                    For Each RegisteredGame In GamesList.Games()
+                        'Check if the next selected app is within a group
+                        If RegisteredGame.Group = CType(NextApp.Tag, AppDetails).FolderName Then
+
+                            'Declare new group app
+                            Dim NewAppImage As New Image With {
+                                        .Name = "GroupApp" + (HomeGroupAppsCount + 1).ToString, 'Here the new GroupApp get it's number, so the code can iterate through it
+                                        .Focusable = True,
+                                        .FocusVisualStyle = Nothing,
+                                        .Tag = New AppDetails() With {.AppTitle = RegisteredGame.Name, .AppButtonExecutionString = "Start", .AppExecutableFilePath = RegisteredGame.ExecutablePath}
+                                    }
+
+                            'Set app image to executable icon or existing asset file (if exists)
+                            If Not String.IsNullOrEmpty(RegisteredGame.ExecutablePath) Then
+                                If Path.GetExtension(RegisteredGame.ExecutablePath) = ".exe" Then
+                                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(RegisteredGame.ExecutablePath)) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(RegisteredGame.ExecutablePath), UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = GetExecutableIconAsImageSource(RegisteredGame.ExecutablePath)
+                                    End If
+                                Else
+                                    If Not String.IsNullOrEmpty(RegisteredGame.IconPath) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(RegisteredGame.IconPath, UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                    End If
+                                End If
+                            End If
+
+                            NewAppImage.Height = 200
+                            NewAppImage.Width = 200
+                            NewAppImage.Stretch = Stretch.Uniform
+                            NewAppImage.StretchDirection = StretchDirection.Both
+
+                            If HomeGroupAppsCount = 0 Then
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, 350)
+                                Canvas.SetTop(NewAppImage, 650)
+
+                            Else
+                                'Get the last app on the main menu
+                                Dim LastGroupAppInMenu As Image = CType(MainCanvas.FindName("GroupApp" + HomeGroupAppsCount.ToString()), Image)
+
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastGroupAppInMenu) + 205)
+                                Canvas.SetTop(NewAppImage, Canvas.GetTop(LastGroupAppInMenu))
+                            End If
+
+                            HomeGroupAppsCount += 1
+
+                            'Register new app
+                            RegisterName(NewAppImage.Name, NewAppImage)
+
+                            'Add the new app on the canvas
+                            MainCanvas.Children.Add(NewAppImage)
+                            Dispatcher.BeginInvoke(Sub() NewAppImage.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(200))}))
+                        End If
+                    Next
+
+                End If
+            End If
+
+            AppTitle.Text = CType(NextApp.Tag, AppDetails).FolderName
+            AppStartLabel.Text = "↓"
+        Else
+            AppTitle.Text = CType(NextApp.Tag, AppDetails).AppTitle
+            AppStartLabel.Text = CType(NextApp.Tag, AppDetails).AppButtonExecutionString
+        End If
 
         NextApp.Focus()
     End Sub
@@ -834,7 +1188,6 @@ Class MainWindow
         For Each App In MainCanvas.Children
 
             If TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("App") Then
-
                 Dim TheApp As Image = CType(App, Image)
 
                 'If the app is not the selected one and also not the next one, move + 210
@@ -842,9 +1195,7 @@ Class MainWindow
                     Dim NewAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(TheApp), .To = Canvas.GetLeft(TheApp) + 210, .Duration = MoveDuration}
                     Dispatcher.BeginInvoke(Sub() TheApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
                 End If
-
             ElseIf TypeOf App Is Image AndAlso CType(App, Image).Name = "DiscApp" Then
-
                 Dim TheDiscApp As Image = CType(App, Image)
 
                 If IsDiscInserted Then
@@ -854,7 +1205,14 @@ Class MainWindow
                         Dispatcher.BeginInvoke(Sub() TheDiscApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
                     End If
                 End If
+            ElseIf TypeOf App Is Image AndAlso CType(App, Image).Name.StartsWith("GroupApp") Then
+                Dim TheApp As Image = CType(App, Image)
 
+                'If the app is not the selected one and also not the next one, move + 210
+                If TheApp.Name IsNot SelectedApp.Name AndAlso TheApp.Name IsNot NextApp.Name Then
+                    Dim NewAnimation As New DoubleAnimation With {.From = Canvas.GetLeft(TheApp), .To = Canvas.GetLeft(TheApp) + 210, .Duration = MoveDuration}
+                    Dispatcher.BeginInvoke(Sub() TheApp.BeginAnimation(Canvas.LeftProperty, NewAnimation))
+                End If
             End If
 
         Next
@@ -882,8 +1240,170 @@ Class MainWindow
                                    SelectedAppBorder.BeginAnimation(HeightProperty, LastUIMoveAnimation)
                                End Sub)
 
-        AppTitle.Text = CType(NextApp.Tag, AppDetails).AppTitle
-        AppStartLabel.Text = CType(NextApp.Tag, AppDetails).AppExecutable
+        'Remove previous group view if exists
+        If Not NextApp.Name.StartsWith("GroupApp") Then
+            If MainCanvas.FindName("GroupApp1") IsNot Nothing Then
+                Dim GroupAppsToRemove As New List(Of UIElement)()
+
+                'Get all GroupApps
+                For Each GroupApp In MainCanvas.Children
+                    If TypeOf GroupApp Is Image Then
+                        Dim TheGroupApp As Image = CType(GroupApp, Image)
+                        If TheGroupApp.Name.StartsWith("GroupApp") Then
+                            GroupAppsToRemove.Add(TheGroupApp)
+                            UnregisterName(TheGroupApp.Name)
+                        End If
+                    End If
+                Next
+                'Remove the UIElements from the canvas (removing while iterating will throw an exception)
+                For Each AppToRemove In GroupAppsToRemove
+                    MainCanvas.Children.Remove(AppToRemove)
+                Next
+
+                HomeGroupAppsCount = 0
+            End If
+        End If
+
+        'Show group items when next items is a folder
+        If CType(NextApp.Tag, AppDetails).IsFolder Then
+            If File.Exists(AppLibraryPath) AndAlso File.Exists(GameLibraryPath) Then
+
+                Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+                Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+                Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+                Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+
+                If AppsList IsNot Nothing AndAlso GamesList IsNot Nothing Then
+
+                    'Check the Apps list
+                    For Each RegisteredApp In AppsList.Apps()
+                        'Check if the next selected app is within a group
+                        If RegisteredApp.Group = CType(NextApp.Tag, AppDetails).FolderName Then
+
+                            'Declare new group app
+                            Dim NewAppImage As New Image With {
+                                        .Name = "GroupApp" + (HomeGroupAppsCount + 1).ToString, 'Here the new GroupApp get it's number, so the code can iterate through it
+                                        .Focusable = True,
+                                        .FocusVisualStyle = Nothing,
+                                        .Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .AppExecutableFilePath = RegisteredApp.ExecutablePath}
+                                    }
+
+                            'Set app image to executable icon or existing asset file (if exists)
+                            If Not String.IsNullOrEmpty(RegisteredApp.ExecutablePath) Then
+                                If Path.GetExtension(RegisteredApp.ExecutablePath) = ".exe" Then
+                                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(RegisteredApp.ExecutablePath)) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(RegisteredApp.ExecutablePath), UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = GetExecutableIconAsImageSource(RegisteredApp.ExecutablePath)
+                                    End If
+                                Else
+                                    If Not String.IsNullOrEmpty(RegisteredApp.IconPath) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(RegisteredApp.IconPath, UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                    End If
+                                End If
+                            End If
+
+                            NewAppImage.Height = 200
+                            NewAppImage.Width = 200
+                            NewAppImage.Stretch = Stretch.Uniform
+                            NewAppImage.StretchDirection = StretchDirection.Both
+
+                            If HomeGroupAppsCount = 0 Then
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, 350)
+                                Canvas.SetTop(NewAppImage, 650)
+
+                            Else
+                                'Get the last app on the main menu
+                                Dim LastGroupAppInMenu As Image = CType(MainCanvas.FindName("GroupApp" + HomeGroupAppsCount.ToString()), Image)
+
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastGroupAppInMenu) + 205)
+                                Canvas.SetTop(NewAppImage, Canvas.GetTop(LastGroupAppInMenu))
+                            End If
+
+                            HomeGroupAppsCount += 1
+
+                            'Register new app
+                            RegisterName(NewAppImage.Name, NewAppImage)
+
+                            'Add the new app on the canvas
+                            MainCanvas.Children.Add(NewAppImage)
+                            Dispatcher.BeginInvoke(Sub() NewAppImage.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(200))}))
+                        End If
+                    Next
+
+                    'Check the Games list
+                    For Each RegisteredGame In GamesList.Games()
+                        'Check if the next selected app is within a group
+                        If RegisteredGame.Group = CType(NextApp.Tag, AppDetails).FolderName Then
+
+                            'Declare new group app
+                            Dim NewAppImage As New Image With {
+                                        .Name = "GroupApp" + (HomeGroupAppsCount + 1).ToString, 'Here the new GroupApp get it's number, so the code can iterate through it
+                                        .Focusable = True,
+                                        .FocusVisualStyle = Nothing,
+                                        .Tag = New AppDetails() With {.AppTitle = RegisteredGame.Name, .AppButtonExecutionString = "Start", .AppExecutableFilePath = RegisteredGame.ExecutablePath}
+                                    }
+
+                            'Set app image to executable icon or existing asset file (if exists)
+                            If Not String.IsNullOrEmpty(RegisteredGame.ExecutablePath) Then
+                                If Path.GetExtension(RegisteredGame.ExecutablePath) = ".exe" Then
+                                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(RegisteredGame.ExecutablePath)) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(RegisteredGame.ExecutablePath), UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = GetExecutableIconAsImageSource(RegisteredGame.ExecutablePath)
+                                    End If
+                                Else
+                                    If Not String.IsNullOrEmpty(RegisteredGame.IconPath) Then
+                                        NewAppImage.Source = New BitmapImage(New Uri(RegisteredGame.IconPath, UriKind.RelativeOrAbsolute))
+                                    Else
+                                        NewAppImage.Source = New BitmapImage(New Uri("/Icons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                    End If
+                                End If
+                            End If
+
+                            NewAppImage.Height = 200
+                            NewAppImage.Width = 200
+                            NewAppImage.Stretch = Stretch.Uniform
+                            NewAppImage.StretchDirection = StretchDirection.Both
+
+                            If HomeGroupAppsCount = 0 Then
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, 350)
+                                Canvas.SetTop(NewAppImage, 650)
+
+                            Else
+                                'Get the last app on the main menu
+                                Dim LastGroupAppInMenu As Image = CType(MainCanvas.FindName("GroupApp" + HomeGroupAppsCount.ToString()), Image)
+
+                                'Set the position of the new app
+                                Canvas.SetLeft(NewAppImage, Canvas.GetLeft(LastGroupAppInMenu) + 205)
+                                Canvas.SetTop(NewAppImage, Canvas.GetTop(LastGroupAppInMenu))
+                            End If
+
+                            HomeGroupAppsCount += 1
+
+                            'Register new app
+                            RegisterName(NewAppImage.Name, NewAppImage)
+
+                            'Add the new app on the canvas
+                            MainCanvas.Children.Add(NewAppImage)
+                            Dispatcher.BeginInvoke(Sub() NewAppImage.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(200))}))
+                        End If
+                    Next
+
+                End If
+            End If
+
+            AppTitle.Text = CType(NextApp.Tag, AppDetails).FolderName
+            AppStartLabel.Text = "↓"
+        Else
+            AppTitle.Text = CType(NextApp.Tag, AppDetails).AppTitle
+            AppStartLabel.Text = CType(NextApp.Tag, AppDetails).AppButtonExecutionString
+        End If
 
         NextApp.Focus()
     End Sub
@@ -919,7 +1439,7 @@ Class MainWindow
 
                         If String.IsNullOrEmpty(StartedGameExecutable) Then
                             Dim FocusedApp As Image = TryCast(FocusedItem, Image)
-                            Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppPath 'FocusedAppPath = Executable path
+                            Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppExecutableFilePath 'FocusedAppPath = Executable path
 
                             PauseInput = True
 
@@ -932,22 +1452,94 @@ Class MainWindow
                             OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png")
                         End If
 
+                        'Side menu actions
+                    ElseIf TypeOf FocusedItem Is Controls.Button Then
+
+                        Dim SelectedButton As Controls.Button = CType(FocusedItem, Controls.Button)
+                        Dim SelectedButtonValue As String = SelectedButton.Content.ToString()
+
+                        Select Case SelectedButtonValue
+                            Case "Add to Folder"
+
+                                'Hide the side menu
+                                If Canvas.GetLeft(RightMenu) = 1430 Then
+                                    PlayBackgroundSound(Sounds.SelectItem)
+                                    Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                    Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                    Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                    Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                    LastFocusedApp.Focus()
+                                End If
+
+                                PauseInput = True
+                                PlayBackgroundSound(Sounds.SelectItem)
+
+                                'Show the existing folders
+                                Dim NewExistingFoldersWindow As New ExistingFolders() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "MainWindow", .FirstSelectedAppOrGame = LastFocusedApp}
+                                NewExistingFoldersWindow.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                                NewExistingFoldersWindow.Show()
+
+                            Case "Delete"
+
+
+
+                            Case "Delete Folder"
+                                PauseInput = True
+
+                                Dim FolderToDelete As String = CType(LastFocusedApp.Tag, AppDetails).FolderName
+                                Dim FolderContentNames As List(Of String) = OrbisFolders.GetFolderContentNames(FolderToDelete)
+
+                                'Change the group name
+                                For Each GameApp In FolderContentNames
+                                    OrbisFolders.ChangeFolderNameOfAppGame("", GameApp)
+                                Next
+
+                                'Remove folder from list
+                                OrbisFolders.RemoveFolder(FolderToDelete)
+
+                                'Hide the side menu
+                                If Canvas.GetLeft(RightMenu) = 1430 Then
+                                    PlayBackgroundSound(Sounds.SelectItem)
+                                    Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                    Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                    Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                    Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                End If
+
+                                'Reload Home
+                                DidAnimate = False
+                                ReloadHome()
+                        End Select
                     End If
                 Case Key.Left
                     If TypeOf FocusedItem Is Image Then
                         Dim SelectedApp As Image = TryCast(FocusedItem, Image)
                         Dim NextAppImage As Image
 
-                        If App2.IsFocused And IsDiscInserted Then
-                            NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
-                        ElseIf DiscApp.IsFocused Then
-                            NextAppImage = CType(MainCanvas.FindName("App1"), Image)
-                        Else
-                            Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
-                            If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                                NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                        If SelectedApp.Name.StartsWith("GroupApp") Then
+                            'Move within the folder items
+                            Dim SelectedGroupApppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
+                            If MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString) IsNot Nothing Then
+                                NextAppImage = CType(MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString), Image)
                             Else
                                 NextAppImage = Nothing
+                            End If
+                        Else
+                            'Move within the Home items
+                            If App2.IsFocused And IsDiscInserted Then
+                                NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
+                            ElseIf DiscApp.IsFocused Then
+                                NextAppImage = CType(MainCanvas.FindName("App1"), Image)
+                            Else
+                                Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
+                                If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                    NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                                Else
+                                    NextAppImage = Nothing
+                                End If
                             End If
                         End If
 
@@ -956,7 +1548,13 @@ Class MainWindow
                             DidAnimate = False
 
                             Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-                            ChangeBackgroundImage(NextAppDetails.AppPath)
+
+                            If Not String.IsNullOrEmpty(NextAppDetails.AppBackgroundPath) Then
+                                ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath, NextAppDetails.AppBackgroundPath)
+                            Else
+                                ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath)
+                            End If
+
                             MoveAppsLeft(SelectedApp, NextAppImage)
                         End If
                     End If
@@ -965,16 +1563,25 @@ Class MainWindow
                         Dim SelectedApp As Image = TryCast(FocusedItem, Image)
                         Dim NextAppImage As Image
 
-                        If App1.IsFocused And IsDiscInserted Then
-                            NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
-                        ElseIf DiscApp.IsFocused Then
-                            NextAppImage = CType(MainCanvas.FindName("App2"), Image)
-                        Else
-                            Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
-                            If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                                NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                        If SelectedApp.Name.StartsWith("GroupApp") Then
+                            Dim SelectedGroupApppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
+                            If MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString) IsNot Nothing Then
+                                NextAppImage = CType(MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString), Image)
                             Else
                                 NextAppImage = Nothing
+                            End If
+                        Else
+                            If App1.IsFocused And IsDiscInserted Then
+                                NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
+                            ElseIf DiscApp.IsFocused Then
+                                NextAppImage = CType(MainCanvas.FindName("App2"), Image)
+                            Else
+                                Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
+                                If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                    NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                                Else
+                                    NextAppImage = Nothing
+                                End If
                             End If
                         End If
 
@@ -982,17 +1589,112 @@ Class MainWindow
                             DidAnimate = False
 
                             Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-                            ChangeBackgroundImage(NextAppDetails.AppPath)
+
+                            If Not String.IsNullOrEmpty(NextAppDetails.AppBackgroundPath) Then
+                                ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath, NextAppDetails.AppBackgroundPath)
+                            Else
+                                ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath)
+                            End If
+
                             MoveAppsRight(SelectedApp, NextAppImage)
+                        End If
+                    End If
+                Case Key.Up
+                    If TypeOf FocusedItem Is Controls.Button Then
+                        PlayBackgroundSound(Sounds.Move)
+
+                        If SettingButton1.IsFocused Then
+                            SettingButton3.Focus()
+                        ElseIf SettingButton3.IsFocused Then
+                            SettingButton2.Focus()
+                        ElseIf SettingButton2.IsFocused Then
+                            SettingButton1.Focus()
+                        End If
+                    ElseIf TypeOf FocusedItem Is Image Then
+                        PlayBackgroundSound(Sounds.Move)
+                        Dim FocusedApp As Image = TryCast(FocusedItem, Image)
+
+                        'Remove the GroupApps from main Home screen (move them down)
+                        If FocusedApp.Name = "GroupApp1" Then
+                            If GroupAppsOnHome Then
+                                RemoveGroupAppsOnHome()
+                                GroupAppsOnHome = False
+                            End If
+                        End If
+                    End If
+                Case Key.Down
+                    If TypeOf FocusedItem Is Controls.Button Then
+                        PlayBackgroundSound(Sounds.Move)
+
+                        If SettingButton1.IsFocused Then
+                            SettingButton2.Focus()
+                        ElseIf SettingButton2.IsFocused Then
+                            SettingButton3.Focus()
+                        ElseIf SettingButton3.IsFocused Then
+                            SettingButton1.Focus()
+                        End If
+                    ElseIf TypeOf FocusedItem Is Image Then
+                        PlayBackgroundSound(Sounds.Move)
+                        Dim FocusedApp As Image = TryCast(FocusedItem, Image)
+
+                        'Show the GroupApps on main Home screen (move them up)
+                        If CType(FocusedApp.Tag, AppDetails).IsFolder Then
+                            If GroupAppsOnHome = False Then
+                                LastFocusedApp = FocusedApp
+                                GroupAppsOnHome = True
+                                ShowGroupAppsOnHome()
+                            End If
                         End If
                     End If
                 Case Key.F1
                     DidAnimate = False
                     ReloadHome()
-                Case Key.VolumeDown
-                    MasterVolumeDown()
-                Case Key.VolumeUp
-                    MasterVolumeUp()
+                Case Key.F2
+                    If TypeOf FocusedItem Is Image Then
+
+                        Dim FocusedApp As Image = TryCast(FocusedItem, Image)
+
+                        If Canvas.GetLeft(RightMenu) = 1925 Then
+                            LastFocusedApp = FocusedApp
+
+                            'Show the side menu
+                            PlayBackgroundSound(Sounds.SelectItem)
+
+                            'Make sure the menu is always on top (elements added during rutime would mess up the side menu)
+                            EnsureHighestZIndex(RightMenu)
+
+                            Animate(RightMenu, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                            If Not CType(FocusedApp.Tag, AppDetails).IsFolder Then
+                                SettingButton1.Content = "Add to Folder"
+                                SettingButton2.Content = "Delete"
+                                SettingButton3.Content = "Information"
+
+                                ShowSideSettingButtons(3)
+                            Else
+                                SettingButton1.Content = "Delete Folder"
+
+                                ShowSideSettingButtons(1)
+                            End If
+
+                            'Set focus on the first available option
+                            SettingButton1.Focus()
+                        End If
+
+                    ElseIf TypeOf FocusedItem Is Controls.Button Then
+                        If Canvas.GetLeft(RightMenu) = 1430 Then
+                            'Hide the side menu
+                            PlayBackgroundSound(Sounds.SelectItem)
+                            Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                            Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                            Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                            Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                            'Set the focus back
+                            LastFocusedApp.Focus()
+                        End If
+                    End If
             End Select
 
             LastKeyboardKey = e.Key
@@ -1014,7 +1716,7 @@ Class MainWindow
                     If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso ActiveProcess IsNot Nothing Then
                         Try
                             'Suspend the running game process
-                            PauseProcessThreads(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                            PauseProcessThreads(ActiveProcess.StartInfo.FileName)
                         Catch ex As Exception
                             PauseInput = True
                             ExceptionDialog("System Error", ex.Message)
@@ -1033,7 +1735,7 @@ Class MainWindow
                         PauseInput = True
                         ReduceUsage()
                         ResumeProcessThreads()
-                        ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                        ShowProcess(ActiveProcess.StartInfo.FileName)
                     End If
                 End If
         End Select
@@ -1047,6 +1749,7 @@ Class MainWindow
             Dim MainGamepadButtonFlags As GamepadButtonFlags = MainGamepadState.Gamepad.Buttons
 
             If MainGamepadPreviousState.PacketNumber <> MainGamepadState.PacketNumber AndAlso DidAnimate Then
+                'While Home is present
                 If Not PauseInput Then
 
                     Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
@@ -1074,7 +1777,7 @@ Class MainWindow
                             PauseInput = True
                             ReduceUsage()
                             ResumeProcessThreads()
-                            ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                            ShowProcess(ActiveProcess.StartInfo.FileName)
                         End If
 
                         'Do not leave the buttons in a pressed state
@@ -1097,7 +1800,7 @@ Class MainWindow
 
                             If String.IsNullOrEmpty(StartedGameExecutable) Then
                                 Dim FocusedApp As Image = TryCast(FocusedItem, Image)
-                                Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppPath
+                                Dim FocusedAppPath = CType(FocusedApp.Tag, AppDetails).AppExecutableFilePath 'FocusedAppPath = Executable path
 
                                 PauseInput = True
 
@@ -1106,28 +1809,99 @@ Class MainWindow
                                 Else
                                     StartGameAnimation(FocusedApp)
                                 End If
-
-                                LastFocusedApp = FocusedApp
                             Else
                                 OrbisNotifications.NotificationPopup(MainCanvas, "Game Running", "A game is already running.", "/Icons/Media-CD-icon.png")
                             End If
 
+                            'Side menu actions
+                        ElseIf TypeOf FocusedItem Is Controls.Button Then
+
+                            Dim SelectedButton As Controls.Button = CType(FocusedItem, Controls.Button)
+                            Dim SelectedButtonValue As String = SelectedButton.Content.ToString()
+
+                            Select Case SelectedButtonValue
+                                Case "Add to Folder"
+
+                                    'Hide the side menu
+                                    If Canvas.GetLeft(RightMenu) = 1430 Then
+                                        PlayBackgroundSound(Sounds.SelectItem)
+                                        Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                        Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                        Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                        Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                        LastFocusedApp.Focus()
+                                    End If
+
+                                    PauseInput = True
+                                    PlayBackgroundSound(Sounds.SelectItem)
+
+                                    'Show the existing folders
+                                    Dim NewExistingFoldersWindow As New ExistingFolders() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "MainWindow", .FirstSelectedAppOrGame = LastFocusedApp}
+                                    NewExistingFoldersWindow.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                                    NewExistingFoldersWindow.Show()
+
+                                Case "Delete"
+                                    PauseInput = True
+
+
+
+                                Case "Delete Folder"
+                                    PauseInput = True
+
+                                    Dim FolderToDelete As String = CType(LastFocusedApp.Tag, AppDetails).FolderName
+                                    Dim FolderContentNames As List(Of String) = OrbisFolders.GetFolderContentNames(FolderToDelete)
+
+                                    'Change the group name
+                                    For Each GameApp In FolderContentNames
+                                        OrbisFolders.ChangeFolderNameOfAppGame("", GameApp)
+                                    Next
+
+                                    'Remove folder from list
+                                    OrbisFolders.RemoveFolder(FolderToDelete)
+
+                                    'Hide the side menu
+                                    If Canvas.GetLeft(RightMenu) = 1430 Then
+                                        PlayBackgroundSound(Sounds.SelectItem)
+                                        Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                        Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                        Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                        Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                    End If
+
+                                    'Reload Home
+                                    DidAnimate = False
+                                    ReloadHome()
+                            End Select
                         End If
                     ElseIf MainGamepadButton_DPad_Left_Pressed Then
                         If TypeOf FocusedItem Is Image Then
                             Dim SelectedApp As Image = TryCast(FocusedItem, Image)
                             Dim NextAppImage As Image
 
-                            If App2.IsFocused And IsDiscInserted Then
-                                NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
-                            ElseIf DiscApp.IsFocused Then
-                                NextAppImage = CType(MainCanvas.FindName("App1"), Image)
-                            Else
-                                Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
-                                If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                                    NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                            If SelectedApp.Name.StartsWith("GroupApp") Then
+                                'Move within the folder items
+                                Dim SelectedGroupApppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
+                                If MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString) IsNot Nothing Then
+                                    NextAppImage = CType(MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString), Image)
                                 Else
                                     NextAppImage = Nothing
+                                End If
+                            Else
+                                'Move within the Home items
+                                If App2.IsFocused And IsDiscInserted Then
+                                    NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
+                                ElseIf DiscApp.IsFocused Then
+                                    NextAppImage = CType(MainCanvas.FindName("App1"), Image)
+                                Else
+                                    Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) - 1
+                                    If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                        NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                                    Else
+                                        NextAppImage = Nothing
+                                    End If
                                 End If
                             End If
 
@@ -1136,7 +1910,13 @@ Class MainWindow
                                 DidAnimate = False
 
                                 Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-                                ChangeBackgroundImage(NextAppDetails.AppPath)
+
+                                If Not String.IsNullOrEmpty(NextAppDetails.AppBackgroundPath) Then
+                                    ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath, NextAppDetails.AppBackgroundPath)
+                                Else
+                                    ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath)
+                                End If
+
                                 MoveAppsLeft(SelectedApp, NextAppImage)
                             End If
 
@@ -1146,16 +1926,25 @@ Class MainWindow
                             Dim SelectedApp As Image = TryCast(FocusedItem, Image)
                             Dim NextAppImage As Image
 
-                            If App1.IsFocused And IsDiscInserted Then
-                                NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
-                            ElseIf DiscApp.IsFocused Then
-                                NextAppImage = CType(MainCanvas.FindName("App2"), Image)
-                            Else
-                                Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
-                                If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
-                                    NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                            If SelectedApp.Name.StartsWith("GroupApp") Then
+                                Dim SelectedGroupApppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
+                                If MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString) IsNot Nothing Then
+                                    NextAppImage = CType(MainCanvas.FindName("GroupApp" + SelectedGroupApppNumber.ToString), Image)
                                 Else
                                     NextAppImage = Nothing
+                                End If
+                            Else
+                                If App1.IsFocused And IsDiscInserted Then
+                                    NextAppImage = CType(MainCanvas.FindName("DiscApp"), Image)
+                                ElseIf DiscApp.IsFocused Then
+                                    NextAppImage = CType(MainCanvas.FindName("App2"), Image)
+                                Else
+                                    Dim SelectedAppNumber As Integer = GetIntegerOnly(SelectedApp.Name) + 1
+                                    If MainCanvas.FindName("App" + SelectedAppNumber.ToString) IsNot Nothing Then
+                                        NextAppImage = CType(MainCanvas.FindName("App" + SelectedAppNumber.ToString), Image)
+                                    Else
+                                        NextAppImage = Nothing
+                                    End If
                                 End If
                             End If
 
@@ -1163,10 +1952,63 @@ Class MainWindow
                                 DidAnimate = False
 
                                 Dim NextAppDetails As AppDetails = CType(NextAppImage.Tag, AppDetails)
-                                ChangeBackgroundImage(NextAppDetails.AppPath)
+
+                                If Not String.IsNullOrEmpty(NextAppDetails.AppBackgroundPath) Then
+                                    ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath, NextAppDetails.AppBackgroundPath)
+                                Else
+                                    ChangeBackgroundImage(NextAppDetails.AppExecutableFilePath)
+                                End If
+
                                 MoveAppsRight(SelectedApp, NextAppImage)
                             End If
 
+                        End If
+                    ElseIf MainGamepadButton_DPad_Up_Pressed Then
+                        If TypeOf FocusedItem Is Controls.Button Then
+                            PlayBackgroundSound(Sounds.Move)
+
+                            If SettingButton1.IsFocused Then
+                                SettingButton3.Focus()
+                            ElseIf SettingButton3.IsFocused Then
+                                SettingButton2.Focus()
+                            ElseIf SettingButton2.IsFocused Then
+                                SettingButton1.Focus()
+                            End If
+                        ElseIf TypeOf FocusedItem Is Image Then
+                            PlayBackgroundSound(Sounds.Move)
+                            Dim FocusedApp As Image = TryCast(FocusedItem, Image)
+
+                            'Remove the GroupApps from main Home screen (move them down)
+                            If FocusedApp.Name = "GroupApp1" Then
+                                If GroupAppsOnHome Then
+                                    RemoveGroupAppsOnHome()
+                                    GroupAppsOnHome = False
+                                End If
+                            End If
+                        End If
+                    ElseIf MainGamepadButton_DPad_Down_Pressed Then
+                        If TypeOf FocusedItem Is Controls.Button Then
+                            PlayBackgroundSound(Sounds.Move)
+
+                            If SettingButton1.IsFocused Then
+                                SettingButton2.Focus()
+                            ElseIf SettingButton2.IsFocused Then
+                                SettingButton3.Focus()
+                            ElseIf SettingButton3.IsFocused Then
+                                SettingButton1.Focus()
+                            End If
+                        ElseIf TypeOf FocusedItem Is Image Then
+                            PlayBackgroundSound(Sounds.Move)
+                            Dim FocusedApp As Image = TryCast(FocusedItem, Image)
+
+                            'Show the GroupApps on main Home screen (move them up)
+                            If CType(FocusedApp.Tag, AppDetails).IsFolder Then
+                                If GroupAppsOnHome = False Then
+                                    LastFocusedApp = FocusedApp
+                                    GroupAppsOnHome = True
+                                    ShowGroupAppsOnHome()
+                                End If
+                            End If
                         End If
                     ElseIf MainGamepadButton_Back_Button_Pressed Then
                         PlayBackgroundSound(Sounds.Options)
@@ -1180,10 +2022,58 @@ Class MainWindow
 
                         OpenWindowsManager.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
                         OpenWindowsManager.Show()
+                    ElseIf MainGamepadButton_Start_Button_Pressed Then
+                        If TypeOf FocusedItem Is Image Then
+
+                            Dim FocusedApp As Image = TryCast(FocusedItem, Image)
+
+                            If Canvas.GetLeft(RightMenu) = 1925 Then
+                                LastFocusedApp = FocusedApp
+
+                                'Show the side menu
+                                PlayBackgroundSound(Sounds.SelectItem)
+
+                                'Make sure the menu is always on top (elements added during rutime would mess up the side menu)
+                                EnsureHighestZIndex(RightMenu)
+
+                                Animate(RightMenu, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                If Not CType(FocusedApp.Tag, AppDetails).IsFolder Then
+                                    SettingButton1.Content = "Add to Folder"
+                                    SettingButton2.Content = "Delete"
+                                    SettingButton3.Content = "Information"
+
+                                    ShowSideSettingButtons(3)
+                                Else
+                                    SettingButton1.Content = "Delete Folder"
+
+                                    ShowSideSettingButtons(1)
+                                End If
+
+                                'Set focus on the first available option
+                                SettingButton1.Focus()
+                            End If
+
+                        ElseIf TypeOf FocusedItem Is Controls.Button Then
+                            If Canvas.GetLeft(RightMenu) = 1430 Then
+                                'Hide the side menu
+                                PlayBackgroundSound(Sounds.SelectItem)
+                                Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                Animate(SettingButton1, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                Animate(SettingButton2, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                                Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+
+                                'Set the focus back
+                                LastFocusedApp.Focus()
+                            Else
+                                MsgBox(Canvas.GetLeft(RightMenu).ToString())
+                            End If
+                        End If
                     End If
 
                 Else
-
+                    'While a process is running
                     Dim MainGamepadButton_Back_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Back) <> 0
                     Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
 
@@ -1192,7 +2082,7 @@ Class MainWindow
                         If Not String.IsNullOrEmpty(StartedGameExecutable) AndAlso ActiveProcess IsNot Nothing Then
                             'Suspend the running game process
                             Try
-                                PauseProcessThreads(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                                PauseProcessThreads(ActiveProcess.StartInfo.FileName)
                             Catch ex As Exception
                                 PauseInput = True
                                 ExceptionDialog("System Error", ex.Message)
@@ -1210,7 +2100,7 @@ Class MainWindow
                                 PauseInput = True
                                 ReduceUsage()
                                 ResumeProcessThreads()
-                                ShowProcess(Path.GetFileNameWithoutExtension(StartedGameExecutable))
+                                ShowProcess(ActiveProcess.StartInfo.FileName)
                             End If
                         End If
 
@@ -1228,6 +2118,34 @@ Class MainWindow
             Await Task.Delay(SharedController1PollingRate, CancellationToken.None)
         End While
     End Function
+
+#End Region
+
+#Region "Button Focus Changes"
+
+    Private Sub SettingButton1_GotFocus(sender As Object, e As RoutedEventArgs) Handles SettingButton1.GotFocus
+        SettingButton1.BorderBrush = New SolidColorBrush(CType(ColorConverter.ConvertFromString("#FFFFFFFF"), Color))
+    End Sub
+
+    Private Sub SettingButton1_LostFocus(sender As Object, e As RoutedEventArgs) Handles SettingButton1.LostFocus
+        SettingButton1.BorderBrush = Nothing
+    End Sub
+
+    Private Sub SettingButton2_GotFocus(sender As Object, e As RoutedEventArgs) Handles SettingButton2.GotFocus
+        SettingButton2.BorderBrush = New SolidColorBrush(CType(ColorConverter.ConvertFromString("#FFFFFFFF"), Color))
+    End Sub
+
+    Private Sub SettingButton2_LostFocus(sender As Object, e As RoutedEventArgs) Handles SettingButton2.LostFocus
+        SettingButton2.BorderBrush = Nothing
+    End Sub
+
+    Private Sub SettingButton3_GotFocus(sender As Object, e As RoutedEventArgs) Handles SettingButton3.GotFocus
+        SettingButton3.BorderBrush = New SolidColorBrush(CType(ColorConverter.ConvertFromString("#FFFFFFFF"), Color))
+    End Sub
+
+    Private Sub SettingButton3_LostFocus(sender As Object, e As RoutedEventArgs) Handles SettingButton3.LostFocus
+        SettingButton3.BorderBrush = Nothing
+    End Sub
 
 #End Region
 
@@ -1275,59 +2193,71 @@ Class MainWindow
     End Sub
 
     Private Sub DelayTimer_Tick(sender As Object, e As EventArgs) Handles DelayTimer.Tick
-
         DelayTimer.Stop()
-        NotificationBannerTextBlock.Dispatcher.Invoke(Sub() NotificationBannerTextBlock.Text = "Loading library, please wait")
 
-        'Add default and custom applications from \Apps\AppsList.txt
-        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                'Internal applications
-                If LineWithApp.EndsWith(".png") Then
-                    If App1.Tag Is Nothing Then
-                        App1.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                        AppTitle.Text = LineWithApp.Split("="c)(1).Split(";"c)(0)
-                    ElseIf App2.Tag Is Nothing Then
-                        App2.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                    ElseIf App3.Tag Is Nothing Then
-                        App3.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                    ElseIf App4.Tag Is Nothing Then
-                        App4.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                    ElseIf App5.Tag Is Nothing Then
-                        App5.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                    ElseIf App6.Tag Is Nothing Then
-                        App6.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                    ElseIf App7.Tag Is Nothing Then
-                        App7.Tag = New AppDetails() With {.AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0), .AppExecutable = "Start"}
-                    End If
-                Else
-                    'Custom applications
-                    If LineWithApp.StartsWith("App") Then
-                        AddNewApp(LineWithApp.Split("="c)(1).Split(";"c)(0), LineWithApp.Split("="c)(1).Split(";"c)(1))
-                        Thread.Sleep(125)
-                    End If
-                End If
-            Next
+        'Add folders from \System\Folders.json
+        If File.Exists(AppLibraryPath) Then
+            Dim FoldersListJSON As String = File.ReadAllText(FoldersPath)
+            Dim FoldersList As OrbisFolders = JsonConvert.DeserializeObject(Of OrbisFolders)(FoldersListJSON)
+            If FoldersList IsNot Nothing Then
+                For Each Folder In FoldersList.Folders
+                    AddNewApp(Folder.Name, "", True, Folder.Name)
+                Next
+            End If
         End If
 
-        'Add games from \Games\GameList.txt
+        'Add default and custom applications from \Apps\AppsList.json
+        If File.Exists(AppLibraryPath) Then
+            Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+            Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+            If AppsList IsNot Nothing Then
+                For Each RegisteredApp In AppsList.Apps()
+                    'Internal applications
+                    If String.IsNullOrEmpty(RegisteredApp.ExecutablePath) Then
+                        If App1.Tag Is Nothing Then
+                            App1.Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .FolderName = RegisteredApp.Group, .AppBackgroundPath = RegisteredApp.BackgroundPath, .AppIconPath = RegisteredApp.IconPath}
+                            AppStartLabel.Text = "Start"
+                        ElseIf App2.Tag Is Nothing Then
+                            App2.Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .FolderName = RegisteredApp.Group, .AppBackgroundPath = RegisteredApp.BackgroundPath, .AppIconPath = RegisteredApp.IconPath}
+                        ElseIf App3.Tag Is Nothing Then
+                            App3.Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .FolderName = RegisteredApp.Group, .AppBackgroundPath = RegisteredApp.BackgroundPath, .AppIconPath = RegisteredApp.IconPath}
+                        ElseIf App4.Tag Is Nothing Then
+                            App4.Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .FolderName = RegisteredApp.Group, .AppBackgroundPath = RegisteredApp.BackgroundPath, .AppIconPath = RegisteredApp.IconPath}
+                        ElseIf App5.Tag Is Nothing Then
+                            App5.Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .FolderName = RegisteredApp.Group, .AppBackgroundPath = RegisteredApp.BackgroundPath, .AppIconPath = RegisteredApp.IconPath}
+                        ElseIf App6.Tag Is Nothing Then
+                            App6.Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .FolderName = RegisteredApp.Group, .AppBackgroundPath = RegisteredApp.BackgroundPath, .AppIconPath = RegisteredApp.IconPath}
+                        ElseIf App7.Tag Is Nothing Then
+                            App7.Tag = New AppDetails() With {.AppTitle = RegisteredApp.Name, .AppButtonExecutionString = "Start", .FolderName = RegisteredApp.Group, .AppBackgroundPath = RegisteredApp.BackgroundPath, .AppIconPath = RegisteredApp.IconPath}
+                        End If
+                    Else
+                        'Custom applications
+                        AddNewApp(RegisteredApp.Name, RegisteredApp.ExecutablePath, BackgroundPath:=RegisteredApp.BackgroundPath, IconPath:=RegisteredApp.IconPath, Platform:=RegisteredApp.Platform)
+                    End If
+                Next
+            End If
+        End If
+
+        'Add games from \Games\GamesList.json
         If File.Exists(GameLibraryPath) Then
-            For Each Game In File.ReadAllLines(GameLibraryPath)
-                If Game.StartsWith("PS1Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS2Game") Then
-                    AddNewApp(Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)), Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PS3Game") Then
-                    'For PS3 games show the folder name
-                    Dim PS3GameFolderName = Directory.GetParent(Game.Split("="c)(1).Split(";"c)(0))
-                    AddNewApp(PS3GameFolderName.Parent.Parent.Name, Game.Split("="c)(1).Split(";"c)(0))
-                ElseIf Game.StartsWith("PC") Then
-                    AddNewApp(Game.Split(";"c)(1), Game.Split(";"c)(2))
-                End If
-            Next
+            Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+            Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+            If GamesList IsNot Nothing Then
+                For Each RegisteredGame In GamesList.Games()
+                    Select Case RegisteredGame.Platform
+                        Case "PC", "PS1", "PS2", "PS4"
+                            AddNewApp(RegisteredGame.Name, RegisteredGame.ExecutablePath, BackgroundPath:=RegisteredGame.BackgroundPath, IconPath:=RegisteredGame.IconPath, Platform:=RegisteredGame.Platform)
+                        Case "PS3"
+                            Dim PS3GameFolderName As String = Directory.GetParent(RegisteredGame.ExecutablePath).Parent.Parent.Name
+                            AddNewApp(PS3GameFolderName, RegisteredGame.ExecutablePath, BackgroundPath:=RegisteredGame.BackgroundPath, IconPath:=RegisteredGame.IconPath, Platform:=RegisteredGame.Platform)
+                    End Select
+                Next
+            End If
         End If
 
-        DidAnimate = True 'Accept input from this point
+        'Accept input from this point
+        DidAnimate = True
+        PauseInput = False
         NotificationBannerTextBlock.Dispatcher.Invoke(Sub() NotificationBannerTextBlock.Text = "OrbisPro BETA")
     End Sub
 
@@ -1344,6 +2274,10 @@ Class MainWindow
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -1392,33 +2326,49 @@ Class MainWindow
         BackgroundMedia.Play()
     End Sub
 
-    Private Sub ChangeBackgroundImage(AppFilePath As String)
+    Private Sub ChangeBackgroundImage(AppFilePath As String, Optional BackgroundPath As String = "")
         If MainConfigFile.IniReadValue("System", "BackgroundSwitchtingAnimation") = "true" Then
             'Change background animation
-            If Path.GetExtension(AppFilePath) = ".exe" Then
-                If Not String.IsNullOrEmpty(GameStarter.CheckForExistingBackgroundAsset(AppFilePath)) Then
-                    Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+            If Not String.IsNullOrEmpty(BackgroundPath) Then
+                Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
 
-                    Dispatcher.BeginInvoke(Sub()
-                                               Dim TempBitmapImage = New BitmapImage()
-                                               TempBitmapImage.BeginInit()
-                                               TempBitmapImage.CacheOption = BitmapCacheOption.OnLoad
-                                               TempBitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache
-                                               TempBitmapImage.UriSource = New Uri(GameStarter.CheckForExistingBackgroundAsset(AppFilePath), UriKind.RelativeOrAbsolute)
-                                               TempBitmapImage.EndInit()
-                                               BackgroundImage.Source = TempBitmapImage
-                                           End Sub)
+                Dispatcher.BeginInvoke(Sub()
+                                           Dim TempBitmapImage = New BitmapImage()
+                                           TempBitmapImage.BeginInit()
+                                           TempBitmapImage.CacheOption = BitmapCacheOption.OnLoad
+                                           TempBitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache
+                                           TempBitmapImage.UriSource = New Uri(BackgroundPath, UriKind.RelativeOrAbsolute)
+                                           TempBitmapImage.EndInit()
+                                           BackgroundImage.Source = TempBitmapImage
+                                       End Sub)
 
-                    Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                Else
-                    BackgroundImage.Source = Nothing
-                    Animate(BackgroundImage, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
-                    Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
-                End If
+                Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
             Else
-                If BackgroundMedia.Opacity = 0 Then
-                    BackgroundImage.Source = Nothing
-                    Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                If Path.GetExtension(AppFilePath) = ".exe" Then
+                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingBackgroundAsset(AppFilePath)) Then
+                        Animate(BackgroundMedia, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+
+                        Dispatcher.BeginInvoke(Sub()
+                                                   Dim TempBitmapImage = New BitmapImage()
+                                                   TempBitmapImage.BeginInit()
+                                                   TempBitmapImage.CacheOption = BitmapCacheOption.OnLoad
+                                                   TempBitmapImage.CreateOptions = BitmapCreateOptions.IgnoreImageCache
+                                                   TempBitmapImage.UriSource = New Uri(GameStarter.CheckForExistingBackgroundAsset(AppFilePath), UriKind.RelativeOrAbsolute)
+                                                   TempBitmapImage.EndInit()
+                                                   BackgroundImage.Source = TempBitmapImage
+                                               End Sub)
+
+                        Animate(BackgroundImage, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                    Else
+                        BackgroundImage.Source = Nothing
+                        Animate(BackgroundImage, OpacityProperty, 1, 0, New Duration(TimeSpan.FromMilliseconds(500)))
+                        Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                    End If
+                Else
+                    If BackgroundMedia.Opacity = 0 Then
+                        BackgroundImage.Source = Nothing
+                        Animate(BackgroundMedia, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                    End If
                 End If
             End If
         End If
@@ -1475,14 +2425,14 @@ Class MainWindow
                     OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", CoverImgSrc.UriSource.AbsoluteUri)
                     Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                .AppIconPath = CoverImgSrc.UriSource.AbsoluteUri,
-                                                               .AppExecutable = "Start Disc",
-                                                               .AppPath = DiscDriveName}))
+                                                               .AppButtonExecutionString = "Start Disc",
+                                                               .AppExecutableFilePath = DiscDriveName}))
                 Else
                     OrbisNotifications.NotificationPopup(MainCanvas, GameDatabaseReturnedTitle, "PS1 CD-ROM is now ready.", "/Icons/Media-PS1-icon.png")
                     Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                .AppIconPath = "/Icons/Media-PS1-icon.png",
-                                                               .AppExecutable = "Start Disc",
-                                                               .AppPath = DiscDriveName}))
+                                                               .AppButtonExecutionString = "Start Disc",
+                                                               .AppExecutableFilePath = DiscDriveName}))
                 End If
 
                 SecondWebSearch = False
@@ -1527,19 +2477,19 @@ Class MainWindow
                 'Get the game disc image (if exists)
                 If GameDataBrowser.Document.GetElementsByTagName("img")(2).GetAttribute("src") IsNot Nothing Then
                     Dim GameDiscImage = New BitmapImage(New Uri(GameDataBrowser.Document.GetElementsByTagName("img")(2).GetAttribute("src")))
-                    Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle, .AppIconPath = GameDiscImage.UriSource.AbsoluteUri, .AppExecutable = "Start"}))
+                    Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle, .AppIconPath = GameDiscImage.UriSource.AbsoluteUri, .AppButtonExecutionString = "Start"}))
                 Else
                     'If it doesn't exists, add the previous found cover, if this one is also not present then add a default disc image
                     If CoverImgSrc IsNot Nothing Then
                         Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                    .AppIconPath = CoverImgSrc.UriSource.AbsoluteUri,
-                                                                   .AppExecutable = "Start",
-                                                                   .AppPath = DiscDriveName}))
+                                                                   .AppButtonExecutionString = "Start",
+                                                                   .AppExecutableFilePath = DiscDriveName}))
                     Else
                         Dispatcher.BeginInvoke(Sub() AddDiscToHome(New AppDetails() With {.AppTitle = GameDatabaseReturnedTitle,
                                                                    .AppIconPath = "/Icons/Media-DVD-icon.png",
-                                                                   .AppExecutable = "Start",
-                                                                   .AppPath = DiscDriveName}))
+                                                                   .AppButtonExecutionString = "Start",
+                                                                   .AppExecutableFilePath = DiscDriveName}))
                     End If
                 End If
 
@@ -1557,7 +2507,6 @@ Class MainWindow
             .Top = 0,
             .Left = 0,
             .Opacity = 0,
-            .SetupStep = True,
             .Opener = "MainWindow",
             .MessageTitle = MessageTitle,
             .MessageDescription = MessageDescription}
@@ -1585,6 +2534,27 @@ Class MainWindow
         'Force SetProcessWorkingSetSize
         Dim CurrentProcessHandle As IntPtr = GetCurrentProcess()
         SetProcessWorkingSetSize(CurrentProcessHandle, -1, -1)
+    End Sub
+
+    Private Sub ShowSideSettingButtons(Count As Integer)
+        For i = 1 To Count
+            Dim SettingsButton As Controls.Button = CType(MainCanvas.FindName("SettingButton" + i.ToString()), Controls.Button)
+            EnsureHighestZIndex(SettingsButton)
+            Animate(SettingsButton, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+        Next
+    End Sub
+
+    Private Sub EnsureHighestZIndex(AnimatedElement As UIElement)
+        Dim maxZIndex As Integer = 0
+
+        For Each child As UIElement In MainCanvas.Children
+            Dim currentZIndex As Integer = Canvas.GetZIndex(child)
+            If currentZIndex > maxZIndex Then
+                maxZIndex = currentZIndex
+            End If
+        Next
+
+        Canvas.SetZIndex(AnimatedElement, maxZIndex + 1)
     End Sub
 
 End Class

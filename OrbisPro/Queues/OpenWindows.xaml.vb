@@ -104,6 +104,13 @@ Public Class OpenWindows
                         Exit For
                     End If
                 Next
+            Case "CreateNewFolderDialog"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.CreateNewFolderDialog" Then
+                        CType(Win, CreateNewFolderDialog).Activate()
+                        Exit For
+                    End If
+                Next
             Case "Downloads"
                 For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.Downloads" Then
@@ -111,11 +118,24 @@ Public Class OpenWindows
                         Exit For
                     End If
                 Next
+            Case "ExistingFolders"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.ExistingFolders" Then
+                        CType(Win, ExistingFolders).Activate()
+                        Exit For
+                    End If
+                Next
             Case "FileExplorer"
                 For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
-                        'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
+                        Exit For
+                    End If
+                Next
+            Case "GamepadInputTester"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.GamepadInputTester" Then
+                        CType(Win, GamepadInputTester).Activate()
                         Exit For
                     End If
                 Next
@@ -143,17 +163,38 @@ Public Class OpenWindows
                         Exit For
                     End If
                 Next
-            Case "SetupApps"
+            Case "PKGInstaller"
                 For Each Win In System.Windows.Application.Current.Windows()
-                    If Win.ToString = "OrbisPro.SetupApps" Then
-                        CType(Win, SetupApps).Activate()
+                    If Win.ToString = "OrbisPro.PKGInstaller" Then
+                        CType(Win, PKGInstaller).Activate()
                         Exit For
                     End If
                 Next
-            Case "SetupGames"
+            Case "SelectFolderContentDialog"
                 For Each Win In System.Windows.Application.Current.Windows()
-                    If Win.ToString = "OrbisPro.SetupGames" Then
-                        CType(Win, SetupGames).Activate()
+                    If Win.ToString = "OrbisPro.SelectFolderContentDialog" Then
+                        CType(Win, SelectFolderContentDialog).Activate()
+                        Exit For
+                    End If
+                Next
+            Case "SystemImageViewer"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.SystemImageViewer" Then
+                        CType(Win, SystemImageViewer).Activate()
+                        Exit For
+                    End If
+                Next
+            Case "SystemMediaPlayer"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.SystemMediaPlayer" Then
+                        CType(Win, SystemMediaPlayer).Activate()
+                        Exit For
+                    End If
+                Next
+            Case "WelcomeToSetup"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.WelcomeToSetup" Then
+                        CType(Win, WelcomeToSetup).Activate()
                         Exit For
                     End If
                 Next
@@ -164,7 +205,6 @@ Public Class OpenWindows
                         Exit For
                     End If
                 Next
-
         End Select
 
         Close()
@@ -180,7 +220,7 @@ Public Class OpenWindows
 #Region "Input"
 
     Private Sub OpenWindows_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Dim FocusedItem = FocusManager.GetFocusedElement(Me)
             Select Case e.Key
                 Case Key.A
@@ -207,8 +247,8 @@ Public Class OpenWindows
                                     End If
                                 Next
 
-                                'Close this window
-                                Close()
+                                RefocusFirstItem()
+                                Activate()
                             End If
                         Else
                             'Kill the selected unknown process
@@ -221,10 +261,10 @@ Public Class OpenWindows
                                 OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
 
                                 RefocusFirstItem()
+                                Activate()
                             End If
                         End If
                     End If
-
                 Case Key.C
                     BeginAnimation(OpacityProperty, ClosingAnimation)
                 Case Key.X
@@ -252,7 +292,6 @@ Public Class OpenWindows
                         End If
 
                         BeginAnimation(OpacityProperty, SwitchAnimation)
-
                     End If
             End Select
         Else
@@ -336,7 +375,17 @@ Public Class OpenWindows
 
                                 'Kill the process
                                 FoundProcess.Kill()
-                                Close()
+
+                                'Let the main window know that the OtherProcess got killed
+                                For Each Win In System.Windows.Application.Current.Windows()
+                                    If Win.ToString = "OrbisPro.MainWindow" Then
+                                        CType(Win, MainWindow).StartedGameExecutable = ""
+                                        Exit For
+                                    End If
+                                Next
+
+                                RefocusFirstItem()
+                                Activate()
                             End If
                         Else
                             'Kill the selected unknown process
@@ -349,10 +398,10 @@ Public Class OpenWindows
                                 OpenWindowsListView.Items.Remove(OpenWindowsListView.SelectedItem)
 
                                 RefocusFirstItem()
+                                Activate()
                             End If
                         End If
                     End If
-
                 ElseIf MainGamepadButton_DPad_Up_Pressed Then
                     PlayBackgroundSound(Sounds.Move)
 
@@ -392,10 +441,50 @@ Public Class OpenWindows
     End Function
 
     Private Sub ChangeButtonLayout()
-        If SharedDeviceModel = DeviceModel.ROGAlly Then
-            ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
-            ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_y.png", UriKind.RelativeOrAbsolute))
-            SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_a.png", UriKind.RelativeOrAbsolute))
+        Dim GamepadButtonLayout As String = MainConfigFile.IniReadValue("Gamepads", "ButtonLayout")
+
+        If SharedDeviceModel = DeviceModel.PC AndAlso MainController Is Nothing Then
+            'Show keyboard keys instead of gamepad buttons
+            ReturnButton.Source = New BitmapImage(New Uri("/Icons/Keys/C_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            ActionButton.Source = New BitmapImage(New Uri("/Icons/Keys/A_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            SwitchButton.Source = New BitmapImage(New Uri("/Icons/Keys/X_Key_Dark.png", UriKind.RelativeOrAbsolute))
+        Else
+            If Not String.IsNullOrEmpty(GamepadButtonLayout) Then
+                Select Case GamepadButtonLayout
+                    Case "PS3"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Triangle.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS4"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Triangle.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS5"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Triangle.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS Vita"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Triangle.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_B.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_Y.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam Deck"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_B.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_Y.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Xbox 360"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_B.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_Y.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_A.png", UriKind.RelativeOrAbsolute))
+                    Case "ROG Ally"
+                        ReturnButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_b.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_y.png", UriKind.RelativeOrAbsolute))
+                        SwitchButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_a.png", UriKind.RelativeOrAbsolute))
+                End Select
+            End If
         End If
     End Sub
 
@@ -463,6 +552,10 @@ Public Class OpenWindows
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else

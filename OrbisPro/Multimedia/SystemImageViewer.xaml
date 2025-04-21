@@ -1,4 +1,4 @@
-﻿<Window x:Class="SystemImageViewer"
+﻿<Window x:Name="SystemImageViewerWindow" x:Class="SystemImageViewer"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,8 +7,35 @@
         mc:Ignorable="d"
         Title="OrbisPro - Media Player" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
         KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
-    <Canvas>
+    <Canvas x:Name="SystemImageViewerCanvas">
         <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+        <TextBlock x:Name="WindowTitle" Text="Image Viewer" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Separator x:Name="TopSeparator" Height="10" Canvas.Top="133" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="966" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="119" Canvas.Top="981" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock x:Name="BackTextBlock" Canvas.Left="174" TextWrapping="Wrap" Text="Close" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="FullscreenButton" Height="48" Canvas.Left="1474" Canvas.Top="981" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBlock x:Name="FullscreenViewTextBlock" Canvas.Left="1529" TextWrapping="Wrap" Text="Fullscreen View" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
         
+        <Image x:Name="RotateButton" Height="48" Canvas.Left="1220" Canvas.Top="981" Width="48" Source="/Icons/Buttons/PS3/PS3_Square.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <TextBlock x:Name="RemoveTextBlock" Canvas.Left="1275" TextWrapping="Wrap" Text="Rotate 90°" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        
+        <Image x:Name="CurrentImage" Height="720" Canvas.Left="320" Canvas.Top="180" Width="1280" Source="/Icons/boot_controllersetup1.png"/>
     </Canvas>
 </Window>

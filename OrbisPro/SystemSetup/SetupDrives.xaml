@@ -1,0 +1,91 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp" x:Name="SetupDrivesWindow" x:Class="SetupDrives"
+        mc:Ignorable="d"
+        Title="OrbisPro - Drives Setup" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
+    <Canvas x:Name="SetupDrivesCanvas">
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <TextBlock x:Name="SetupTitle" Text="Checking for System Drives &amp; Volumes" FontFamily="SST Light" Foreground="White" FontSize="60" Height="78" Canvas.Left="101" Canvas.Top="43" Width="1117">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Separator x:Name="TopSeparator" Background="White" Foreground="{x:Null}" Height="10" Canvas.Top="132" Width="1920"/>
+
+        <TextBlock x:Name="TopLabel" Text="Retrieving drive list, please wait ..." FontFamily="SST Light" Foreground="White" FontSize="48" TextAlignment="Center" Height="64" Canvas.Left="310" Canvas.Top="170" Width="1300">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <ListView x:Name="DrivesList" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" d:ItemsSource="{d:SampleData ItemCount=5}" ScrollViewer.CanContentScroll="True" Height="650" Canvas.Left="138" Canvas.Top="271" Width="1644">
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel FocusVisualStyle="{x:Null}"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Canvas Height="140" Width="400" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}" Margin="5,5,5,5">
+                        <Canvas.Background>
+                            <SolidColorBrush Color="Black" Opacity="0.5"/>
+                        </Canvas.Background>
+                        <Border BorderBrush="{Binding DriveSelectionBorderBrush}" BorderThickness="3,3,3,3" Height="140" Width="400" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="{Binding IsDriveSelected}" FocusVisualStyle="{x:Null}"/>
+                        <Image Width="128" Height="128" Source="{Binding DriveIcon}" FocusVisualStyle="{x:Null}" Margin="6,6,0,0"/>
+                        <TextBlock HorizontalAlignment="Center" Canvas.Left="140" VerticalAlignment="Top" Text="{Binding DriveFullNameText}" Canvas.Top="10" FocusVisualStyle="{x:Null}" TextWrapping="Wrap" FontSize="24" FontFamily="SST Medium"/>
+                        <ProgressBar Canvas.Left="140" Canvas.Top="50" Width="225" Height="25" Value="{Binding DriveUsedSpace}" Foreground="#FF009CB8"/>
+                        <TextBlock HorizontalAlignment="Center" Canvas.Left="140" VerticalAlignment="Top" Text="{Binding DriveSizeText}" Canvas.Top="80" FocusVisualStyle="{x:Null}" TextWrapping="Wrap" FontSize="18"/>
+                    </Canvas>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <Image x:Name="BackButton" Source="/Icons/Buttons/PS3/PS3_Circle.png" Opacity="0" Height="48" Canvas.Left="136" Canvas.Top="955" Width="48"/>
+        <TextBlock x:Name="BackTextBlock" TextWrapping="Wrap" Text="Back" Foreground="White" FontFamily="SST Light" FontSize="36" Opacity="0" Height="47" Canvas.Left="191" Canvas.Top="955" Width="76">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <Image x:Name="EnterButton" Source="/Icons/Buttons/PS3/PS3_Cross.png" Opacity="0" Height="48" Canvas.Left="1477" Canvas.Top="955" Width="48"/>
+        <TextBlock x:Name="ContinueTextBlock" TextWrapping="Wrap" Text="Continue Setup" Foreground="White" FontFamily="SST Light" FontSize="36" Opacity="0" Height="47" Canvas.Left="1532" Canvas.Top="955" Width="250">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <Image x:Name="AddButton" Source="/Icons/Buttons/ps_triangle.png" Opacity="0" Height="48" Canvas.Left="1048" Canvas.Top="955" Width="48"/>
+        <TextBlock x:Name="AddDriveTextBlock" TextWrapping="Wrap" Text="Select Drive" Foreground="White" FontFamily="SST Light" FontSize="36" Opacity="0" Height="47" Canvas.Left="1103" Canvas.Top="955" Width="334">
+            <TextBlock.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+        <Separator x:Name="BottomSeparator" Background="White" Foreground="{x:Null}" Height="10" Canvas.Top="940" Width="1920"/>
+
+        <fa:IconImage x:Name="LoadingIndicator" Icon="Refresh" Height="48" Width="48" Canvas.Left="1350" Canvas.Top="178" Foreground="White" fa:Awesome.Spin="True" fa:Awesome.SpinDuration="2" HorizontalAlignment="Center" VerticalAlignment="Center" >
+            <fa:IconImage.Effect>
+                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
+            </fa:IconImage.Effect>
+        </fa:IconImage>
+
+    </Canvas>
+</Window>

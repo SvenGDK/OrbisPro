@@ -29,13 +29,13 @@
         </Button>
 
         <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}"/>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="202" Canvas.Top="953" Width="48" Source="/Icons/Buttons/ps_circle.png"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="202" Canvas.Top="953" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png"/>
         <TextBlock x:Name="BackLabel" Text="Back" Canvas.Left="250" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="SelectButton" Height="48" Canvas.Left="1448" Canvas.Top="953" Width="48" Source="/Icons/Buttons/ps_cross.png"/>
+        <Image x:Name="SelectButton" Height="48" Canvas.Left="1448" Canvas.Top="953" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png"/>
         <TextBlock x:Name="CrossButtonLabel" Text="Select" Canvas.Left="1496" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34" >
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>

@@ -204,13 +204,13 @@
         </ListView>
 
         <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="286" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="286" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <TextBlock x:Name="BackLabel" Text="Back" Canvas.Left="334" Canvas.Top="955" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="EnterButton" Height="48" Canvas.Left="1507" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <Image x:Name="EnterButton" Height="48" Canvas.Left="1507" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <TextBlock x:Name="ActionButtonTextBlock" Text="Enter" Canvas.Left="1555" Canvas.Top="955" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
@@ -226,27 +226,52 @@
                 </LinearGradientBrush>
             </Rectangle.Fill>
         </Rectangle>
-        <Button x:Name="SettingButton3" Content="Setting3" Canvas.Left="1925" Canvas.Top="509" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+        <Button x:Name="SettingButton3" Content="Setting3" Canvas.Left="1925" Canvas.Top="332" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton2" Content="Setting2" Canvas.Left="1925" Canvas.Top="439" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+        <Button x:Name="SettingButton2" Content="Setting2" Canvas.Left="1925" Canvas.Top="262" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton1" Content="Setting1" Canvas.Left="1925" Canvas.Top="369" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+        <Button x:Name="SettingButton1" Content="Setting1" Canvas.Left="1925" Canvas.Top="192" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton4" Content="Setting4" Canvas.Left="1925" Canvas.Top="579" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+        <Button x:Name="SettingButton4" Content="Setting4" Canvas.Left="1925" Canvas.Top="402" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Button x:Name="SettingButton5" Content="Setting5" Canvas.Left="1925" Canvas.Top="649" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+        <Button x:Name="SettingButton5" Content="Setting5" Canvas.Left="1925" Canvas.Top="472" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" HorizontalAlignment="Center" VerticalAlignment="Top" FocusVisualStyle="{x:Null}">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton6" Content="Setting6" Canvas.Left="1925" Canvas.Top="542" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton7" Content="Setting7" Canvas.Left="1925" Canvas.Top="612" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton8" Content="Setting8" Canvas.Left="1925" Canvas.Top="682" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton9" Content="Setting9" Canvas.Left="1925" Canvas.Top="752" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton10" Content="Setting10" Canvas.Left="1925" Canvas.Top="827" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Button.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>

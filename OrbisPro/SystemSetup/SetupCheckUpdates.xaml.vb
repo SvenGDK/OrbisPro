@@ -82,7 +82,7 @@ Public Class SetupCheckUpdates
 #Region "Input"
 
     Private Sub SetupCheckUpdates_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Select Case e.Key
                 Case Key.C
                     BeginAnimation(OpacityProperty, ClosingAnimation)
@@ -224,9 +224,9 @@ Public Class SetupCheckUpdates
     Private Sub ContinueSetup()
         PlayBackgroundSound(Sounds.SelectItem)
 
-        Dim NewGamesSetup As New SetupGames() With {.ShowActivated = True, .Top = Top, .Left = Left}
-        NewGamesSetup.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
-        NewGamesSetup.Show()
+        Dim NewSetupDrives As New SetupDrives() With {.ShowActivated = True, .Top = Top, .Left = Left}
+        NewSetupDrives.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+        NewSetupDrives.Show()
 
         BeginAnimation(OpacityProperty, ClosingAnimation)
     End Sub
@@ -242,6 +242,10 @@ Public Class SetupCheckUpdates
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else

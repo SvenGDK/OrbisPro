@@ -61,21 +61,14 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <Image x:Name="BackButton" Height="48" Canvas.Left="136" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="136" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0"/>
         <TextBlock x:Name="BackTextBlock" Canvas.Left="191" TextWrapping="Wrap" Text="Back" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>
         </TextBlock>
 
-        <Image x:Name="OptionsButton" Canvas.Left="360" Canvas.Top="962" Width="75" Source="/Icons/Buttons/ps_options.png" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0"/>
-        <TextBlock x:Name="MoreTextBlock" Canvas.Left="440" TextWrapping="Wrap" Text="More" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0">
-            <TextBlock.Effect>
-                <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
-            </TextBlock.Effect>
-        </TextBlock>
-
-        <Image x:Name="EnterButton" Height="48" Canvas.Left="1477" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0"/>
+        <Image x:Name="EnterButton" Height="48" Canvas.Left="1477" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0"/>
         <TextBlock x:Name="ContinueTextBlock" Canvas.Left="1532" TextWrapping="Wrap" Text="Continue Setup" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>

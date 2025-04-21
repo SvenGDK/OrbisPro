@@ -67,13 +67,13 @@
         </TextBlock>
 
         <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}"/>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="104" Canvas.Top="951" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="104" Canvas.Top="951" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         <TextBlock x:Name="BackLabel" Text="Back" Canvas.Left="157" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="SelectButton" Height="48" Canvas.Left="1415" Canvas.Top="951" Width="48" Source="/Icons/Buttons/ps_cross.png"/>
+        <Image x:Name="SelectButton" Height="48" Canvas.Left="1415" Canvas.Top="951" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png"/>
         <TextBlock x:Name="CrossButtonLabel" Text="Select" Canvas.Left="1468" Canvas.Top="953" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>

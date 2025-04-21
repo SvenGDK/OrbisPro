@@ -10,7 +10,22 @@
     <Compile Update="Classes\NetworkAdapter.vb">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Update="Multimedia\SystemGallery.xaml.vb">
+    <Compile Update="Dialogs\SelectFolderContentDialog.xaml.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Dialogs\CreateNewFolderDialog.xaml.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Dialogs\ExistingFolders.xaml.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="GamepadInputTester.xaml.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Queues\PKGInstaller.xaml.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="SystemSetup\SetupDrives.xaml.vb">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
@@ -66,7 +81,7 @@
     <Page Update="Settings\WifiSettings.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Update="SystemDialog.xaml">
+    <Page Update="Dialogs\SystemDialog.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="SystemSetup\SetupApps.xaml">

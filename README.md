@@ -1,7 +1,7 @@
 # OrbisPro
 Media center and game launcher for Windows in the style of PS4's UI.<br>
-The goal of this project is to build an entire Shell replacement for Windows with the focus on gaming.<br>
-This Shell replacement can be used on any Desktop, Laptop or Portable device that runs Windows 10 or 11 x64.<br>
+The goal of this project is to build a type of Shell replacement for Windows with the focus on gaming.<br>
+This type of Shell replacement can be used on any Desktop, Laptop or Portable device that runs Windows 10 or 11 x64.<br>
 Beta releases do not disable any Windows features like the Taskbar or Explorer, they're both still accessible in any case.
 
 <img width="360" alt="OrbisProBetaScreenshot1" src="https://github.com/SvenGDK/OrbisPro/assets/84620/85f51a20-eabb-4159-89ef-29cf17455751">
@@ -11,7 +11,7 @@ Beta releases do not disable any Windows features like the Taskbar or Explorer, 
 
 ## Read before using
 OrbisPro is on a BETA stage and some bugs may occur while running the application.<br>
-Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/wiki/First-Run
+Pleas read the Wiki on how to use/set up OrbisPro: https://github.com/SvenGDK/OrbisPro/wiki/First-Run
 
 ## Requirements
 <b>Minimal</b>
@@ -20,7 +20,7 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - RAM: 8 GB RAM or better
 - OS: Windows 10 x64 or newer
 - Display: 1920x1080 @ 60Hz with 100% scaling
-- [.NET Desktop Runtime 9.0.3 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x64-installer) or [.NET Desktop Runtime 9.0.3 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x86-installer)
+- [.NET Desktop Runtime 9.0.4 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x64-installer) or [.NET Desktop Runtime 9.0.4 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x86-installer)
 
 <b>Recommended</b>
 - CPU: AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
@@ -28,16 +28,25 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - RAM: 8 GB Dual Channel (2x4 GB)
 - OS: Windows 10 or 11 x64
 - Display: 1920x1080 @ 120Hz with 100% scaling
-- [.NET Desktop Runtime 9.0.3 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x64-installer) or [.NET Desktop Runtime 9.0.3 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.3-windows-x86-installer)
+- [.NET Desktop Runtime 9.0.4 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x64-installer) or [.NET Desktop Runtime 9.0.4 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x86-installer)
 
 ## Current Available Core Features
 - System Setup
+  - Checks for Updates on first Run
+  - Choose drives that will be scanned for Games/Apps
+  - Automatic detection of PC games (more in next update)
+  - Automatic detection of PC applications
+  - Customize the interface (User name, background, sound effects)
 - Keyboard Support
 - Gamepad Support
   - OrbisPro uses XInput from SharpDX
-  - The button layout changes depending on which device you use
+  - The button layout can be changed in the Settings
 - Video Backgrounds
 - User Interface animations and interactions
+  - Background switching animations
+- Home Screen Options
+  - Add the selected app or game to a folder
+  - Delete a selected folder
 - Wifi & Battery indicator
 - Add / Remove Device Detection
   - Currently only used for USB drives & Disc drives
@@ -46,9 +55,10 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
 - Game Disc Detection
   - PS1, PS2 & PC-Engine disc games can currently be started from Home
 - Emulator Integration
-  - ePSXe, PCSX2, RPCS3, Vita3k, Mednafen, Fusion and Dolphin are currently available
-  - BIOS files need to be added manually. Read the Wiki to know how to.
+  - ePSXe, PCSX2, RPCS3, shadPS4, Vita3k, Mednafen, Fusion and Dolphin are currently available
+  - BIOS files need to be added manually. Please read the Wiki to know how to do this.
   - Latest Firmwares for PS3 & Vita can be downloaded & installed using OrbisPro
+  - PS4 firmware files need to be added manually in the "System\Emulators\shadps4\user\sys_modules" folder
 - Suspend & Resume a running game or application (like on game consoles)
 - Return to HOME
   - Return to the Home screen from ANY running game or application
@@ -70,14 +80,25 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
   - Uses VLC (LibVLCSharp)
   - https://code.videolan.org/videolan/LibVLCSharp#features
   - Still work in progress
+- Image Viewer
+  - Rotate images by 90°
+  - Make images fullscreen or back to original size
 - System Message Window
   - Shows information, warnings or errors of OrbisPro
 - Application & Game Libary
 - File Explorer
-  - "Add to Game Library" option
-  - "Add to Apps Library" option
-  - "Play Media" for video files
+  - "Add to Game Library" option for executables & roms
+  - "Add to Apps Library" option for executables
+  - "Play Media" for video & image files
   - "Copy" & "Delete" option
+  - "Install PKG File" option for PS4 games
+  - "Start" option for executables
+  - "Start with ..." option for ".bin", ".elf", ".iso" files
+- PKG installer for PS4 games
+  - The PKG installer checks game compatibility with the shadPS4 compatibility database and returns the current working state of the game in a dialog
+    - You can accept the message and install the PKG or cancel the action
+- Gamepad Input Tester
+  - Shows pressed button, Left/Right Thumb Y/X values, Left/Right Trigger values
 - Audio Settings
   - Change notification volume (not working yet)
   - Enable/Disable background audio
@@ -101,14 +122,18 @@ Pleas read the Wiki on how to use OrbisPro: https://github.com/SvenGDK/OrbisPro/
   - Set the notification duration (in seconds)
 - Account Management Settings
   - Change the Username
+- Gamepad Settings
+  - Adjust the polling rate of gamepad 1-4 (only 1 is currently working atm)
+  - The gamepad input option
+  - Set the gamepad button layout
   
 ## Font Note
 OrbisPro will use the [SST font family](https://font.download/font/sst) ONLY if installed.<br>
 It is NOT included in the repository nor in the final archive.
 
 ## Notes for portable consoles
-- Set the Control Mode to "Gamepad" for the best experience
-  - If "Gamepad" mode is disabled you might not be able to use button combinations
+- Set the Control Mode to "Gamepad" for the best experience on portable Windows devices
+  - If "Gamepad" mode is disabled you might not be able to use button combinations or do anything in OrbisPro without any other controller or keyboard connected
 
 ## Used Libraries
 - [DiscUtils](https://github.com/discutils/discutils)

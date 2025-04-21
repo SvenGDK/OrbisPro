@@ -1,17 +1,19 @@
-﻿Imports OrbisPro.OrbisAnimations
+﻿Imports System.ComponentModel
+Imports System.IO
+Imports System.Text
+Imports System.Threading
+Imports System.Windows.Media.Animation
+Imports Microsoft.Win32
+Imports OrbisPro.INI
+Imports OrbisPro.OrbisAnimations
 Imports OrbisPro.OrbisAudio
 Imports OrbisPro.OrbisInput
 Imports OrbisPro.OrbisNetwork
 Imports OrbisPro.OrbisStructures
 Imports OrbisPro.OrbisUtils
-Imports System.ComponentModel
-Imports System.Threading
-Imports System.Windows.Media.Animation
 Imports SharpDX.XInput
-Imports Microsoft.Win32
-Imports OrbisPro.INI
-Imports System.IO
-Imports System.Text
+Imports Tomlyn
+Imports Tomlyn.Model
 
 Public Class GeneralSettings
 
@@ -19,7 +21,7 @@ Public Class GeneralSettings
     Private WithEvents NewGlobalKeyboardHook As New OrbisKeyboardHook()
     Private LastKeyboardKey As Key
 
-    'Keep last selection index
+#Region "Selection Index Trackers"
     Private LastGeneralSettingsIndex As Integer
 
     Private LastAccountManagementSettingsIndex As Integer = 0
@@ -27,6 +29,7 @@ Public Class GeneralSettings
     Private LastNotificationsSettingsIndex As Integer = 0
     Private LastSystemSettingsIndex As Integer = 0
     Private LastGeneralEmulatorSettingsIndex As Integer = 0
+    Private LastGamepadSettingsIndex As Integer = 0
 
     Private LastAudioSettingsIndex As Integer = 0
     Private LastDisplaySettingsIndex As Integer = 0
@@ -35,8 +38,10 @@ Public Class GeneralSettings
     Private LastPS1EmulatorSettingsIndex As Integer = 0
     Private LastPS2EmulatorSettingsIndex As Integer = 0
     Private LastPS3EmulatorSettingsIndex As Integer = 0
+    Private LastPS4EmulatorSettingsIndex As Integer = 0
+#End Region
 
-    Private NewInputBox As New PSInputBox("Enter a new value :")
+    Private WithEvents NewInputBox As New PSInputBox("Enter a new value :")
     Private SettingToChange As SettingsListViewItem
 
     Public Opener As String = ""
@@ -154,12 +159,13 @@ Public Class GeneralSettings
 
         Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
 
-        Dim AccountManagementSetting As New SettingsListViewItem With {.SettingsTitle = "Account Management", .SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute))}
+        Dim AccountManagementSetting As New SettingsListViewItem With {.SettingsTitle = "User Management", .SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute))}
         Dim NetworkSetting As New SettingsListViewItem With {.SettingsTitle = "Network", .SettingsIcon = New BitmapImage(New Uri("/Icons/Network.png", UriKind.RelativeOrAbsolute))}
         Dim NotificationSetting As New SettingsListViewItem With {.SettingsTitle = "Notifications", .SettingsIcon = New BitmapImage(New Uri("/Icons/quickmenu_notifications.png", UriKind.RelativeOrAbsolute))}
         Dim SystemSetting As New SettingsListViewItem With {.SettingsTitle = "System", .SettingsIcon = New BitmapImage(New Uri("/Icons/InternalStorage.png", UriKind.RelativeOrAbsolute))}
         Dim EmulatorSetting As New SettingsListViewItem With {.SettingsTitle = "Emulators", .SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute))}
         Dim BluetoothSetting As New SettingsListViewItem With {.SettingsTitle = "Bluetooth", .SettingsIcon = New BitmapImage(New Uri("/Icons/Bluetooth.png", UriKind.RelativeOrAbsolute))}
+        Dim GamepadSetting As New SettingsListViewItem With {.SettingsTitle = "Gamepad Settings", .SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute))}
 
         Dim Setting1Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = AccountManagementSetting}
         Dim Setting2Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = NetworkSetting}
@@ -167,6 +173,7 @@ Public Class GeneralSettings
         Dim Setting4Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = SystemSetting}
         Dim Setting5Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = EmulatorSetting}
         Dim Setting6Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = BluetoothSetting}
+        Dim Setting7Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = GamepadSetting}
 
         GeneralSettingsListView.Items.Add(Setting1Item)
         GeneralSettingsListView.Items.Add(Setting2Item)
@@ -174,12 +181,13 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Add(Setting4Item)
         GeneralSettingsListView.Items.Add(Setting5Item)
         GeneralSettingsListView.Items.Add(Setting6Item)
+        GeneralSettingsListView.Items.Add(Setting7Item)
 
         GeneralSettingsListView.Items.Refresh()
     End Sub
 
-    Public Sub LoadAccountManagementSettings()
-        WindowTitle.Text = "Account Management"
+    Public Sub LoadUserManagementSettings()
+        WindowTitle.Text = "User Management"
 
         GeneralSettingsListView.Items.Clear()
 
@@ -191,7 +199,7 @@ Public Class GeneralSettings
 
         'Declare the setting
         Dim ChangeUsernameSetting As New SettingsListViewItem With {.SettingsTitle = "Username",
-            .SettingsDescription = "Change your username.",
+            .SettingsDescription = "Change your User Name.",
             .SettingsIcon = New BitmapImage(New Uri("/Icons/quickmenu_friends.png", UriKind.RelativeOrAbsolute)),
             .SettingsState = Username,
             .ConfigSectionName = "System",
@@ -408,6 +416,7 @@ Public Class GeneralSettings
         Dim PS1EmulatorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.Relative)), .SettingsTitle = "PS1 Emulator (ePSXe)"}
         Dim PS2EmulatorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.Relative)), .SettingsTitle = "PS2 Emulator (pcsx2)"}
         Dim PS3EmulatorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.Relative)), .SettingsTitle = "PS3 Emulator (rpcs3)"}
+        Dim PS4EmulatorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.Relative)), .SettingsTitle = "PS4 Emulator (shadPS4)"}
         Dim PSPEmulatorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.Relative)), .SettingsTitle = "PSP Emulator (ppsspp)"}
         Dim PSVitaEmulatorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.Relative)), .SettingsTitle = "PS Vita Emulator (vita3k)"}
         Dim DolphinEmulatorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.Relative)), .SettingsTitle = "Dolpin Emulator"}
@@ -418,11 +427,12 @@ Public Class GeneralSettings
         Dim Setting2Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PS1EmulatorSetting}
         Dim Setting3Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PS2EmulatorSetting}
         Dim Setting4Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PS3EmulatorSetting}
-        Dim Setting5Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PSPEmulatorSetting}
-        Dim Setting6Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PSVitaEmulatorSetting}
-        Dim Setting7Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = DolphinEmulatorSetting}
-        Dim Setting8Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = SegaEmulatorSetting}
-        Dim Setting9Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = MednafenEmulatorSetting}
+        Dim Setting5Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PS4EmulatorSetting}
+        Dim Setting6Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PSPEmulatorSetting}
+        Dim Setting7Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = PSVitaEmulatorSetting}
+        Dim Setting8Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = DolphinEmulatorSetting}
+        Dim Setting9Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = SegaEmulatorSetting}
+        Dim Setting10Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = MednafenEmulatorSetting}
 
         GeneralSettingsListView.Items.Add(Setting1Item)
         GeneralSettingsListView.Items.Add(Setting2Item)
@@ -433,6 +443,7 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Add(Setting7Item)
         GeneralSettingsListView.Items.Add(Setting8Item)
         GeneralSettingsListView.Items.Add(Setting9Item)
+        GeneralSettingsListView.Items.Add(Setting10Item)
 
         GeneralSettingsListView.Items.Refresh()
     End Sub
@@ -484,6 +495,77 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Add(Setting4Item)
         GeneralSettingsListView.Items.Add(Setting5Item)
 
+        GeneralSettingsListView.Items.Refresh()
+    End Sub
+
+    Public Sub LoadGamepadSettings()
+        WindowTitle.Text = "Gamepad Settings"
+
+        GeneralSettingsListView.Items.Clear()
+
+        'Declare the styles
+        Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
+        Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
+
+        'Get the values
+        'Polling rates
+        Dim Gamepad1PollingRate As String = MainConfigFile.IniReadValue("Gamepads", "Gamepad1PollingRate")
+        Dim Gamepad2PollingRate As String = MainConfigFile.IniReadValue("Gamepads", "Gamepad2PollingRate")
+        Dim Gamepad3PollingRate As String = MainConfigFile.IniReadValue("Gamepads", "Gamepad3PollingRate")
+        Dim Gamepad4PollingRate As String = MainConfigFile.IniReadValue("Gamepads", "Gamepad4PollingRate")
+
+        'Button layout
+        Dim GamepadButtonLayout As String = MainConfigFile.IniReadValue("Gamepads", "ButtonLayout")
+
+        'Input Tester
+        Dim InputTesterSetting As New SettingsListViewItem With {.SettingsTitle = "Gamepad Input Tester", .SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute))}
+
+        'Declare the settings
+        Dim Gamepad1PollingRateSetting As New SettingsListViewItem With {.SettingsTitle = "Gamepad 1 Polling Rate",
+            .SettingsDescription = "Set the polling rate of gamepad 1",
+            .SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute)),
+            .SettingsState = Gamepad1PollingRate,
+            .ConfigSectionName = "Gamepads",
+            .ConfigToChange = "Gamepad1PollingRate"}
+        Dim Gamepad2PollingRateSetting As New SettingsListViewItem With {.SettingsTitle = "Gamepad 2 Polling Rate",
+            .SettingsDescription = "Set the polling rate of gamepad 2",
+            .SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute)),
+            .SettingsState = Gamepad2PollingRate,
+            .ConfigSectionName = "Gamepads",
+            .ConfigToChange = "Gamepad2PollingRate"}
+        Dim Gamepad3PollingRateSetting As New SettingsListViewItem With {.SettingsTitle = "Gamepad 3 Polling Rate",
+            .SettingsDescription = "Set the polling rate of gamepad 3",
+            .SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute)),
+            .SettingsState = Gamepad3PollingRate,
+            .ConfigSectionName = "Gamepads",
+            .ConfigToChange = "Gamepad3PollingRate"}
+        Dim Gamepad4PollingRateSetting As New SettingsListViewItem With {.SettingsTitle = "Gamepad 4 Polling Rate",
+            .SettingsDescription = "Set the polling rate of gamepad 4",
+            .SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute)),
+            .SettingsState = Gamepad4PollingRate,
+            .ConfigSectionName = "Gamepads",
+            .ConfigToChange = "Gamepad4PollingRate"}
+        Dim GamepadButtonLayoutSetting As New SettingsListViewItem With {.SettingsTitle = "Gamepad Button Layout",
+            .SettingsDescription = "Set the gamepad button layout",
+            .SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute)),
+            .SettingsState = GamepadButtonLayout,
+            .ConfigSectionName = "Gamepads",
+            .ConfigToChange = "ButtonLayout"}
+
+        'Create a new ListViewItem and override the content template style
+        Dim Setting1Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = InputTesterSetting}
+        Dim Setting2Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = Gamepad1PollingRateSetting}
+        Dim Setting3Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = Gamepad2PollingRateSetting}
+        Dim Setting4Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = Gamepad3PollingRateSetting}
+        Dim Setting5Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = Gamepad4PollingRateSetting}
+        Dim Setting6Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = GamepadButtonLayoutSetting}
+
+        GeneralSettingsListView.Items.Add(Setting1Item)
+        GeneralSettingsListView.Items.Add(Setting2Item)
+        GeneralSettingsListView.Items.Add(Setting3Item)
+        GeneralSettingsListView.Items.Add(Setting4Item)
+        GeneralSettingsListView.Items.Add(Setting5Item)
+        GeneralSettingsListView.Items.Add(Setting6Item)
         GeneralSettingsListView.Items.Refresh()
     End Sub
 
@@ -1108,6 +1190,320 @@ Public Class GeneralSettings
         GeneralSettingsListView.Items.Add(Setting3Item)
         GeneralSettingsListView.Items.Add(Setting4Item)
         GeneralSettingsListView.Items.Add(Setting5Item)
+
+        GeneralSettingsListView.Items.Refresh()
+    End Sub
+
+#End Region
+
+#Region "PS4 (shadps4) Emulator Settings"
+
+    Public Sub LoadPS4EmulatorSettings()
+        WindowTitle.Text = "PS4 Emulator (shadPS4)"
+
+        GeneralSettingsListView.Items.Clear()
+
+        'Declare the styles
+        Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
+        Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
+        Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
+
+        'Get the values
+        Dim ConfigPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\user\config.toml"
+        Dim ConfigContent As String = File.ReadAllText(ConfigPath)
+        Dim ConfigTable As TomlTable = Toml.Parse(ConfigContent).ToModel()
+        Dim GeneralTable As TomlTable = CType(ConfigTable("General"), TomlTable)
+        Dim GUITable As TomlTable = CType(ConfigTable("GUI"), TomlTable)
+
+        Dim IsPS4Pro As Boolean = CBool(GeneralTable("isPS4Pro"))
+        Dim UserName As String = CStr(GeneralTable("userName"))
+        Dim EmulatorLanguage As String = CStr(GUITable("emulatorLanguage"))
+
+        'Declare the settings
+        Dim IsPS4ProSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "PS4 Pro",
+            .ConfigToChange = "isPS4Pro",
+            .IsSettingChecked = IsPS4Pro}
+        Dim UserNameSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "User Name",
+            .ConfigToChange = "userName",
+            .SettingsState = UserName,
+            .SettingsDescription = "Sets the User Name for the PS4 Emulator."}
+        Dim EmulatorLanguageSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Emulator Language",
+            .ConfigToChange = "emulatorLanguage",
+            .SettingsState = EmulatorLanguage,
+            .SettingsDescription = "Sets the Language for the PS4 Emulator."}
+
+        Dim GPUSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)), .SettingsTitle = "PS4 GPU Settings"}
+        Dim InputSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/ControllerWhite.png", UriKind.RelativeOrAbsolute)), .SettingsTitle = "PS4 Input Settings"}
+        Dim OtherSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)), .SettingsTitle = "PS4 Other General Settings"}
+
+        'Create a new ListViewItem and set the content
+        Dim Setting1Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = IsPS4ProSetting}
+        Dim Setting2Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = UserNameSetting}
+        Dim Setting3Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = EmulatorLanguageSetting}
+        Dim Setting4Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = GPUSetting}
+        Dim Setting5Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = InputSetting}
+        Dim Setting6Item As New ListViewItem With {.ContentTemplate = DefaultSettingStyle, .Content = OtherSetting}
+
+        'Add the settings to the list
+        GeneralSettingsListView.Items.Add(Setting1Item)
+        GeneralSettingsListView.Items.Add(Setting2Item)
+        GeneralSettingsListView.Items.Add(Setting3Item)
+        GeneralSettingsListView.Items.Add(Setting4Item)
+        GeneralSettingsListView.Items.Add(Setting5Item)
+        GeneralSettingsListView.Items.Add(Setting6Item)
+
+        GeneralSettingsListView.Items.Refresh()
+    End Sub
+
+    Public Sub LoadPS4GPUSettings()
+        WindowTitle.Text = "PS4 GPU Settings"
+
+        GeneralSettingsListView.Items.Clear()
+
+        'Declare the styles
+        Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
+        Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
+
+        'Get the values
+        Dim ConfigPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\user\config.toml"
+        Dim ConfigContent As String = File.ReadAllText(ConfigPath)
+        Dim ConfigTable As TomlTable = Toml.Parse(ConfigContent).ToModel()
+        Dim GPUTable As TomlTable = CType(ConfigTable("GPU"), TomlTable)
+
+        Dim ScreenWidth As Integer = CInt(GPUTable("screenWidth"))
+        Dim ScreenHeight As Integer = CInt(GPUTable("screenHeight"))
+        Dim NullGpu As Boolean = CBool(GPUTable("nullGpu"))
+        Dim CopyGPUBuffers As Boolean = CBool(GPUTable("copyGPUBuffers"))
+        Dim DumpShaders As Boolean = CBool(GPUTable("dumpShaders"))
+        Dim PatchShaders As Boolean = CBool(GPUTable("patchShaders"))
+        Dim VblankDivider As Integer = CInt(GPUTable("vblankDivider"))
+        Dim Fullscreen As Boolean = CBool(GPUTable("Fullscreen"))
+        Dim FullscreenMode As String = CStr(GPUTable("FullscreenMode"))
+        Dim AllowHDR As Boolean = CBool(GPUTable("allowHDR"))
+
+        'Declare the settings
+        Dim ScreenWidthSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Screen Width",
+            .ConfigToChange = "screenWidth",
+            .SettingsState = ScreenWidth.ToString()}
+        Dim ScreenHeightSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Screen Height",
+            .ConfigToChange = "screenHeight",
+            .SettingsState = ScreenHeight.ToString()}
+        Dim NullGpuSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Use NullGpu",
+            .ConfigToChange = "nullGpu",
+            .IsSettingChecked = NullGpu}
+        Dim CopyGPUBuffersSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Copy GPU Buffers",
+            .ConfigToChange = "copyGPUBuffers",
+            .IsSettingChecked = CopyGPUBuffers}
+        Dim DumpShadersSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Dump Shaders",
+            .ConfigToChange = "dumpShaders",
+            .IsSettingChecked = DumpShaders}
+        Dim PatchShadersSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Patch Shaders",
+            .ConfigToChange = "patchShaders",
+            .IsSettingChecked = PatchShaders}
+        Dim VblankDividerSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Vblank Divider",
+            .ConfigToChange = "vblankDivider",
+            .SettingsState = VblankDivider.ToString()}
+        Dim FullscreenSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Fullscreen",
+            .ConfigToChange = "Fullscreen",
+            .IsSettingChecked = Fullscreen}
+        Dim FullscreenModeSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Fullscreen Mode",
+            .ConfigToChange = "FullscreenMode",
+            .SettingsState = FullscreenMode}
+        Dim AllowHDRSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Enable HDR",
+            .ConfigToChange = "allowHDR",
+            .IsSettingChecked = AllowHDR}
+
+        'Create a new ListViewItem and set the content
+        Dim Setting1Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = ScreenWidthSetting}
+        Dim Setting2Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = ScreenHeightSetting}
+        Dim Setting3Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = NullGpuSetting}
+        Dim Setting4Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = CopyGPUBuffersSetting}
+        Dim Setting5Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = DumpShadersSetting}
+        Dim Setting6Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = PatchShadersSetting}
+        Dim Setting7Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = VblankDividerSetting}
+        Dim Setting8Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = FullscreenSetting}
+        Dim Setting9Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = FullscreenModeSetting}
+        Dim Setting10Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = AllowHDRSetting}
+
+        'Add the settings to the list
+        GeneralSettingsListView.Items.Add(Setting1Item)
+        GeneralSettingsListView.Items.Add(Setting2Item)
+        GeneralSettingsListView.Items.Add(Setting3Item)
+        GeneralSettingsListView.Items.Add(Setting4Item)
+        GeneralSettingsListView.Items.Add(Setting5Item)
+        GeneralSettingsListView.Items.Add(Setting6Item)
+        GeneralSettingsListView.Items.Add(Setting7Item)
+        GeneralSettingsListView.Items.Add(Setting8Item)
+        GeneralSettingsListView.Items.Add(Setting9Item)
+        GeneralSettingsListView.Items.Add(Setting10Item)
+
+        GeneralSettingsListView.Items.Refresh()
+    End Sub
+
+    Public Sub LoadPS4InputSettings()
+        WindowTitle.Text = "PS4 Input Settings"
+
+        GeneralSettingsListView.Items.Clear()
+
+        'Declare the styles
+        Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
+        Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
+
+        'Get the values
+        Dim ConfigPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\user\config.toml"
+        Dim ConfigContent As String = File.ReadAllText(ConfigPath)
+        Dim ConfigTable As TomlTable = Toml.Parse(ConfigContent).ToModel()
+        Dim InputTable As TomlTable = CType(ConfigTable("Input"), TomlTable)
+
+        Dim BackButtonBehavior As String = CStr(InputTable("backButtonBehavior"))
+        Dim UseSpecialPad As Boolean = CBool(InputTable("useSpecialPad"))
+        Dim SpecialPadClass As Integer = CInt(InputTable("specialPadClass"))
+        Dim IsMotionControlsEnabled As Boolean = CBool(InputTable("isMotionControlsEnabled"))
+        Dim UseUnifiedInputConfig As Boolean = CBool(InputTable("useUnifiedInputConfig"))
+
+        'Declare the settings
+        Dim BackButtonBehaviorSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Back Button Behavior",
+            .ConfigToChange = "backButtonBehavior",
+            .SettingsState = BackButtonBehavior}
+        Dim UseSpecialPadSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Use Special Pad",
+            .ConfigToChange = "useSpecialPad",
+            .IsSettingChecked = UseSpecialPad}
+        Dim SpecialPadClassSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Special Pad Class",
+            .ConfigToChange = "specialPadClass",
+            .SettingsState = SpecialPadClass.ToString()}
+        Dim IsMotionControlsEnabledSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Enable Motion Controls",
+            .ConfigToChange = "isMotionControlsEnabled",
+            .IsSettingChecked = IsMotionControlsEnabled}
+        Dim UseUnifiedInputConfigSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Use Unified Input Config",
+            .ConfigToChange = "useUnifiedInputConfig",
+            .IsSettingChecked = UseUnifiedInputConfig}
+
+        'Create a new ListViewItem and set the content
+        Dim Setting1Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = BackButtonBehaviorSetting}
+        Dim Setting2Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = UseSpecialPadSetting}
+        Dim Setting3Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = SpecialPadClassSetting}
+        Dim Setting4Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = IsMotionControlsEnabledSetting}
+        Dim Setting5Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = UseUnifiedInputConfigSetting}
+
+        'Add the settings to the list
+        GeneralSettingsListView.Items.Add(Setting1Item)
+        GeneralSettingsListView.Items.Add(Setting2Item)
+        GeneralSettingsListView.Items.Add(Setting3Item)
+        GeneralSettingsListView.Items.Add(Setting4Item)
+        GeneralSettingsListView.Items.Add(Setting5Item)
+
+        GeneralSettingsListView.Items.Refresh()
+    End Sub
+
+    Public Sub LoadPS4OtherSettings()
+        WindowTitle.Text = "PS4 Other General Settings"
+
+        GeneralSettingsListView.Items.Clear()
+
+        'Declare the styles
+        Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
+        Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
+
+        'Get the values
+        Dim ConfigPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\user\config.toml"
+        Dim ConfigContent As String = File.ReadAllText(ConfigPath)
+        Dim ConfigTable As TomlTable = Toml.Parse(ConfigContent).ToModel()
+        Dim GeneralTable As TomlTable = CType(ConfigTable("General"), TomlTable)
+
+        Dim IsTrophyPopupDisabled As Boolean = CBool(GeneralTable("isTrophyPopupDisabled"))
+        Dim TrophyNotificationDuration As Double = CDbl(GeneralTable("trophyNotificationDuration"))
+        Dim PlayBGM As Boolean = CBool(GeneralTable("playBGM"))
+        Dim BGMvolume As Integer = CInt(GeneralTable("BGMvolume"))
+        Dim EnableDiscordRPC As Boolean = CBool(GeneralTable("enableDiscordRPC"))
+        Dim UpdateChannel As String = CStr(GeneralTable("updateChannel"))
+        Dim AutoUpdate As Boolean = CBool(GeneralTable("autoUpdate"))
+        Dim SeparateUpdateEnabled As Boolean = CBool(GeneralTable("separateUpdateEnabled"))
+        Dim CompatibilityEnabled As Boolean = CBool(GeneralTable("compatibilityEnabled"))
+        Dim CheckCompatibilityOnStartup As Boolean = CBool(GeneralTable("checkCompatibilityOnStartup"))
+
+        'Declare the settings
+        Dim IsTrophyPopupDisabledSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Disable Tropy Popups",
+            .ConfigToChange = "isTrophyPopupDisabled",
+            .IsSettingChecked = IsTrophyPopupDisabled}
+        Dim TrophyNotificationDurationSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Trophy Notification Duration",
+            .ConfigToChange = "trophyNotificationDuration",
+            .SettingsState = TrophyNotificationDuration.ToString()}
+        Dim PlayBGMSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Play Background Music",
+            .ConfigToChange = "playBGM",
+            .IsSettingChecked = PlayBGM}
+        Dim BGMvolumeSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Background Music volume",
+            .ConfigToChange = "BGMvolume",
+            .SettingsState = BGMvolume.ToString()}
+        Dim EnableDiscordRPCSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Enable Discord RPC",
+            .ConfigToChange = "enableDiscordRPC",
+            .IsSettingChecked = EnableDiscordRPC}
+        Dim UpdateChannelSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Update Channel",
+            .ConfigToChange = "updateChannel",
+            .SettingsState = UpdateChannel}
+        Dim AutoUpdateSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Auto Update",
+            .ConfigToChange = "autoUpdate",
+            .IsSettingChecked = AutoUpdate}
+        Dim SeparateUpdateEnabledSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Separate Update Enabled",
+            .ConfigToChange = "separateUpdateEnabled",
+            .IsSettingChecked = SeparateUpdateEnabled}
+        Dim CompatibilityEnabledSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Compatibility Enabled",
+            .ConfigToChange = "compatibilityEnabled",
+            .IsSettingChecked = CompatibilityEnabled}
+        Dim CheckCompatibilityOnStartupSetting As New SettingsListViewItem With {.SettingsIcon = New BitmapImage(New Uri("/Icons/Setting.png", UriKind.RelativeOrAbsolute)),
+            .SettingsTitle = "Check Compatibility on Startup",
+            .ConfigToChange = "checkCompatibilityOnStartup",
+            .IsSettingChecked = CheckCompatibilityOnStartup}
+
+        'Create a new ListViewItem and set the content
+        Dim Setting1Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = IsTrophyPopupDisabledSetting}
+        Dim Setting2Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = TrophyNotificationDurationSetting}
+        Dim Setting3Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = PlayBGMSetting}
+        Dim Setting4Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = BGMvolumeSetting}
+        Dim Setting5Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = EnableDiscordRPCSetting}
+        Dim Setting6Item As New ListViewItem With {.ContentTemplate = SettingWithDescription, .Content = UpdateChannelSetting}
+        Dim Setting7Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = AutoUpdateSetting}
+        Dim Setting8Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = SeparateUpdateEnabledSetting}
+        Dim Setting9Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = CompatibilityEnabledSetting}
+        Dim Setting10Item As New ListViewItem With {.ContentTemplate = SettingWithCheckBoxStyle, .Content = CheckCompatibilityOnStartupSetting}
+
+        'Add the settings to the list
+        GeneralSettingsListView.Items.Add(Setting1Item)
+        GeneralSettingsListView.Items.Add(Setting2Item)
+        GeneralSettingsListView.Items.Add(Setting3Item)
+        GeneralSettingsListView.Items.Add(Setting4Item)
+        GeneralSettingsListView.Items.Add(Setting5Item)
+        GeneralSettingsListView.Items.Add(Setting6Item)
+        GeneralSettingsListView.Items.Add(Setting7Item)
+        GeneralSettingsListView.Items.Add(Setting8Item)
+        GeneralSettingsListView.Items.Add(Setting9Item)
+        GeneralSettingsListView.Items.Add(Setting10Item)
 
         GeneralSettingsListView.Items.Refresh()
     End Sub
@@ -2919,11 +3315,11 @@ Public Class GeneralSettings
 
             'Open the next list of settings if the title matches a new list of settings
             Select Case SelectedItem.SettingsTitle
-                Case "Account Management"
+                Case "User Management"
                     'Set the LastGeneralSettingsIndex to the currently selected index from GeneralSettingsListView
                     LastGeneralSettingsIndex = GeneralSettingsListView.SelectedIndex
-                    'Load the settings for Account Management
-                    LoadAccountManagementSettings()
+                    'Load the settings for User Management
+                    LoadUserManagementSettings()
                     'Animate the new ListView
                     GoForwardAnimation()
                 Case "Network"
@@ -2956,6 +3352,19 @@ Public Class GeneralSettings
                     Dim NewBluetoothSettings As New BluetoothSettings() With {.Top = 0, .Left = 0, .ShowActivated = True, .Opacity = 0, .Opener = "GeneralSettings"}
                     NewBluetoothSettings.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
                     NewBluetoothSettings.Show()
+
+                Case "Gamepad Settings"
+                    LastGeneralSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadGamepadSettings()
+                    GoForwardAnimation()
+
+                Case "Gamepad Input Tester"
+                    PauseInput = True
+
+                    Dim NewGamepadInputTester As New GamepadInputTester() With {.Top = 0, .Left = 0, .ShowActivated = True, .Opacity = 0}
+                    NewGamepadInputTester.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                    NewGamepadInputTester.Show()
+
 
                 Case "Set Up Internet Connection"
                     PauseInput = True
@@ -2999,6 +3408,10 @@ Public Class GeneralSettings
                     LastGeneralEmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadPS3EmulatorSettings()
                     GoForwardAnimation()
+                Case "PS4 Emulator (shadPS4)"
+                    LastGeneralEmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadPS4EmulatorSettings()
+                    GoForwardAnimation()
                 Case "PSP Emulator (ppsspp)"
                     LastGeneralEmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadPSPEmulatorSettings()
@@ -3032,10 +3445,24 @@ Public Class GeneralSettings
                     LastPS3EmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadPS3CoreSettings()
                     GoForwardAnimation()
+
+                Case "PS4 GPU Settings"
+                    LastPS4EmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadPS4GPUSettings()
+                    GoForwardAnimation()
+                Case "PS4 Input Settings"
+                    LastPS4EmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadPS4InputSettings()
+                    GoForwardAnimation()
+                Case "PS4 Other General Settings"
+                    LastPS4EmulatorSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadPS4OtherSettings()
+                    GoForwardAnimation()
             End Select
 
             'If the ContentTemplate is SettingWithCheckBoxStyle, change the boolean value
-            'If the ContentTemplate is SettingWithCheckBoxStyle, show an input box (current exception are PS3 related settings)
+            'If the ContentTemplate is SettingWithDescription, show an input box (current exception are PS3 related settings)
+            Dim DefaultSettingStyle As DataTemplate = CType(SettingsWindow.Resources("DefaultSetting"), DataTemplate)
             Dim SettingWithDescription As DataTemplate = CType(SettingsWindow.Resources("SettingWithDescription"), DataTemplate)
             Dim SettingWithCheckBoxStyle As DataTemplate = CType(SettingsWindow.Resources("SettingWithCheckBox"), DataTemplate)
 
@@ -3069,46 +3496,55 @@ Public Class GeneralSettings
 
                         End If
                     Case Else
-                        ChangeBoolValue(SelectedItem)
-
                         'Show visual change
                         If SelectedItem.IsSettingChecked Then
                             SelectedItem.IsSettingChecked = False
                         Else
                             SelectedItem.IsSettingChecked = True
                         End If
+
+                        ChangeBoolValue(SelectedItem)
                 End Select
 
             ElseIf SelectedListViewItem.ContentTemplate Is SettingWithDescription Then
 
                 SettingToChange = SelectedItem
 
-                Select Case SelectedItem.SettingsTitle
-                    'Known and pre-defined settings
-                    Case "Duration of Notifications", "Selected Background", "Navigation Audio Pack", "Display Resolution"
-                        'Show available options for specific settings
-                        ShowHideSideMenuSettings()
-                    Case Else
-                        Select Case WindowTitle.Text
-                            Case "PS3 Emulator (rpcs3)", "PS3 Audio Settings", "PS3 Video Settings", "PS3 Core Settings"
-                                Select Case SelectedItem.SettingsTitle
-                                    'Known and pre-defined settings for the PS3 emulator
-                                    Case "Console Language", "License Area", "Enter button assignment", "Renderer", "Audio Format"
-                                        ShowHideSideMenuSettings()
-                                End Select
-                            Case Else
-                                'For any other setting that has no boolean value or pre-defined list of settings -> Show an input field to change the setting manually
-                                'Show the input field
-                                Animate(NewInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
-                                Animate(NewInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
-                                Animate(NewInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+                Select Case WindowTitle.Text
 
-                                'Pause the window keyboard input and focus the input field
-                                PauseInput = True
-                                NewInputBox.InputTextBox.Clear()
-                                NewInputBox.InputTextBox.Focus()
-                                ShowVirtualKeyboard()
+                    'PS3 related settings
+                    Case "PS3 Emulator (rpcs3)", "PS3 Audio Settings", "PS3 Video Settings", "PS3 Core Settings"
+                        Select Case SelectedItem.SettingsTitle
+                            'Known and pre-defined settings for the PS3 emulator
+                            Case "Console Language", "License Area", "Enter button assignment", "Renderer", "Audio Format"
+                                ShowHideSideMenuSettings()
                         End Select
+                    Case Else
+                        Select Case SelectedItem.SettingsTitle
+                            Case "Duration of Notifications", "Selected Background", "Navigation Audio Pack", "Display Resolution", "Gamepad Button Layout"
+                                'Show available options for specific settings
+                                ShowHideSideMenuSettings()
+                            Case Else
+                                'Check if the selected setting got a value to change
+                                If Not String.IsNullOrEmpty(SelectedItem.SettingsState) Then
+                                    'For any other setting that has no boolean value or pre-defined list of settings -> Show an input field to change the setting manually
+                                    'Show the input field
+                                    Animate(NewInputBox, Canvas.TopProperty, 1085, 400, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    Animate(NewInputBox, Canvas.LeftProperty, 1925, 500, New Duration(TimeSpan.FromMilliseconds(500)))
+                                    Animate(NewInputBox, OpacityProperty, 0, 1, New Duration(TimeSpan.FromMilliseconds(500)))
+
+                                    'Pause the window keyboard input and focus the input field
+                                    PauseInput = True
+                                    NewInputBox.InputTextBox.Clear()
+                                    NewInputBox.InputTextBox.Text = SelectedItem.SettingsState
+                                    NewInputBox.InputTextBox.Focus()
+
+                                    If MainController IsNot Nothing Then
+                                        ShowVirtualKeyboard()
+                                    End If
+                                End If
+                        End Select
+
                 End Select
 
             End If
@@ -3120,7 +3556,7 @@ Public Class GeneralSettings
 
             If SettingToChange IsNot Nothing Then
                 'Save the new value
-                ChangeStringValue(SettingToChange, SelectedSettingValue)
+                ChangeValue(SettingToChange, SelectedSettingValue)
 
                 'Special cases
                 Select Case SettingToChange.SettingsTitle
@@ -3159,7 +3595,6 @@ Public Class GeneralSettings
 
             'Remove the side menu
             ShowHideSideMenuSettings()
-
         End If
     End Sub
 
@@ -3183,7 +3618,7 @@ Public Class GeneralSettings
                     'Close if we're in the main settings
                     BeginAnimation(OpacityProperty, ClosingAnimation)
 
-                Case "Account Management"
+                Case "User Management"
                     LastAccountManagementSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadGeneralSettings()
                     GoBackAnimation(LastGeneralSettingsIndex)
@@ -3203,7 +3638,10 @@ Public Class GeneralSettings
                     LastSystemSettingsIndex = GeneralSettingsListView.SelectedIndex
                     LoadGeneralSettings()
                     GoBackAnimation(LastGeneralSettingsIndex)
-
+                Case "Gamepad Settings"
+                    LastGamepadSettingsIndex = GeneralSettingsListView.SelectedIndex
+                    LoadGeneralSettings()
+                    GoBackAnimation(LastGeneralSettingsIndex)
 
                 Case "Audio"
                     LastAudioSettingsIndex = GeneralSettingsListView.SelectedIndex
@@ -3219,7 +3657,7 @@ Public Class GeneralSettings
                     GoBackAnimation(LastDisplaySettingsIndex)
 
 
-                Case "PS1 Emulator (ePSXe)", "PS2 Emulator (pcsx2)", "PS3 Emulator (rpcs3)", "PSP Emulator (ppsspp)", "PS Vita Emulator (vita3k)", "Dolpin Emulator", "Sega Emulator (Fusion)", "Mednafen Emulator"
+                Case "PS1 Emulator (ePSXe)", "PS2 Emulator (pcsx2)", "PS3 Emulator (rpcs3)", "PS4 Emulator (shadPS4)", "PSP Emulator (ppsspp)", "PS Vita Emulator (vita3k)", "Dolpin Emulator", "Sega Emulator (Fusion)", "Mednafen Emulator"
                     LoadGeneralEmulatorSettings()
                     GoBackAnimation(LastGeneralEmulatorSettingsIndex)
 
@@ -3234,6 +3672,15 @@ Public Class GeneralSettings
                     LoadPS3EmulatorSettings()
                     GoBackAnimation(LastPS3EmulatorSettingsIndex)
 
+                Case "PS4 GPU Settings"
+                    LoadPS4EmulatorSettings()
+                    GoBackAnimation(LastPS4EmulatorSettingsIndex)
+                Case "PS4 Input Settings"
+                    LoadPS4EmulatorSettings()
+                    GoBackAnimation(LastPS4EmulatorSettingsIndex)
+                Case "PS4 Other General Settings"
+                    LoadPS4EmulatorSettings()
+                    GoBackAnimation(LastPS4EmulatorSettingsIndex)
             End Select
 
         ElseIf TypeOf FocusedItem Is Button Then 'Close the side menu
@@ -3278,15 +3725,17 @@ Public Class GeneralSettings
                         SettingButton4.Content = "4"
                         SettingButton5.Content = "5"
 
-                        ShowAllSettingButtons()
+                        ShowSideSettingButtons(5)
                     Case "Selected Background"
                         SettingButton1.Content = "Blue Bubbles"
-                        SettingButton2.Content = "Orange/Red Gradient Waves"
-                        SettingButton3.Content = "PS2 Dots"
-                        SettingButton4.Content = "Custom"
-                        SettingButton5.Content = "None"
+                        SettingButton2.Content = "Blue Bokeh Dust"
+                        SettingButton3.Content = "Golden Dust"
+                        SettingButton4.Content = "Orange/Red Gradient Waves"
+                        SettingButton5.Content = "PS2 Dots"
+                        SettingButton6.Content = "Custom"
+                        SettingButton7.Content = "None"
 
-                        ShowAllSettingButtons()
+                        ShowSideSettingButtons(7)
                     Case "Navigation Audio Pack"
                         SettingButton1.Content = "PS1"
                         SettingButton2.Content = "PS2"
@@ -3294,7 +3743,7 @@ Public Class GeneralSettings
                         SettingButton4.Content = "PS4"
                         SettingButton5.Content = "PS5"
 
-                        ShowAllSettingButtons()
+                        ShowSideSettingButtons(5)
                     Case "Display Resolution"
                         SettingButton1.Content = "AutoScaling"
                         SettingButton2.Content = "1280x720"
@@ -3302,7 +3751,18 @@ Public Class GeneralSettings
                         SettingButton4.Content = "2560x1440"
                         SettingButton5.Content = "3840x2160"
 
-                        ShowAllSettingButtons()
+                        ShowSideSettingButtons(5)
+                    Case "Gamepad Button Layout"
+                        SettingButton1.Content = "PS3"
+                        SettingButton2.Content = "PS4"
+                        SettingButton3.Content = "PS5"
+                        SettingButton4.Content = "PS Vita"
+                        SettingButton5.Content = "Steam"
+                        SettingButton6.Content = "Steam Deck"
+                        SettingButton7.Content = "Xbox 360"
+                        SettingButton8.Content = "ROG Ally"
+
+                        ShowSideSettingButtons(8)
 #End Region
 #Region "PS3 General Settings"
                     Case "Console Language"
@@ -3311,19 +3771,21 @@ Public Class GeneralSettings
                         SettingButton3.Content = "Spanish"
                         SettingButton4.Content = "German"
                         SettingButton5.Content = "Portuguese (Brazil)"
+
+                        ShowSideSettingButtons(5)
                     Case "License Area"
                         SettingButton1.Content = "SCEA"
                         SettingButton2.Content = "SCEE"
                         SettingButton3.Content = "SCEJ"
                         SettingButton4.Content = "SCEH"
                         SettingButton5.Content = "SCH"
-                        ShowAllSettingButtons()
+
+                        ShowSideSettingButtons(5)
                     Case "Enter button assignment"
                         SettingButton1.Content = "Enter with cross"
                         SettingButton2.Content = "Enter with circle"
 
-                        Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                        Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                        ShowSideSettingButtons(2)
 #End Region
 #Region "PS3 Audio Settings"
                     Case "Renderer"
@@ -3331,19 +3793,14 @@ Public Class GeneralSettings
                         SettingButton2.Content = "XAudio2"
                         SettingButton3.Content = """Null"""
 
-                        Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                        Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                        Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                        ShowSideSettingButtons(3)
                     Case "Audio Format"
                         SettingButton1.Content = "Stereo"
                         SettingButton2.Content = "Surround 5.1"
                         SettingButton3.Content = "Surround 7.1"
                         SettingButton4.Content = "Automatic"
 
-                        Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                        Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                        Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                        Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                        ShowSideSettingButtons(4)
 #End Region
 #Region "PS3 Video Settings"
 
@@ -3368,6 +3825,11 @@ Public Class GeneralSettings
                 Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
                 Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
                 Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                Animate(SettingButton7, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                Animate(SettingButton8, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                Animate(SettingButton9, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                Animate(SettingButton10, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
                 'Set the focus back
                 Dim NextSelectedListViewItem As ListViewItem = TryCast(GeneralSettingsListView.Items(GeneralSettingsListView.SelectedIndex), ListViewItem)
@@ -3378,12 +3840,11 @@ Public Class GeneralSettings
 
     End Sub
 
-    Private Sub ShowAllSettingButtons()
-        Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-        Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-        Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-        Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-        Animate(SettingButton5, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+    Private Sub ShowSideSettingButtons(Count As Integer)
+        For i = 1 To Count
+            Dim SettingsButton As Button = CType(SettingsCanvas.FindName("SettingButton" + i.ToString()), Button)
+            Animate(SettingsButton, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+        Next
     End Sub
 
     Private Sub MoveUp()
@@ -3395,6 +3856,16 @@ Public Class GeneralSettings
             PlayBackgroundSound(Sounds.Move)
 
             If SettingButton1.IsFocused Then
+                SettingButton10.Focus()
+            ElseIf SettingButton10.IsFocused Then
+                SettingButton9.Focus()
+            ElseIf SettingButton9.IsFocused Then
+                SettingButton8.Focus()
+            ElseIf SettingButton8.IsFocused Then
+                SettingButton7.Focus()
+            ElseIf SettingButton7.IsFocused Then
+                SettingButton6.Focus()
+            ElseIf SettingButton6.IsFocused Then
                 SettingButton5.Focus()
             ElseIf SettingButton5.IsFocused Then
                 SettingButton4.Focus()
@@ -3439,6 +3910,16 @@ Public Class GeneralSettings
             ElseIf SettingButton4.IsFocused Then
                 SettingButton5.Focus()
             ElseIf SettingButton5.IsFocused Then
+                SettingButton6.Focus()
+            ElseIf SettingButton6.IsFocused Then
+                SettingButton7.Focus()
+            ElseIf SettingButton7.IsFocused Then
+                SettingButton8.Focus()
+            ElseIf SettingButton8.IsFocused Then
+                SettingButton9.Focus()
+            ElseIf SettingButton9.IsFocused Then
+                SettingButton10.Focus()
+            ElseIf SettingButton10.IsFocused Then
                 SettingButton1.Focus()
             End If
 
@@ -3525,8 +4006,7 @@ Public Class GeneralSettings
 #Region "Input"
 
     Private Sub GeneralSettings_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Dim FocusedItem = FocusManager.GetFocusedElement(Me)
             If PauseInput = False Then
                 Select Case e.Key
@@ -3555,8 +4035,8 @@ Public Class GeneralSettings
         If PauseInput Then
             Select Case Key
                 Case Forms.Keys.Return, Forms.Keys.Enter
-                    If SettingToChange IsNot Nothing Then
-                        ChangeStringValue(SettingToChange, NewInputBox.InputTextBox.Text)
+                    If SettingToChange IsNot Nothing AndAlso Not String.IsNullOrEmpty(NewInputBox.InputTextBox.Text) Then
+                        ChangeValue(SettingToChange, NewInputBox.InputTextBox.Text)
                     End If
 
                     'Remove the input field
@@ -3636,9 +4116,41 @@ Public Class GeneralSettings
     End Function
 
     Private Sub ChangeButtonLayout()
-        If SharedDeviceModel = DeviceModel.ROGAlly Then
-            BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
-            EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_a.png", UriKind.RelativeOrAbsolute))
+        Dim GamepadButtonLayout As String = MainConfigFile.IniReadValue("Gamepads", "ButtonLayout")
+
+        If SharedDeviceModel = DeviceModel.PC AndAlso MainController Is Nothing Then
+            'Show keyboard keys instead of gamepad buttons
+            BackButton.Source = New BitmapImage(New Uri("/Icons/Keys/C_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            EnterButton.Source = New BitmapImage(New Uri("/Icons/Keys/X_Key_Dark.png", UriKind.RelativeOrAbsolute))
+        Else
+            If Not String.IsNullOrEmpty(GamepadButtonLayout) Then
+                Select Case GamepadButtonLayout
+                    Case "PS3"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Circle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS4"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Circle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS5"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Circle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS Vita"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Circle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_B.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam Deck"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_B.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Xbox 360"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_B.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_A.png", UriKind.RelativeOrAbsolute))
+                    Case "ROG Ally"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_b.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_a.png", UriKind.RelativeOrAbsolute))
+                End Select
+            End If
         End If
     End Sub
 
@@ -3812,7 +4324,7 @@ Public Class GeneralSettings
                 Else
                     PCSX2Config.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanTrueValue)
                 End If
-            Case "PS3 Emulator (rpcs3)"
+            Case "PS3 Emulator (rpcs3)", "PS3 Audio Settings", "PS3 Video Settings", "PS3 Core Settings"
                 BooleanTrueValue = "true"
                 BooleanFalseValue = "false"
 
@@ -3821,6 +4333,47 @@ Public Class GeneralSettings
                 Else
                     SetPS3ConfigValue(SelectedConfig.ConfigToChange, BooleanTrueValue)
                 End If
+            Case "PS4 Emulator (shadPS4)", "PS4 Other General Settings", "PS4 Input Settings", "PS4 GPU Settings"
+                Dim ConfigPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\user\config.toml"
+                Dim ConfigContent As String = File.ReadAllText(ConfigPath)
+                Dim ConfigTable As TomlTable = Toml.Parse(ConfigContent).ToModel()
+                Dim GeneralTable As TomlTable = CType(ConfigTable("General"), TomlTable)
+                Dim GUITable As TomlTable = CType(ConfigTable("GUI"), TomlTable)
+                Dim GPUTable As TomlTable = CType(ConfigTable("GPU"), TomlTable)
+                Dim InputTable As TomlTable = CType(ConfigTable("Input"), TomlTable)
+
+                If SelectedConfig.IsSettingChecked Then
+                    If GeneralTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        GeneralTable(SelectedConfig.ConfigToChange) = True
+                        ConfigTable("General") = GeneralTable
+                    ElseIf GUITable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        GUITable(SelectedConfig.ConfigToChange) = True
+                        ConfigTable("GUI") = GUITable
+                    ElseIf InputTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        InputTable(SelectedConfig.ConfigToChange) = True
+                        ConfigTable("Input") = InputTable
+                    ElseIf GPUTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        GPUTable(SelectedConfig.ConfigToChange) = True
+                        ConfigTable("GPU") = GPUTable
+                    End If
+                Else
+                    If GeneralTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        GeneralTable(SelectedConfig.ConfigToChange) = False
+                        ConfigTable("General") = GeneralTable
+                    ElseIf GUITable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        GUITable(SelectedConfig.ConfigToChange) = False
+                        ConfigTable("GUI") = GUITable
+                    ElseIf InputTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        InputTable(SelectedConfig.ConfigToChange) = False
+                        ConfigTable("Input") = InputTable
+                    ElseIf GPUTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                        GPUTable(SelectedConfig.ConfigToChange) = False
+                        ConfigTable("GPU") = GPUTable
+                    End If
+                End If
+
+                Dim ModifiedConfigContent As String = Toml.FromModel(ConfigTable)
+                File.WriteAllText(ConfigPath, ModifiedConfigContent)
             Case "PSP Emulator (ppsspp)"
                 BooleanTrueValue = "True"
                 BooleanFalseValue = "False"
@@ -3855,7 +4408,7 @@ Public Class GeneralSettings
                 'BooleanFalseValue = "0"
                 'Future build
 
-            Case "Account Management", "Notifications", "Notifications", "Background", "Network"
+            Case "Notifications", "Notifications", "Background", "Network"
                 BooleanTrueValue = "true"
                 BooleanFalseValue = "false"
 
@@ -3865,10 +4418,9 @@ Public Class GeneralSettings
                     MainConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, BooleanTrueValue)
                 End If
         End Select
-
     End Sub
 
-    Private Sub ChangeStringValue(SelectedConfig As SettingsListViewItem, NewValue As String)
+    Private Sub ChangeValue(SelectedConfig As SettingsListViewItem, NewValue As String)
         Select Case WindowTitle.Text
             Case "Dolpin Emulator"
                 Dim DolphinConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\User\Config\Dolphin.ini")
@@ -3881,9 +4433,25 @@ Public Class GeneralSettings
                 Dim PCSX2Config As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\inis\PCSX2_ui.ini")
                 PCSX2Config.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
-            Case "PS3 Emulator (rpcs3)"
+            Case "PS3 Emulator (rpcs3)", "PS3 Audio Settings", "PS3 Video Settings", "PS3 Core Settings"
                 SetPS3ConfigValue(SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
+            Case "PS4 Emulator (shadPS4)", "PS4 GPU Settings", "PS4 Input Settings", "PS4 Other General Settings"
+                'Check value and convert if required
+                Dim NewIntValue As Integer
+                If Integer.TryParse(NewValue, NewIntValue) Then
+                    'Change an Integer value
+                    ChangePS4ConfigValue(SettingToChange, NewIntValue)
+                Else
+                    Dim NewDoubleValue As Double
+                    If Double.TryParse(NewValue, NewDoubleValue) Then
+                        'Change a Double value
+                        ChangePS4ConfigValue(SettingToChange, NewDoubleValue)
+                    Else
+                        'Change a String value
+                        ChangePS4ConfigValue(SettingToChange, NewValue)
+                    End If
+                End If
             Case "PSP Emulator (ppsspp)"
                 Dim PPSSPPConfig As New IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\memstick\PSP\SYSTEM\ppsspp.ini")
                 PPSSPPConfig.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
@@ -3898,11 +4466,54 @@ Public Class GeneralSettings
             Case "Mednafen Emulator"
                 'Future build
 
-            Case "Account Management", "Audio", "Background", "Display", "Network", "Notifications", "System"
+            Case "User Management", "Audio", "Background", "Display", "Network", "Notifications", "System"
                 MainConfigFile.IniWriteValue(SelectedConfig.ConfigSectionName, SelectedConfig.ConfigToChange, NewValue)
                 SelectedConfig.SettingsState = NewValue
         End Select
     End Sub
+
+    Private Sub ChangePS4ConfigValue(SelectedConfig As SettingsListViewItem, NewObjectValue As Object)
+        If NewObjectValue IsNot Nothing Then
+            Dim ConfigPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\user\config.toml"
+            Dim ConfigContent As String = File.ReadAllText(ConfigPath)
+            Dim ConfigTable As TomlTable = Toml.Parse(ConfigContent).ToModel()
+            Dim GeneralTable As TomlTable = CType(ConfigTable("General"), TomlTable)
+            Dim GUITable As TomlTable = CType(ConfigTable("GUI"), TomlTable)
+            Dim GPUTable As TomlTable = CType(ConfigTable("GPU"), TomlTable)
+            Dim InputTable As TomlTable = CType(ConfigTable("Input"), TomlTable)
+
+            If GeneralTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                GeneralTable(SelectedConfig.ConfigToChange) = NewObjectValue
+                ConfigTable("General") = GeneralTable
+            ElseIf GUITable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                GUITable(SelectedConfig.ConfigToChange) = NewObjectValue
+                ConfigTable("GUI") = GUITable
+            ElseIf InputTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                InputTable(SelectedConfig.ConfigToChange) = NewObjectValue
+                ConfigTable("Input") = InputTable
+            ElseIf GPUTable.ContainsKey(SelectedConfig.ConfigToChange) Then
+                GPUTable(SelectedConfig.ConfigToChange) = NewObjectValue
+                ConfigTable("GPU") = GPUTable
+            End If
+
+            Dim ModifiedConfigContent As String = Toml.FromModel(ConfigTable)
+            File.WriteAllText(ConfigPath, ModifiedConfigContent)
+
+            SelectedConfig.SettingsState = NewObjectValue.ToString()
+        End If
+    End Sub
+
+    Private Function GetTOMLValue(ConfigName As String) As Object
+        Dim ConfigPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\user\config.toml"
+        Dim ConfigContent As String = File.ReadAllText(ConfigPath)
+        Dim ConfigTable As TomlTable = Toml.Parse(ConfigContent).ToModel()
+
+        If ConfigTable.ContainsKey(ConfigName) Then
+            Return ConfigTable(ConfigName)
+        Else
+            Return Nothing
+        End If
+    End Function
 
 #End Region
 
@@ -3917,6 +4528,10 @@ Public Class GeneralSettings
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else

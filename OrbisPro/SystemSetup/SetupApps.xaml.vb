@@ -1,4 +1,5 @@
 ﻿Imports Microsoft.Win32
+Imports Newtonsoft.Json
 Imports OrbisPro.OrbisAudio
 Imports OrbisPro.OrbisInput
 Imports OrbisPro.OrbisNotifications
@@ -195,8 +196,6 @@ Public Class SetupApps
         'Show buttons and activate gamepad
         BackButton.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
         BackTextBlock.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
-        OptionsButton.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
-        MoreTextBlock.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
         AddButton.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
         AddGameTextBlock.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
         EnterButton.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(100))})
@@ -225,7 +224,7 @@ Public Class SetupApps
 #Region "Input"
 
     Private Sub SetupApps_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
             Select Case e.Key
@@ -233,15 +232,19 @@ Public Class SetupApps
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.SelectItem)
 
+                        'Create new OrbisGamesList.App
                         Dim SelectedApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                        Dim NewOrbisApp As New OrbisAppList.App() With {.Name = SelectedApp.AppTitle, .ExecutablePath = SelectedApp.AppLaunchPath, .ShowInLibrary = "True", .ShowOnHome = "True", .Platform = "PC", .BackgroundPath = "", .IconPath = ""}
 
-                        'Add selected app to the library
-                        Using AppWriter As New StreamWriter(AppShortcuts, True)
-                            AppWriter.WriteLine("App=" + SelectedApp.AppTitle + ";" + SelectedApp.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                        End Using
+                        'Add selected App to the library
+                        Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+                        Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+                        AppsList.Apps.Add(NewOrbisApp)
 
-                        'Notify that the app has been added and add additional delay due to animation
-                        NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon)
+                        Dim NewAppsListJSON As String = JsonConvert.SerializeObject(AppsList, Formatting.Indented, New JsonSerializerSettings With {.NullValueHandling = NullValueHandling.Ignore})
+                        File.WriteAllText(AppLibraryPath, NewAppsListJSON)
+
+                        NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Apps Library", SelectedApp.AppIcon)
                     End If
                 Case Key.C
                     ReturnToPreviousSetupStep()
@@ -270,17 +273,13 @@ Public Class SetupApps
 
                 Dim MainGamepadButton_A_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.A) <> 0
                 Dim MainGamepadButton_B_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.B) <> 0
-                Dim MainGamepadButton_X_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.X) <> 0
                 Dim MainGamepadButton_Y_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Y) <> 0
-                Dim MainGamepadButton_Start_Button_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.Start) <> 0
 
                 Dim MainGamepadButton_DPad_Up_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadUp) <> 0
                 Dim MainGamepadButton_DPad_Down_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadDown) <> 0
                 Dim MainGamepadButton_DPad_Left_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadLeft) <> 0
                 Dim MainGamepadButton_DPad_Right_Pressed As Boolean = (MainGamepadButtonFlags And GamepadButtonFlags.DPadRight) <> 0
 
-                Dim MainGamepadButton_RightThumbX_Left As Boolean = MainGamepadState.Gamepad.RightThumbX = CShort(-32768)
-                Dim MainGamepadButton_RightThumbX_Right As Boolean = MainGamepadState.Gamepad.RightThumbX = CShort(32767)
                 Dim MainGamepadButton_RightThumbY_Up As Boolean = MainGamepadState.Gamepad.RightThumbY = CShort(32767)
                 Dim MainGamepadButton_RightThumbY_Down As Boolean = MainGamepadState.Gamepad.RightThumbY = CShort(-32768)
 
@@ -295,22 +294,23 @@ Public Class SetupApps
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.SelectItem)
 
+                        'Create new OrbisGamesList.App
                         Dim SelectedApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                        Dim NewOrbisApp As New OrbisAppList.App() With {.Name = SelectedApp.AppTitle, .ExecutablePath = SelectedApp.AppLaunchPath, .ShowInLibrary = "True", .ShowOnHome = "True", .Platform = "PC", .BackgroundPath = "", .IconPath = ""}
 
-                        'Add selected app to the library
-                        Using AppWriter As New StreamWriter(AppShortcuts, True)
-                            AppWriter.WriteLine("App;" + SelectedApp.AppTitle + ";" + SelectedApp.AppLaunchPath + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                        End Using
+                        'Add selected App to the library
+                        Dim AppsListJSON As String = File.ReadAllText(GameLibraryPath)
+                        Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+                        AppsList.Apps.Add(NewOrbisApp)
 
-                        'Notify that the app has been added and add additional delay due to animation
-                        NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Games Library", SelectedApp.AppIcon)
+                        Dim NewAppsListJSON As String = JsonConvert.SerializeObject(AppsList, Formatting.Indented, New JsonSerializerSettings With {.NullValueHandling = NullValueHandling.Ignore})
+                        File.WriteAllText(GameLibraryPath, NewAppsListJSON)
+
+                        NotificationPopup(SetupAppsCanvas, SelectedApp.AppTitle, "Added to Apps Library", SelectedApp.AppIcon)
                     End If
                 ElseIf MainGamepadButton_DPad_Left_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
-
-                        'Get the ListView of the selected item
-                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
                         Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
                         Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex - 1
@@ -323,9 +323,6 @@ Public Class SetupApps
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
 
-                        'Get the ListView of the selected item
-                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
-
                         Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
                         Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex + 1
 
@@ -337,9 +334,6 @@ Public Class SetupApps
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
 
-                        'Get the ListView of the selected item
-                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
-
                         Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
                         Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex - 4
 
@@ -350,9 +344,6 @@ Public Class SetupApps
                 ElseIf MainGamepadButton_DPad_Down_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
-
-                        'Get the ListView of the selected item
-                        Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
                         Dim SelectedIndex As Integer = ApplicationLibrary.SelectedIndex
                         Dim NextIndex As Integer = ApplicationLibrary.SelectedIndex + 4
@@ -377,16 +368,50 @@ Public Class SetupApps
     End Function
 
     Private Sub ChangeButtonLayout()
-        If SharedDeviceModel = DeviceModel.ROGAlly Then
-            BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
+        Dim GamepadButtonLayout As String = MainConfigFile.IniReadValue("Gamepads", "ButtonLayout")
 
-            OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_options.png", UriKind.RelativeOrAbsolute))
-            OptionsButton.Width = 48
-            Canvas.SetTop(OptionsButton, 955)
-            Canvas.SetLeft(OptionsButton, 385)
-
-            AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_y.png", UriKind.RelativeOrAbsolute))
-            EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_a.png", UriKind.RelativeOrAbsolute))
+        If SharedDeviceModel = DeviceModel.PC AndAlso MainController Is Nothing Then
+            'Show keyboard keys instead of gamepad buttons
+            BackButton.Source = New BitmapImage(New Uri("/Icons/Keys/C_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            AddButton.Source = New BitmapImage(New Uri("/Icons/Keys/A_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            EnterButton.Source = New BitmapImage(New Uri("/Icons/Keys/X_Key_Dark.png", UriKind.RelativeOrAbsolute))
+        Else
+            If Not String.IsNullOrEmpty(GamepadButtonLayout) Then
+                Select Case GamepadButtonLayout
+                    Case "PS3"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Circle.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS4"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Circle.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS5"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Circle.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS Vita"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Circle.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_B.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_Y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam Deck"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_B.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_Y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Xbox 360"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_B.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_Y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_A.png", UriKind.RelativeOrAbsolute))
+                    Case "ROG Ally"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_b.png", UriKind.RelativeOrAbsolute))
+                        AddButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_a.png", UriKind.RelativeOrAbsolute))
+                End Select
+            End If
         End If
     End Sub
 
@@ -452,6 +477,10 @@ Public Class SetupApps
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else

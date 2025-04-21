@@ -1,10 +1,11 @@
-﻿Imports OrbisPro.OrbisInput
-Imports OrbisPro.OrbisUtils
+﻿Imports System.ComponentModel
 Imports System.Threading
 Imports System.Windows.Media.Animation
 Imports Microsoft.Web.WebView2.Core
+Imports OrbisPro.OrbisAudio
+Imports OrbisPro.OrbisInput
+Imports OrbisPro.OrbisUtils
 Imports SharpDX.XInput
-Imports System.ComponentModel
 
 Public Class SystemWebBrowser
 
@@ -54,6 +55,26 @@ Public Class SystemWebBrowser
 #End Region
 
     Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
+        PlayBackgroundSound(Sounds.Back)
+
+        'Reactivate previous window
+        Select Case Opener
+            Case "MainWindow"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.MainWindow" Then
+                        CType(Win, MainWindow).Activate()
+                        Exit For
+                    End If
+                Next
+            Case "OpenWindows"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.OpenWindows" Then
+                        CType(Win, OpenWindows).Activate()
+                        Exit For
+                    End If
+                Next
+        End Select
+
         Close()
     End Sub
 
@@ -77,7 +98,7 @@ Public Class SystemWebBrowser
 #Region "Input"
 
     Private Sub SystemWebBrowser_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Select Case e.Key
                 Case Key.A
                     If Not WebNavigationBarTextBox.IsFocused Then WebNavigationBarTextBox.Focus()
@@ -156,10 +177,50 @@ Public Class SystemWebBrowser
     End Function
 
     Private Sub ChangeButtonLayout()
-        If SharedDeviceModel = DeviceModel.ROGAlly Then
-            BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
-            NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_a.png", UriKind.RelativeOrAbsolute))
-            FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_y.png", UriKind.RelativeOrAbsolute))
+        Dim GamepadButtonLayout As String = MainConfigFile.IniReadValue("Gamepads", "ButtonLayout")
+
+        If SharedDeviceModel = DeviceModel.PC AndAlso MainController Is Nothing Then
+            'Show keyboard keys instead of gamepad buttons
+            BackButton.Source = New BitmapImage(New Uri("/Icons/Keys/C_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            FocusButton.Source = New BitmapImage(New Uri("/Icons/Keys/A_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            NavigateButton.Source = New BitmapImage(New Uri("/Icons/Keys/X_Key_Dark.png", UriKind.RelativeOrAbsolute))
+        Else
+            If Not String.IsNullOrEmpty(GamepadButtonLayout) Then
+                Select Case GamepadButtonLayout
+                    Case "PS3"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Circle.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Triangle.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS4"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Circle.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Triangle.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS5"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Circle.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Triangle.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "PS Vita"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Circle.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Triangle.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_B.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_Y.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam Deck"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_B.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_Y.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_A.png", UriKind.RelativeOrAbsolute))
+                    Case "Xbox 360"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_B.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_Y.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_A.png", UriKind.RelativeOrAbsolute))
+                    Case "ROG Ally"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_b.png", UriKind.RelativeOrAbsolute))
+                        FocusButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_y.png", UriKind.RelativeOrAbsolute))
+                        NavigateButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_a.png", UriKind.RelativeOrAbsolute))
+                End Select
+            End If
         End If
     End Sub
 
@@ -224,6 +285,10 @@ Public Class SystemWebBrowser
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else

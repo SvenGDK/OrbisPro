@@ -53,25 +53,25 @@
         </ListView>
 
         <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="964" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="119" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="119" Canvas.Top="981" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="BackTextBlock" Canvas.Left="174" TextWrapping="Wrap" Text="Close" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="ActionButton" Height="48" Canvas.Left="1549" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <Image x:Name="OptionsButton" Height="48" Canvas.Left="1549" Canvas.Top="981" Width="48" Source="/Icons/Buttons/PS3/PS3_Start.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <TextBlock x:Name="OtherOptionsTextBlock" Canvas.Left="1604" TextWrapping="Wrap" Text="Other Options" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="RemoveButton" Height="48" Canvas.Left="1133" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_square.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="RemoveButton" Height="48" Canvas.Left="1133" Canvas.Top="981" Width="48" Source="/Icons/Buttons/PS3/PS3_Triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="RemoveTextBlock" Canvas.Left="1188" TextWrapping="Wrap" Text="Remove from Library" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="StartButton" Height="48" Canvas.Left="296" Canvas.Top="981" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="StartButton" Height="48" Canvas.Left="296" Canvas.Top="981" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="StartTextBlock" Canvas.Left="351" TextWrapping="Wrap" Text="Start" Canvas.Top="981" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>

@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:OrbisPro"
         mc:Ignorable="d"
         Title="OrbisPro - Home" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
-        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None" >
     <Canvas x:Name="MainCanvas">
         <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
         <Image x:Name="BackgroundImage" Width="1920" Height="1080"></Image>
@@ -41,11 +41,11 @@
 
         <!-- Upper Home Items -->
         <Image x:Name="WiFiIndicatorImage" Height="48" Canvas.Left="1100" Canvas.Top="78" Width="48" Source="/Icons/Wifi/WiFiHigh.png"/>
-        <Image x:Name="NotificationImage" Height="48" Canvas.Left="96" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_notifications.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="NotificationImage" Height="48" Canvas.Left="96" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_notifications.png"/>
         <Image x:Name="FriendsBannerImage" Height="48" Canvas.Left="720" Canvas.Top="78" Width="48" Source="/Icons/quickmenu_friends.png"/>
         <Image x:Name="OnlineIndicatorImage" Height="48" Canvas.Left="800" Canvas.Top="78" Width="48" Source="/Icons/online.png"/>
         <Image x:Name="BatteryIndicatorImage" Height="48" Canvas.Left="1500" Canvas.Top="78" Width="48" Source="/Icons/Battery/BatteryFull.png"/>
-        <TextBlock x:Name="NotificationBannerTextBlock" Text="OrbisPro Beta" Canvas.Left="150" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30" HorizontalAlignment="Left" VerticalAlignment="Center">
+        <TextBlock x:Name="NotificationBannerTextBlock" Text="OrbisPro Beta" Canvas.Left="150" Canvas.Top="82" FontFamily="SST Light" Foreground="White" FontSize="30">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
@@ -60,18 +60,19 @@
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <TextBlock x:Name="BatteryPercentageTextBlock" Text="100%" Canvas.Left="1553" Canvas.Top="86" FontFamily="SST Light" Foreground="White" FontSize="24" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <TextBlock x:Name="BatteryPercentageTextBlock" Text="100%" Canvas.Left="1553" Canvas.Top="86" FontFamily="SST Light" Foreground="White" FontSize="24">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <TextBlock x:Name="WiFiNetworkNameStrenghtTextBlock" Text="WirelessLAN - 100%" Canvas.Left="1160" Canvas.Top="86" FontFamily="SST Light" Foreground="White" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center" Width="330">
+        <TextBlock x:Name="WiFiNetworkNameStrenghtTextBlock" Text="WirelessLAN - 100%" Canvas.Left="1160" Canvas.Top="86" FontFamily="SST Light" Foreground="White" FontSize="24" Width="330">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
 
         <!-- Home Menu Apps -->
+        <Rectangle x:Name="StartRect" Fill="Black" Width="330" Height="72" Canvas.Top="539" Visibility="Hidden" Opacity="0.7" Canvas.Left="285"></Rectangle>
         <Border x:Name="SelectedAppBorder" BorderBrush="White" BorderThickness="3" Height="175" Canvas.Left="455" Canvas.Top="204" Width="175">
             <Border.Effect>
                 <BlurEffect Radius="4"/>
@@ -97,5 +98,29 @@
 
         <!-- Hidden Disc App -->
         <Image x:Name="DiscApp" Height="200" Width="200" Focusable="True" FocusVisualStyle="{x:Null}" Canvas.Left="248" Canvas.Top="209" Source="/Icons/Media-DVD-icon.png" Visibility="Hidden" />
+        
+        <Rectangle x:Name="RightMenu" Height="1080" Canvas.Left="1925" Stroke="White" Width="500" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Rectangle.Fill>
+                <LinearGradientBrush EndPoint="1,2" StartPoint="0.5,2" Opacity="0.795">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF151515" Offset="1"/>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Button x:Name="SettingButton3" Content="Setting3" Canvas.Left="1925" Canvas.Top="332" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center" Focusable="True">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton2" Content="Setting2" Canvas.Left="1925" Canvas.Top="262" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="4" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center" Focusable="True">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="SettingButton1" Content="Setting1" Canvas.Left="1925" Canvas.Top="192" Width="450" Height="70" FontSize="30" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="White" BorderThickness="3,3,3,3" FontFamily="SST Light" HorizontalContentAlignment="Left" Padding="15,1,1,8" FocusVisualStyle="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center" Focusable="True">
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
     </Canvas>
 </Window>

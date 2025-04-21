@@ -32,7 +32,7 @@
         </TextBlock>
         <Separator x:Name="BottomSeparator" Height="10" Margin="0" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" Opacity="0"/>
         <Separator x:Name="TopSeparator" Height="10" Margin="0" Canvas.Top="128" Width="1920" Background="White" Foreground="{x:Null}" Opacity="0"/>
-        <Image x:Name="CrossButton" Height="48" Canvas.Left="104" Canvas.Top="948" Width="48" Opacity="0" Source="/Icons/Buttons/ps_cross.png"/>
+        <Image x:Name="CrossButton" Height="48" Canvas.Left="104" Canvas.Top="948" Width="48" Opacity="0" Source="/Icons/Buttons/PS3/PS3_Cross.png"/>
         <Label x:Name="BackLabel" Content="Enter" Canvas.Left="152" Canvas.Top="948" Height="48" Width="119" FontFamily="SST Light" Foreground="White" FontSize="34" VerticalContentAlignment="Center" Opacity="0">
             <Label.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
@@ -68,7 +68,7 @@
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </Button.Effect>
         </Button>
-        <Image x:Name="CircleButton" Height="48" Canvas.Left="284" Canvas.Top="948" Width="48" Source="/Icons/Buttons/ps_circle.png" Opacity="0"/>
+        <Image x:Name="CircleButton" Height="48" Canvas.Left="284" Canvas.Top="948" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" Opacity="0"/>
         <Label x:Name="NewBackLabel" Content="Back" Canvas.Left="332" Canvas.Top="948" Height="48" Width="118" FontFamily="Humnst777 BT" Foreground="White" FontSize="34" VerticalContentAlignment="Center" Opacity="0">
             <Label.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>

@@ -84,8 +84,8 @@ Public Class GameStarter
     End Function
 
     Public Shared Function SupportedGameExtension(FilePath As String) As Boolean
-        Select Case Path.GetExtension(FilePath)
-            Case ".bin", ".gb", ".gbc", ".gba", ".cso", ".pbp", ".gcm", ".gcz", ".ciso", ".wbfs", ".vpk", ".gen", ".32X", ".sg", ".smd", ".BIN", ".exe"
+        Select Case Path.GetExtension(FilePath).ToLower()
+            Case ".bin", ".gb", ".gbc", ".gba", ".cso", ".pbp", ".gcm", ".gcz", ".ciso", ".wbfs", ".vpk", ".gen", ".32x", ".sg", ".smd", ".exe"
                 Return True
             Case ".iso"
                 Select Case ReadISOFile(FilePath)
@@ -99,19 +99,136 @@ Public Class GameStarter
         End Select
     End Function
 
-    Public Shared Sub StartGame(GamePath As String)
-
+    Public Shared Sub StartGame(GamePath As String, Optional StartUsing As String = "", Optional Platform As String = "")
         Dim EmulatorLauncherStartInfo As New ProcessStartInfo()
         Dim EmulatorLauncher As New Process() With {.StartInfo = EmulatorLauncherStartInfo, .EnableRaisingEvents = True}
 
         'Select by file extension
-        Select Case Path.GetExtension(GamePath)
+        Select Case Path.GetExtension(GamePath).ToLower()
             Case ".bin"
-                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe"
-                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe")
-                EmulatorLauncherStartInfo.Arguments = "-nogui -loadbin """ + GamePath + """"
-                ActiveProcess = EmulatorLauncher
-                ActiveProcess.Start()
+                If Not String.IsNullOrEmpty(StartUsing) Then
+                    Select Case StartUsing
+                        Case "ePSXe"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe")
+                            EmulatorLauncherStartInfo.Arguments = "-nogui -loadbin """ + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PCSX2"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PPSSPP"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "RPCS3"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "shadPS4"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe")
+                            EmulatorLauncherStartInfo.Arguments = "-g """ + GamePath + """ -f true"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                    End Select
+                Else
+                    Select Case Platform
+                        Case "PS1"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ePSXe\ePSXe.exe")
+                            EmulatorLauncherStartInfo.Arguments = "-nogui -loadbin """ + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PS2"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PSP"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PS3"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PS4"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe")
+                            EmulatorLauncherStartInfo.Arguments = "-g """ + GamePath + """ -f true"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                    End Select
+                End If
+            Case ".elf"
+                If Not String.IsNullOrEmpty(StartUsing) Then
+                    Select Case StartUsing
+                        Case "PCSX2"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PPSSPP"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "RPCS3"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "shadPS4"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe")
+                            EmulatorLauncherStartInfo.Arguments = "-g """ + GamePath + """ -f true"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                    End Select
+                Else
+                    Select Case Platform
+                        Case "PS2"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PSP"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PS3"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PS4"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\shadps4\shadPS4.exe")
+                            EmulatorLauncherStartInfo.Arguments = "-g """ + GamePath + """ -f true"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                    End Select
+                End If
             Case ".gb"
                 EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\mednafen\mednafen.exe"
                 EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\mednafen\mednafen.exe")
@@ -178,7 +295,7 @@ Public Class GameStarter
                 EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
                 ActiveProcess = EmulatorLauncher
                 ActiveProcess.Start()
-            Case ".32X"
+            Case ".32x"
                 EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.exe"
                 EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Fusion\Fusion.exe")
                 EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
@@ -197,46 +314,96 @@ Public Class GameStarter
                 ActiveProcess = EmulatorLauncher
                 ActiveProcess.Start()
             Case ".iso"
-                'Check the ISO file first
-                Select Case ReadISOFile(GamePath)
-                    Case "GC"
-                        EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe"
-                        EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe")
-                        EmulatorLauncherStartInfo.Arguments = "-e """ + GamePath + """"
-                        ActiveProcess = EmulatorLauncher
-                        ActiveProcess.Start()
-                    Case "PS2"
-                        EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
-                        EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
-                        EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
-                        ActiveProcess = EmulatorLauncher
-                        ActiveProcess.Start()
-                    Case "PS3"
-                        EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
-                        EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
-                        EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
-                        ActiveProcess = EmulatorLauncher
-                        ActiveProcess.Start()
-                    Case "PSP"
-                        EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
-                        EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
-                        EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
-                        ActiveProcess = EmulatorLauncher
-                        ActiveProcess.Start()
-                End Select
-            Case ".BIN"
-                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
-                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
-                EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
-                ActiveProcess = EmulatorLauncher
-                ActiveProcess.Start()
+                If Not String.IsNullOrEmpty(StartUsing) Then
+                    Select Case StartUsing
+                        Case "Dolphin"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe")
+                            EmulatorLauncherStartInfo.Arguments = "-e """ + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PCSX2"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "RPCS3"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                        Case "PPSSPP"
+                            EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
+                            EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
+                            EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
+                            ActiveProcess = EmulatorLauncher
+                            ActiveProcess.Start()
+                    End Select
+                Else
+                    If Not String.IsNullOrEmpty(Platform) Then
+                        Select Case Platform
+                            Case "GC", "Wii"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe")
+                                EmulatorLauncherStartInfo.Arguments = "-e """ + GamePath + """"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                            Case "PS2"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
+                                EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                            Case "PS3"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
+                                EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                            Case "PSP"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
+                                EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                        End Select
+                    Else
+                        Select Case ReadISOFile(GamePath)
+                            Case "GC"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\Dolphin\Dolphin.exe")
+                                EmulatorLauncherStartInfo.Arguments = "-e """ + GamePath + """"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                            Case "PS2"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\PCSX2\pcsx2.exe")
+                                EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --nogui --fullboot --portable"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                            Case "PS3"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\rpcs3\rpcs3.exe")
+                                EmulatorLauncherStartInfo.Arguments = """" + GamePath + """ --no-gui"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                            Case "PSP"
+                                EmulatorLauncherStartInfo.FileName = FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe"
+                                EmulatorLauncherStartInfo.WorkingDirectory = Path.GetDirectoryName(FileIO.FileSystem.CurrentDirectory + "\System\Emulators\ppsspp\PPSSPPWindows64.exe")
+                                EmulatorLauncherStartInfo.Arguments = """" + GamePath + """"
+                                ActiveProcess = EmulatorLauncher
+                                ActiveProcess.Start()
+                        End Select
+                    End If
+                End If
             Case ".exe"
                 Dim NewExecutableProcess As New Process() With {.EnableRaisingEvents = True,
                     .StartInfo = New ProcessStartInfo() With {.FileName = GamePath, .WorkingDirectory = Path.GetDirectoryName(GamePath), .UseShellExecute = False}}
                 ActiveProcess = NewExecutableProcess
                 ActiveProcess.Start()
         End Select
-
     End Sub
 
     Public Shared Function GetGameAlias(ExecutableFileName As String) As String
@@ -276,12 +443,22 @@ Public Class GameStarter
             AliasName = "Cyberpunk"
         ElseIf Path.GetFileName(ExecutableFileName) = "D2R.exe" Then
             AliasName = "Diablo2R"
+        ElseIf Path.GetFileName(ExecutableFileName) = "DarkSoulsIII.exe" Then
+            AliasName = "DarkSouls3"
+        ElseIf Path.GetFileName(ExecutableFileName) = "DarkSoulsRemastered.exe" Then
+            AliasName = "DarkSoulsRemastered"
+        ElseIf Path.GetFileName(ExecutableFileName) = "DMC-DevilMayCry.exe" Then
+            AliasName = "DMC"
         ElseIf Path.GetFileName(ExecutableFileName) = "DevilMayCry5.exe" Then
             AliasName = "DMC5"
         ElseIf Path.GetFileName(ExecutableFileName) = "Diablo IV.exe" Then
             AliasName = "DiabloIV"
+        ElseIf Path.GetFileName(ExecutableFileName) = "DragonAgeInquisition.exe" Then
+            AliasName = "DragonAgeInquisition"
         ElseIf Path.GetFileName(ExecutableFileName) = "eldenring.exe" Then
             AliasName = "EldenRing"
+        ElseIf Path.GetFileName(ExecutableFileName) = "FarCry4.exe" Then
+            AliasName = "FarCry4"
         ElseIf Path.GetFileName(ExecutableFileName) = "FarCry5.exe" Then
             AliasName = "FarCry5"
         ElseIf Path.GetFileName(ExecutableFileName) = "ffxvi.exe" Then
@@ -294,6 +471,8 @@ Public Class GameStarter
             AliasName = "ForzaHorizon5"
         ElseIf Path.GetFileName(ExecutableFileName) = "GameApp_PcDx11_x64Final.exe" Then
             AliasName = "TeamSonicRacing"
+        ElseIf Path.GetFileName(ExecutableFileName) = "GhostOfTsushima.exe" Then
+            AliasName = "GhostOfTsushima"
         ElseIf Path.GetFileName(ExecutableFileName) = "GoW.exe" Then
             AliasName = "GoW"
         ElseIf Path.GetFileName(ExecutableFileName) = "GTA3.exe" Then
@@ -314,6 +493,14 @@ Public Class GameStarter
             AliasName = "Hearthstone"
         ElseIf Path.GetFileName(ExecutableFileName) = "HorizonForbiddenWest.exe" Then
             AliasName = "HorizonFW"
+        ElseIf Path.GetFileName(ExecutableFileName) = "HotlineGL.exe" Then
+            AliasName = "HotlineMiami"
+        ElseIf Path.GetFileName(ExecutableFileName) = "HotlineMiami.exe" Then
+            AliasName = "HotlineMiami"
+        ElseIf Path.GetFileName(ExecutableFileName) = "LANLauncher.exe" Then
+            AliasName = "LANoire"
+        ElseIf Path.GetFileName(ExecutableFileName) = "LANoire.exe" Then
+            AliasName = "LANoire"
         ElseIf Path.GetFileName(ExecutableFileName) = "LibertyCity.exe" Then
             AliasName = "GTA3Def"
         ElseIf Path.GetFileName(ExecutableFileName) = "LOP.exe" Then
@@ -326,6 +513,8 @@ Public Class GameStarter
             AliasName = "LOTF"
         ElseIf Path.GetFileName(ExecutableFileName) = "Palworld.exe" Then
             AliasName = "Palworld"
+        ElseIf Path.GetFileName(ExecutableFileName) = "PlanetSide2_x64.exe" Then
+            AliasName = "Planetside2"
         ElseIf Path.GetFileName(ExecutableFileName) = "MaxPayne3.exe" Then
             AliasName = "MaxPayne3"
         ElseIf Path.GetFileName(ExecutableFileName) = "METAL GEAR SOLID.exe" Then
@@ -358,8 +547,14 @@ Public Class GameStarter
             AliasName = "GTASADef"
         ElseIf Path.GetFileName(ExecutableFileName) = "sekiro.exe" Then
             AliasName = "Sekiro"
+        ElseIf Path.GetFileName(ExecutableFileName) = "ShooterGame.exe" Then
+            AliasName = "ARKSurvivalEvolved"
         ElseIf Path.GetFileName(ExecutableFileName) = "SHProto.exe" Then
             AliasName = "SH2R"
+        ElseIf Path.GetFileName(ExecutableFileName) = "SkyrimSE.exe" Then
+            AliasName = "Skyrim"
+        ElseIf Path.GetFileName(ExecutableFileName) = "SkyrimSELauncher.exe" Then
+            AliasName = "Skyrim"
         ElseIf Path.GetFileName(ExecutableFileName) = "SonicFrontiers.exe" Then
             AliasName = "SonicFrontiers"
         ElseIf Path.GetFileName(ExecutableFileName) = "SonicMania.exe" Then
@@ -370,6 +565,8 @@ Public Class GameStarter
             AliasName = "Swag"
         ElseIf Path.GetFileName(ExecutableFileName) = "TEKKEN 8.exe" Then
             AliasName = "Tekken8"
+        ElseIf Path.GetFileName(ExecutableFileName) = "Terraria.exe" Then
+            AliasName = "Terraria"
         ElseIf Path.GetFileName(ExecutableFileName) = "tlou-i.exe" Then
             AliasName = "TLOUP1"
         ElseIf Path.GetFileName(ExecutableFileName) = "tlou-i-l.exe" Then

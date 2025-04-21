@@ -44,7 +44,7 @@
                             <SolidColorBrush Color="Black" Opacity="0.3"/>
                         </Canvas.Background>
                         <Border x:Name="SelectedBorder" BorderBrush="White" BorderThickness="3,3,3,3" Height="100" Width="1560" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="{Binding IsFileFolderSelected}" FocusVisualStyle="{x:Null}"/>
-                        <Image x:Name="AppIcon" Width="100" Height="100" Source="{Binding FileFolderIcon}" FocusVisualStyle="{x:Null}"/>
+                        <Image x:Name="AppIcon" Width="90" Height="90" Source="{Binding FileFolderIcon}" FocusVisualStyle="{x:Null}" Margin="5,5,0,0"/>
                         <TextBlock x:Name="FileFolderNameTextBlock" Height="50" HorizontalAlignment="Center" Canvas.Left="105" VerticalAlignment="Top" Text="{Binding FileFolderName}" Canvas.Top="25" FocusVisualStyle="{x:Null}" TextWrapping="Wrap"/>
                     </Canvas>
                 </DataTemplate>
@@ -123,26 +123,26 @@
         </Button>
 
         <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="940" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Image x:Name="EnterButton" Height="48" Canvas.Left="101" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <Image x:Name="EnterButton" Height="48" Canvas.Left="101" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png" HorizontalAlignment="Center" VerticalAlignment="Top"/>
         <TextBlock x:Name="CrossButtonLabel" Text="Enter" Canvas.Left="149" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="339" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="339" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
         <TextBlock x:Name="BackLabel" Text="Back" Canvas.Left="387" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="ActionButton" Height="48" Canvas.Left="1319" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-        <TextBlock x:Name="ActionTextBlock" Text="Copy" Canvas.Left="1367" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <Image x:Name="ActionButton" Height="48" Canvas.Left="1319" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Triangle.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBlock x:Name="ActionTextBlock" Text="Copy" Canvas.Left="1372" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="OptionsButton"  Canvas.Left="1538" Canvas.Top="962" Width="75" Height="35" Source="/Icons/Buttons/ps_options.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-        <TextBlock x:Name="OptionsTextBlock" Text="More Options" Canvas.Left="1618" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <Image x:Name="OptionsButton"  Canvas.Left="1541" Canvas.Top="955" Width="48" Height="48" Source="/Icons/Buttons/PS3/PS3_Start.png" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <TextBlock x:Name="OptionsTextBlock" Text="More Options" Canvas.Left="1594" Canvas.Top="957" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>

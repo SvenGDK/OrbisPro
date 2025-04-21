@@ -35,7 +35,7 @@
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="101" Canvas.Top="960" Width="48" Source="/Icons/Buttons/ps_circle.png" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="101" Canvas.Top="960" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <TextBlock x:Name="BackTextBlock" Text="Back" Canvas.Left="149" Canvas.Top="962" FontFamily="SST Light" Foreground="White" FontSize="34" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>

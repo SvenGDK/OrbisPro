@@ -22,7 +22,6 @@ Public Class ProcessUtils
     Private Declare Function ShowWindow Lib "user32.dll" (handle As IntPtr, nCmdShow As Integer) As Boolean
     Private Declare Function GetActiveWindow Lib "user32.dll" Alias "GetActiveWindow" () As IntPtr
     Private Declare Function GetForegroundWindow Lib "user32.dll" () As IntPtr
-    Private Declare Function GetWindowText Lib "user32.dll" Alias "GetWindowTextA" (hwnd As IntPtr, lpString As Text.StringBuilder, cch As Integer) As Integer
     Private Declare Function BringWindowToTop Lib "user32.dll" (hwnd As IntPtr) As Boolean
     Private Declare Function IsIconic Lib "user32.dll" (handle As IntPtr) As Boolean
 
@@ -61,21 +60,23 @@ Public Class ProcessUtils
 
     'Suspend all process threads
     Public Shared Sub PauseProcessThreads(ActiveProcessName As String)
-        Dim ProcessByName As Process() = Process.GetProcessesByName(ActiveProcessName)
-        If ProcessByName.Length > 0 Then
-            Dim FoundProcess As Process = ProcessByName(0)
+        'Get all associated processes for the ActiveProcessName
+        Dim AllProcesses As List(Of Process) = Process.GetProcessesByName(ActiveProcessName).ToList()
+        If AllProcesses.Count > 0 Then
 
             SuspendedThreads = New List(Of IntPtr)
 
-            For Each ProcThread As ProcessThread In FoundProcess.Threads
-                Dim OpenProcessThread As IntPtr = OpenThread(ThreadAccess.SUSPEND_RESUME, False, CType(ProcThread.Id, UInteger))
-
-                If OpenProcessThread = IntPtr.Zero Then
-                    Exit For
-                End If
-
-                SuspendedThreads.Add(OpenProcessThread)
-                Dim SuspendThreadResult As UInteger = SuspendThread(OpenProcessThread)
+            For Each FoundProcesses As Process In AllProcesses
+                For Each ProcThread As ProcessThread In FoundProcesses.Threads
+                    Dim OpenProcessThread As IntPtr = OpenThread(ThreadAccess.SUSPEND_RESUME, False, CType(ProcThread.Id, UInteger))
+                    If OpenProcessThread = IntPtr.Zero Then
+                        Continue For
+                    Else
+                        SuspendedThreads.Add(OpenProcessThread)
+                        Dim SuspendThreadResult As UInteger = SuspendThread(OpenProcessThread)
+                        Debug.WriteLine($"SuspendThreadResult: {SuspendThreadResult}")
+                    End If
+                Next
             Next
         Else
             Debug.WriteLine("No active process found - " + ActiveProcessName)

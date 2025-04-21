@@ -1,12 +1,13 @@
-﻿Imports OrbisPro.OrbisAnimations
-Imports OrbisPro.OrbisAudio
-Imports OrbisPro.GameStarter
-Imports OrbisPro.OrbisInput
-Imports OrbisPro.OrbisUtils
-Imports System.ComponentModel
+﻿Imports System.ComponentModel
 Imports System.IO
 Imports System.Threading
 Imports System.Windows.Media.Animation
+Imports Newtonsoft.Json
+Imports OrbisPro.GameStarter
+Imports OrbisPro.OrbisAnimations
+Imports OrbisPro.OrbisAudio
+Imports OrbisPro.OrbisInput
+Imports OrbisPro.OrbisUtils
 Imports SharpDX.XInput
 
 Public Class FileExplorer
@@ -18,6 +19,7 @@ Public Class FileExplorer
     Public LastPath As String 'Keep track of the last path
     Public LastSelectedIndex As Integer
     Public SelectedItemToCopy As FileBrowserListViewItem
+    Private Shared FileExplorerIconCache As New Dictionary(Of String, BitmapImage)()
 
     'Controller input
     Private MainController As Controller
@@ -108,14 +110,13 @@ Public Class FileExplorer
     Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
         PlayBackgroundSound(Sounds.Back)
 
-        'Reactive previous window
+        'Reactivate previous window
         Select Case Opener
             Case "FileExplorer"
                 For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.FileExplorer" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
-                        CType(Win, FileExplorer).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -124,7 +125,6 @@ Public Class FileExplorer
                     If Win.ToString = "OrbisPro.GameLibrary" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, GameLibrary).Activate()
-                        CType(Win, GameLibrary).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -133,7 +133,6 @@ Public Class FileExplorer
                     If Win.ToString = "OrbisPro.GeneralSettings" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, GeneralSettings).Activate()
-                        CType(Win, GeneralSettings).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -141,7 +140,6 @@ Public Class FileExplorer
                 For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
-                        CType(Win, MainWindow).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -149,7 +147,6 @@ Public Class FileExplorer
                 For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.OpenWindows" Then
                         CType(Win, OpenWindows).Activate()
-                        CType(Win, OpenWindows).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -164,7 +161,6 @@ Public Class FileExplorer
                         'End If
 
                         CType(Win, SetupPS3).AdditionalPauseDelay = 100
-                        CType(Win, SetupPS3).PauseInput = False
                         CType(Win, SetupPS3).Activate()
 
                         Exit For
@@ -193,7 +189,7 @@ Public Class FileExplorer
 #Region "Input"
 
     Private Sub FileExplorer_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Select Case e.Key
                 Case Key.A
                     CopySelectedItem()
@@ -240,12 +236,8 @@ Public Class FileExplorer
                         Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
                         Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
-                        If Canvas.GetLeft(SettingButton5) = 1430 Then
-                            Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                        End If
-                        If Canvas.GetLeft(SettingButton6) = 1430 Then
-                            Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                        End If
+                        If Canvas.GetLeft(SettingButton5) = 1430 Then Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        If Canvas.GetLeft(SettingButton6) = 1430 Then Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
                         'Set the focus back
                         Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
@@ -266,10 +258,6 @@ Public Class FileExplorer
                     ShowHideSideOptions()
                 Case Key.X
                     GoTo_Device_FileFolder_OR_DoSideMenuAction()
-                Case Key.Up
-                    MoveUp()
-                Case Key.Down
-                    MoveDown()
             End Select
         Else
             e.Handled = True
@@ -350,12 +338,8 @@ Public Class FileExplorer
                         Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
                         Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
-                        If Canvas.GetLeft(SettingButton5) = 1430 Then
-                            Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                        End If
-                        If Canvas.GetLeft(SettingButton6) = 1430 Then
-                            Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                        End If
+                        If Canvas.GetLeft(SettingButton5) = 1430 Then Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                        If Canvas.GetLeft(SettingButton6) = 1430 Then Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
                         'Set the focus back
                         Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
@@ -397,16 +381,59 @@ Public Class FileExplorer
     End Function
 
     Private Sub ChangeButtonLayout()
-        If SharedDeviceModel = DeviceModel.ROGAlly Then
-            BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
+        Dim GamepadButtonLayout As String = MainConfigFile.IniReadValue("Gamepads", "ButtonLayout")
 
-            OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_options.png", UriKind.RelativeOrAbsolute))
-            OptionsButton.Width = 48
-            Canvas.SetTop(OptionsButton, 955)
-            Canvas.SetLeft(OptionsButton, 385)
-
-            ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_y.png", UriKind.RelativeOrAbsolute))
-            EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_a.png", UriKind.RelativeOrAbsolute))
+        If SharedDeviceModel = DeviceModel.PC AndAlso MainController Is Nothing Then
+            'Show keyboard keys instead of gamepad buttons
+            BackButton.Source = New BitmapImage(New Uri("/Icons/Keys/C_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            ActionButton.Source = New BitmapImage(New Uri("/Icons/Keys/A_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            EnterButton.Source = New BitmapImage(New Uri("/Icons/Keys/X_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            OptionsButton.Source = New BitmapImage(New Uri("/Icons/Keys/S_Key_Dark.png", UriKind.RelativeOrAbsolute))
+        Else
+            If Not String.IsNullOrEmpty(GamepadButtonLayout) Then
+                Select Case GamepadButtonLayout
+                    Case "PS3"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Cross.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Start.png", UriKind.RelativeOrAbsolute))
+                    Case "PS4"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Cross.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Options.png", UriKind.RelativeOrAbsolute))
+                    Case "PS5"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Cross.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Options.png", UriKind.RelativeOrAbsolute))
+                    Case "PS Vita"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Circle.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Triangle.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Cross.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Cross.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_B.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_Y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_A.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_Start.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam Deck"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_B.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_Y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_A.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_Dots.png", UriKind.RelativeOrAbsolute))
+                    Case "Xbox 360"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_B.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_Y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_A.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_Start.png", UriKind.RelativeOrAbsolute))
+                    Case "ROG Ally"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_b.png", UriKind.RelativeOrAbsolute))
+                        ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_y.png", UriKind.RelativeOrAbsolute))
+                        EnterButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_a.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_options.png", UriKind.RelativeOrAbsolute))
+                End Select
+            End If
         End If
     End Sub
 
@@ -416,24 +443,31 @@ Public Class FileExplorer
 
     Public Sub OpenNewFolder(NewBrowsePath As String)
 
-        'First clear the items
+        'Clear the items
         FilesFoldersListView.Items.Clear()
 
-        'Check if the new folder contains specific directories
+        'Check if a specific directory exists in the NewBrowsePath
         For Each Folder In Directory.GetDirectories(NewBrowsePath)
-            If Directory.Exists(Folder + "\PS3_GAME") Then
+            If Directory.Exists(Folder + "\PS3_GAME") Then 'A PS3 game has been found, mark it with a RPCS3 logo
                 FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
-               .IsFileFolderSelected = Visibility.Hidden,
-               .Type = "Folder",
-               .IsExecutable = True,
-               .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
-               })
-            Else 'Otherwise just add as default folder
+                                               .IsFileFolderSelected = Visibility.Hidden,
+                                               .Type = "Folder",
+                                               .IsExecutable = True,
+                                               .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
+                                               })
+            ElseIf Directory.Exists(Folder + "\sce_sys") AndAlso File.Exists(Folder + "\sce_sys\param.sfo") Then 'A PS4 game has been found, mark it with a shadPS4 logo
                 FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
-               .IsFileFolderSelected = Visibility.Hidden,
-               .Type = "Folder",
-               .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
-               })
+                                               .IsFileFolderSelected = Visibility.Hidden,
+                                               .Type = "Folder",
+                                               .FileFolderIcon = New BitmapImage(New Uri("/Icons/Shadps4.png", UriKind.RelativeOrAbsolute))}
+                                               })
+            Else
+                'Just add as default folder
+                FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
+                                               .IsFileFolderSelected = Visibility.Hidden,
+                                               .Type = "Folder",
+                                               .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
+                                               })
             End If
         Next
 
@@ -443,144 +477,141 @@ Public Class FileExplorer
             Dim FExtensionImage As BitmapImage
             Dim FExecutable As Boolean = False
 
-            Select Case FInfo.Extension
+            Select Case FInfo.Extension.ToLower()
                 Case ".exe"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "exe")
                     FExecutable = True
                 Case ".dll"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dll")
                 Case ".sys"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "sys")
                 Case ".tmp"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tmp")
                 Case ".ini"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ini")
                 Case ".iso"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "iso")
                     FExecutable = True
                 Case ".cue"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "cue")
                     FExecutable = True
                 Case ".jpg"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpg")
                     FExecutable = True
                 Case ".jpeg"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpeg")
                     FExecutable = True
                 Case ".png"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "png")
                     FExecutable = True
                 Case ".txt"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "txt")
                     FExecutable = True
                 Case ".bin"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
-                    FExecutable = True
-                Case ".BIN"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bin")
                     FExecutable = True
                 Case ".mp4"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp4")
                     FExecutable = True
                 Case ".mpeg"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpeg")
                     FExecutable = True
                 Case ".mpg"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpg")
                     FExecutable = True
                 Case ".flv"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "flv")
                     FExecutable = True
                 Case ".webm"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webm")
                     FExecutable = True
                 Case ".mkv"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mkv")
                     FExecutable = True
                 Case ".mov"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mov")
                     FExecutable = True
                 Case ".avi"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "avi")
                     FExecutable = True
                 Case ".wmv"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wmv")
                     FExecutable = True
                 Case ".m4v"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m4v")
                     FExecutable = True
                 Case ".3gp"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3gp")
                     FExecutable = True
                 Case ".3g2"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3g2")
                     FExecutable = True
                 Case ".f4v"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "f4v")
                     FExecutable = True
                 Case ".mts"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mts")
                     FExecutable = True
                 Case ".ts"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ts")
                     FExecutable = True
                 Case ".m2ts"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m2ts")
                     FExecutable = True
                 Case ".webp"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webp")
                     FExecutable = True
                 Case ".bmp"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bmp")
                     FExecutable = True
                 Case ".tif"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tif")
                     FExecutable = True
                 Case ".tiff"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tiff")
                     FExecutable = True
                 Case ".gif"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "gif")
                     FExecutable = True
                 Case ".apng"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "apng")
                     FExecutable = True
                 Case ".heif"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "heif")
                     FExecutable = True
                 Case ".wav"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wav")
                     FExecutable = True
                 Case ".mp3"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp3")
                     FExecutable = True
                 Case ".json"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "json")
                 Case ".rne"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "rne")
                 Case ".dat"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
-                Case ".EXE"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
-                    FExecutable = True
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dat")
                 Case ".tps"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tps")
                 Case ".trm"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "trm")
                 Case ".vdf"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "vdf")
                 Case ".dds"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dds")
                 Case ".md5"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "md5")
                 Case ".ogg"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogg")
                     FExecutable = True
                 Case ".ogv"
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogv")
+                    FExecutable = True
+                Case ".pkg"
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "pkg")
                     FExecutable = True
                 Case Else
-                    FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                    FExtensionImage = GetIconForExtension(FileExplorerIconCache, "file")
                     FExecutable = False
             End Select
 
@@ -601,6 +632,7 @@ Public Class FileExplorer
 
             'Convert to FileBrowserListViewItem to set the border visibility on the first item
             Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+            FilesFoldersListView.SelectedIndex = 0
             LastSelectedItem.IsFileFolderSelected = Visibility.Visible
         Else
             FilesFoldersListView.Focus()
@@ -612,6 +644,7 @@ Public Class FileExplorer
 
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
+        'ListView actions
         If TypeOf FocusedItem Is ListViewItem Then
 
             'Play the 'select' sound effect
@@ -620,7 +653,7 @@ Public Class FileExplorer
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
-            'We are in the Devices ListView
+            'Devices ListView actions
             If CurrentListView.Name = "DevicesListView" Then
                 Dim SelectedListViewItem As ListViewItem = CType(DevicesListView.SelectedItem, ListViewItem)
                 Dim CurrentSelectedItem As DeviceListViewItem = CType(SelectedListViewItem.Content, DeviceListViewItem)
@@ -631,22 +664,27 @@ Public Class FileExplorer
 
                 'List all folders
                 For Each Folder In Directory.GetDirectories(NewBrowsePath)
-
-                    If Directory.Exists(NewBrowsePath + "\PS3_GAME") Then 'A PS3 game has been found, mark it with a RPCS3 logo
+                    If Directory.Exists(Folder + "\PS3_GAME") Then 'A PS3 game has been found, mark it with a RPCS3 logo
                         FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
-                           .IsFileFolderSelected = Visibility.Hidden,
-                           .Type = "Folder",
-                           .IsExecutable = True,'Important - To be able to start the game from the 'Options' side menu
-                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
-                           })
+                                               .IsFileFolderSelected = Visibility.Hidden,
+                                               .Type = "Folder",
+                                               .IsExecutable = True,
+                                               .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
+                                               })
+                    ElseIf Directory.Exists(Folder + "\sce_sys") AndAlso File.Exists(Folder + "\sce_sys\param.sfo") Then 'A PS4 game has been found, mark it with a shadPS4 logo
+                        FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
+                                               .IsFileFolderSelected = Visibility.Hidden,
+                                               .Type = "Folder",
+                                               .FileFolderIcon = New BitmapImage(New Uri("/Icons/Shadps4.png", UriKind.RelativeOrAbsolute))}
+                                               })
                     Else
+                        'Just add as default folder
                         FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
-                           .IsFileFolderSelected = Visibility.Hidden,
-                           .Type = "Folder",
-                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
-                           })
+                                               .IsFileFolderSelected = Visibility.Hidden,
+                                               .Type = "Folder",
+                                               .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
+                                               })
                     End If
-
                 Next
 
                 'List all files inside the folder
@@ -656,144 +694,141 @@ Public Class FileExplorer
                     Dim FExecutable As Boolean = False 'Mark the file as executable
 
                     'Set a custom extension image for 'known' file types
-                    Select Case FInfo.Extension
+                    Select Case FInfo.Extension.ToLower()
                         Case ".exe"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "exe")
                             FExecutable = True
                         Case ".dll"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dll")
                         Case ".sys"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "sys")
                         Case ".tmp"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tmp")
                         Case ".ini"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ini")
                         Case ".iso"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "iso")
                             FExecutable = True
                         Case ".cue"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "cue")
                             FExecutable = True
                         Case ".jpg"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpg")
                             FExecutable = True
                         Case ".jpeg"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpeg")
                             FExecutable = True
                         Case ".png"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "png")
                             FExecutable = True
                         Case ".txt"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "txt")
                             FExecutable = True
                         Case ".bin"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
-                            FExecutable = True
-                        Case ".BIN"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bin")
                             FExecutable = True
                         Case ".mp4"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp4")
                             FExecutable = True
                         Case ".mpeg"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpeg")
                             FExecutable = True
                         Case ".mpg"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpg")
                             FExecutable = True
                         Case ".flv"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "flv")
                             FExecutable = True
                         Case ".webm"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webm")
                             FExecutable = True
                         Case ".mkv"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mkv")
                             FExecutable = True
                         Case ".mov"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mov")
                             FExecutable = True
                         Case ".avi"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "avi")
                             FExecutable = True
                         Case ".wmv"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wmv")
                             FExecutable = True
                         Case ".m4v"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m4v")
                             FExecutable = True
                         Case ".3gp"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3gp")
                             FExecutable = True
                         Case ".3g2"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3g2")
                             FExecutable = True
                         Case ".f4v"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "f4v")
                             FExecutable = True
                         Case ".mts"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mts")
                             FExecutable = True
                         Case ".ts"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ts")
                             FExecutable = True
                         Case ".m2ts"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m2ts")
                             FExecutable = True
                         Case ".webp"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webp")
                             FExecutable = True
                         Case ".bmp"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bmp")
                             FExecutable = True
                         Case ".tif"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tif")
                             FExecutable = True
                         Case ".tiff"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tiff")
                             FExecutable = True
                         Case ".gif"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "gif")
                             FExecutable = True
                         Case ".apng"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "apng")
                             FExecutable = True
                         Case ".heif"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "heif")
                             FExecutable = True
                         Case ".wav"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wav")
                             FExecutable = True
                         Case ".mp3"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp3")
                             FExecutable = True
                         Case ".json"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "json")
                         Case ".rne"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "rne")
                         Case ".dat"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
-                        Case ".EXE"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
-                            FExecutable = True
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dat")
                         Case ".tps"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tps")
                         Case ".trm"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "trm")
                         Case ".vdf"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "vdf")
                         Case ".dds"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dds")
                         Case ".md5"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "md5")
                         Case ".ogg"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogg")
                             FExecutable = True
                         Case ".ogv"
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogv")
+                            FExecutable = True
+                        Case ".pkg"
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "pkg")
                             FExecutable = True
                         Case Else
-                            FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                            FExtensionImage = GetIconForExtension(FileExplorerIconCache, "file")
                             FExecutable = False
                     End Select
 
@@ -814,11 +849,13 @@ Public Class FileExplorer
 
                     'Convert to FileBrowserListViewItem to set the border visibility on the first item
                     Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+                    FilesFoldersListView.SelectedIndex = 0
                     LastSelectedItem.IsFileFolderSelected = Visibility.Visible
                 Else
                     FilesFoldersListView.Focus()
                 End If
 
+                'Files/Folders ListView actions
             ElseIf CurrentListView.Name = "FilesFoldersListView" Then
                 Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
                 Dim CurrentSelectedItem As FileBrowserListViewItem = CType(SelectedListViewItem.Content, FileBrowserListViewItem)
@@ -832,24 +869,30 @@ Public Class FileExplorer
                     'Open the new folder
                     OpenNewFolder(NewBrowsePath)
                 ElseIf CurrentSelectedItem.Type = "File" Then
-
                     Select Case Path.GetExtension(CurrentSelectedItem.FileFolderName)
                         Case ".mp4", ".mpeg", ".mpg", ".flv", ".webm", ".mkv", ".mov", ".avi", ".wmv", ".m4v", ".3gp", ".3g2", ".f4v", ".mts", ".ts", ".m2ts"
                             PauseInput = True
 
+                            'Show the Media Player
                             Dim NewMediaPlayer As New SystemMediaPlayer() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "FileExplorer", .VideoFile = CurrentSelectedItem.FileFolderName}
                             NewMediaPlayer.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
                             NewMediaPlayer.Show()
                         Case ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif", ".apng", ".heif"
-                            'Future build
+                            PauseInput = True
+
+                            'Show the Image Viewer
+                            Dim NewSystemImageViewer As New SystemImageViewer() With {.Top = Top, .Left = Left, .ShowActivated = True, .Opener = "FileExplorer", .CurrentImagePath = CurrentSelectedItem.FileFolderName}
+                            NewSystemImageViewer.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                            NewSystemImageViewer.Show()
                         Case ".exe"
+                            'Start the selected game or application
                             LaunchGameOrApplication(CurrentSelectedItem)
                     End Select
-
                 End If
 
             End If
 
+            'Side menu actions
         ElseIf TypeOf FocusedItem Is Button Then
             Dim SelectedListViewItem As ListViewItem = CType(FilesFoldersListView.SelectedItem, ListViewItem)
             Dim CurrentSelectedItem As FileBrowserListViewItem = CType(SelectedListViewItem.Content, FileBrowserListViewItem)
@@ -886,11 +929,30 @@ Public Class FileExplorer
                         OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Could not delete", CurrentSelectedItem.FileFolderName, CurrentSelectedItem.FileFolderIcon)
                     End If
                 Case "Infos"
-
+                    OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Not available", "This function is not working yet.", "")
                 Case "Start"
                     LaunchGameOrApplication(CurrentSelectedItem)
+                Case "Start with Dolphin"
+                    LaunchGameOrApplication(CurrentSelectedItem, "Dolphin")
+                Case "Start with ePSXe"
+                    LaunchGameOrApplication(CurrentSelectedItem, "ePSXe")
+                Case "Start with PCSX2"
+                    LaunchGameOrApplication(CurrentSelectedItem, "PCSX2")
+                Case "Start with RPCS3"
+                    LaunchGameOrApplication(CurrentSelectedItem, "RPCS3")
+                Case "Start with PPSSPP"
+                    LaunchGameOrApplication(CurrentSelectedItem, "PPSSPP")
+                Case "Start with shadPS4"
+                    LaunchGameOrApplication(CurrentSelectedItem, "shadPS4")
                 Case "Move"
+                    OrbisNotifications.NotificationPopup(FileExplorerCanvas, "Not available", "This function is not working yet.", "")
+                Case "Install PKG File"
+                    PauseInput = True
 
+                    'Show the Image Viewer
+                    Dim NewPKGInstaller As New PKGInstaller() With {.Top = Top, .Left = Left, .ShowActivated = True, .PKGToExtract = CurrentSelectedItem.FileFolderName}
+                    NewPKGInstaller.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                    NewPKGInstaller.Show()
             End Select
 
         End If
@@ -919,7 +981,6 @@ Public Class FileExplorer
 
                     'List all folders
                     For Each Folder In Directory.GetDirectories(Directory.GetParent(ParentFolder).FullName)
-
                         If Directory.Exists(Folder + "\PS3_GAME") Then 'A PS3 game has been found, mark it with a RPCS3 logo
                             FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
                            .IsFileFolderSelected = Visibility.Hidden,
@@ -927,6 +988,12 @@ Public Class FileExplorer
                            .IsExecutable = True,'Important - To be able to start the game from the 'Options' side menu
                            .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
                            })
+                        ElseIf Directory.Exists(Folder + "\sce_sys") AndAlso File.Exists(Folder + "\sce_sys\param.sfo") Then 'A PS4 game has been found, mark it with a shadPS4 logo
+                            FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
+                               .IsFileFolderSelected = Visibility.Hidden,
+                               .Type = "Folder",
+                               .FileFolderIcon = New BitmapImage(New Uri("/Icons/Shadps4.png", UriKind.RelativeOrAbsolute))}
+                               })
                         Else
                             FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
                            .IsFileFolderSelected = Visibility.Hidden,
@@ -934,7 +1001,6 @@ Public Class FileExplorer
                            .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
                            })
                         End If
-
                     Next
 
                     'List all files inside the folder
@@ -943,144 +1009,141 @@ Public Class FileExplorer
                         Dim FExtensionImage As BitmapImage
                         Dim FExecutable As Boolean = False
 
-                        Select Case FInfo.Extension
+                        Select Case FInfo.Extension.ToLower()
                             Case ".exe"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "exe")
                                 FExecutable = True
                             Case ".dll"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dll")
                             Case ".sys"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "sys")
                             Case ".tmp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tmp")
                             Case ".ini"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ini")
                             Case ".iso"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "iso")
                                 FExecutable = True
                             Case ".cue"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "cue")
                                 FExecutable = True
                             Case ".jpg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpg")
                                 FExecutable = True
                             Case ".jpeg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpeg")
                                 FExecutable = True
                             Case ".png"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "png")
                                 FExecutable = True
                             Case ".txt"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "txt")
                                 FExecutable = True
                             Case ".bin"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
-                                FExecutable = True
-                            Case ".BIN"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bin")
                                 FExecutable = True
                             Case ".mp4"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp4")
                                 FExecutable = True
                             Case ".mpeg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpeg")
                                 FExecutable = True
                             Case ".mpg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpg")
                                 FExecutable = True
                             Case ".flv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "flv")
                                 FExecutable = True
                             Case ".webm"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webm")
                                 FExecutable = True
                             Case ".mkv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mkv")
                                 FExecutable = True
                             Case ".mov"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mov")
                                 FExecutable = True
                             Case ".avi"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "avi")
                                 FExecutable = True
                             Case ".wmv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wmv")
                                 FExecutable = True
                             Case ".m4v"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m4v")
                                 FExecutable = True
                             Case ".3gp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3gp")
                                 FExecutable = True
                             Case ".3g2"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3g2")
                                 FExecutable = True
                             Case ".f4v"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "f4v")
                                 FExecutable = True
                             Case ".mts"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mts")
                                 FExecutable = True
                             Case ".ts"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ts")
                                 FExecutable = True
                             Case ".m2ts"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m2ts")
                                 FExecutable = True
                             Case ".webp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webp")
                                 FExecutable = True
                             Case ".bmp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bmp")
                                 FExecutable = True
                             Case ".tif"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tif")
                                 FExecutable = True
                             Case ".tiff"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tiff")
                                 FExecutable = True
                             Case ".gif"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "gif")
                                 FExecutable = True
                             Case ".apng"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "apng")
                                 FExecutable = True
                             Case ".heif"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "heif")
                                 FExecutable = True
                             Case ".wav"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wav")
                                 FExecutable = True
                             Case ".mp3"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp3")
                                 FExecutable = True
                             Case ".json"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "json")
                             Case ".rne"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "rne")
                             Case ".dat"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
-                            Case ".EXE"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
-                                FExecutable = True
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dat")
                             Case ".tps"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tps")
                             Case ".trm"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "trm")
                             Case ".vdf"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "vdf")
                             Case ".dds"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dds")
                             Case ".md5"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "md5")
                             Case ".ogg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogg")
                                 FExecutable = True
                             Case ".ogv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogv")
+                                FExecutable = True
+                            Case ".pkg"
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "pkg")
                                 FExecutable = True
                             Case Else
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "file")
                                 FExecutable = False
                         End Select
 
@@ -1100,6 +1163,7 @@ Public Class FileExplorer
                         LastSelectedListViewItem.Focus()
 
                         Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+                        FilesFoldersListView.SelectedIndex = 0
                         LastSelectedItem.IsFileFolderSelected = Visibility.Visible
                     Else
                         FilesFoldersListView.Focus()
@@ -1109,6 +1173,7 @@ Public Class FileExplorer
 
             End If
 
+            'Side menu action
         ElseIf TypeOf FocusedItem Is Button Then
 
             'Play the 'return' sound effect
@@ -1122,17 +1187,14 @@ Public Class FileExplorer
             Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
             Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
-            If Canvas.GetLeft(SettingButton5) = 1430 Then
-                Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-            End If
-            If Canvas.GetLeft(SettingButton6) = 1430 Then
-                Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-            End If
+            If Canvas.GetLeft(SettingButton5) = 1430 Then Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+            If Canvas.GetLeft(SettingButton6) = 1430 Then Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
-            'Set the focus back
+            'Set the focus back on the last selected item
             Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
             NextSelectedListViewItem.Focus()
 
+            'On empty list return to last path
         ElseIf TypeOf FocusedItem Is ListView Then
 
             Dim CurrentListView As ListView = CType(FocusedItem, ListView)
@@ -1145,22 +1207,27 @@ Public Class FileExplorer
 
                     'List all folders
                     For Each Folder In Directory.GetDirectories(Directory.GetParent(LastPath).FullName)
-
                         If Directory.Exists(Folder + "\PS3_GAME") Then 'A PS3 game has been found, mark it with a RPCS3 logo
                             FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
-                           .IsFileFolderSelected = Visibility.Hidden,
-                           .Type = "Folder",
-                           .IsExecutable = True,'Important - To be able to start the game from the 'Options' side menu
-                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
-                           })
+                                                           .IsFileFolderSelected = Visibility.Hidden,
+                                                           .Type = "Folder",
+                                                           .IsExecutable = True,
+                                                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/rpcs3.png", UriKind.RelativeOrAbsolute))}
+                                                           })
+                        ElseIf Directory.Exists(Folder + "\sce_sys") AndAlso File.Exists(Folder + "\sce_sys\param.sfo") Then 'A PS4 game has been found, mark it with a shadPS4 logo
+                            FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
+                                                           .IsFileFolderSelected = Visibility.Hidden,
+                                                           .Type = "Folder",
+                                                           .IsExecutable = True,
+                                                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/Shadps4.png", UriKind.RelativeOrAbsolute))}
+                                                           })
                         Else
                             FilesFoldersListView.Items.Add(New ListViewItem With {.ContentTemplate = FilesFoldersListView.ItemTemplate, .Content = New FileBrowserListViewItem() With {.FileFolderName = Folder,
-                           .IsFileFolderSelected = Visibility.Hidden,
-                           .Type = "Folder",
-                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
-                           })
+                                                           .IsFileFolderSelected = Visibility.Hidden,
+                                                           .Type = "Folder",
+                                                           .FileFolderIcon = New BitmapImage(New Uri("/Icons/Folder.png", UriKind.RelativeOrAbsolute))}
+                                                           })
                         End If
-
                     Next
 
                     'List all files inside the folder
@@ -1169,144 +1236,141 @@ Public Class FileExplorer
                         Dim FExtensionImage As BitmapImage
                         Dim FExecutable As Boolean = False
 
-                        Select Case FInfo.Extension
+                        Select Case FInfo.Extension.ToLower()
                             Case ".exe"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "exe")
                                 FExecutable = True
                             Case ".dll"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDLL.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dll")
                             Case ".sys"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileSYS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "sys")
                             Case ".tmp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTMP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tmp")
                             Case ".ini"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileINI.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ini")
                             Case ".iso"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "iso")
                                 FExecutable = True
                             Case ".cue"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/CDDrive.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "cue")
                                 FExecutable = True
                             Case ".jpg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpg")
                                 FExecutable = True
                             Case ".jpeg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "jpeg")
                                 FExecutable = True
                             Case ".png"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FilePNG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "png")
                                 FExecutable = True
                             Case ".txt"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTXT.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "txt")
                                 FExecutable = True
                             Case ".bin"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
-                                FExecutable = True
-                            Case ".BIN"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBIN.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bin")
                                 FExecutable = True
                             Case ".mp4"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP4.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp4")
                                 FExecutable = True
                             Case ".mpeg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpeg")
                                 FExecutable = True
                             Case ".mpg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMPG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mpg")
                                 FExecutable = True
                             Case ".flv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileFLV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "flv")
                                 FExecutable = True
                             Case ".webm"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBM.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webm")
                                 FExecutable = True
                             Case ".mkv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMKV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mkv")
                                 FExecutable = True
                             Case ".mov"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMOV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mov")
                                 FExecutable = True
                             Case ".avi"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAVI.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "avi")
                                 FExecutable = True
                             Case ".wmv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWMV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wmv")
                                 FExecutable = True
                             Case ".m4v"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM4V.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m4v")
                                 FExecutable = True
                             Case ".3gp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3GP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3gp")
                                 FExecutable = True
                             Case ".3g2"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/File3G2.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "3g2")
                                 FExecutable = True
                             Case ".f4v"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileF4V.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "f4v")
                                 FExecutable = True
                             Case ".mts"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMTS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mts")
                                 FExecutable = True
                             Case ".ts"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ts")
                                 FExecutable = True
                             Case ".m2ts"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileM2TS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "m2ts")
                                 FExecutable = True
                             Case ".webp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWEBP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "webp")
                                 FExecutable = True
                             Case ".bmp"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileBMP.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "bmp")
                                 FExecutable = True
                             Case ".tif"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tif")
                                 FExecutable = True
                             Case ".tiff"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTIFF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tiff")
                                 FExecutable = True
                             Case ".gif"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileGIF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "gif")
                                 FExecutable = True
                             Case ".apng"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileAPNG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "apng")
                                 FExecutable = True
                             Case ".heif"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileHEIF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "heif")
                                 FExecutable = True
                             Case ".wav"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileWAV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "wav")
                                 FExecutable = True
                             Case ".mp3"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMP3.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "mp3")
                                 FExecutable = True
                             Case ".json"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileJSON.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "json")
                             Case ".rne"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileRNE.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "rne")
                             Case ".dat"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDAT.png", UriKind.RelativeOrAbsolute))
-                            Case ".EXE"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileEXE.png", UriKind.RelativeOrAbsolute))
-                                FExecutable = True
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dat")
                             Case ".tps"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTPS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "tps")
                             Case ".trm"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileTRM.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "trm")
                             Case ".vdf"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileVDF.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "vdf")
                             Case ".dds"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileDDS.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "dds")
                             Case ".md5"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileMD5.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "md5")
                             Case ".ogg"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGG.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogg")
                                 FExecutable = True
                             Case ".ogv"
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileOGV.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "ogv")
+                                FExecutable = True
+                            Case ".pkg"
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "pkg")
                                 FExecutable = True
                             Case Else
-                                FExtensionImage = New BitmapImage(New Uri("/Icons/FileIcons/FileIcon.png", UriKind.RelativeOrAbsolute))
+                                FExtensionImage = GetIconForExtension(FileExplorerIconCache, "file")
                                 FExecutable = False
                         End Select
 
@@ -1326,6 +1390,7 @@ Public Class FileExplorer
                         LastSelectedListViewItem.Focus()
 
                         Dim LastSelectedItem As FileBrowserListViewItem = CType(LastSelectedListViewItem.Content, FileBrowserListViewItem)
+                        FilesFoldersListView.SelectedIndex = 0
                         LastSelectedItem.IsFileFolderSelected = Visibility.Visible
                     Else
                         FilesFoldersListView.Focus()
@@ -1338,9 +1403,28 @@ Public Class FileExplorer
         End If
     End Sub
 
-    Private Sub MoveUp()
-        PlayBackgroundSound(Sounds.Move)
+    Private Sub ShowSideSettingButtons(Count As Integer)
+        For i = 1 To Count
+            Dim SettingsButton As Button = CType(FileExplorerCanvas.FindName("SettingButton" + i.ToString()), Button)
+            EnsureHighestZIndex(SettingsButton)
+            Animate(SettingsButton, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+        Next
+    End Sub
 
+    Private Sub EnsureHighestZIndex(AnimatedElement As UIElement)
+        Dim maxZIndex As Integer = 0
+
+        For Each child As UIElement In FileExplorerCanvas.Children
+            Dim currentZIndex As Integer = Canvas.GetZIndex(child)
+            If currentZIndex > maxZIndex Then
+                maxZIndex = currentZIndex
+            End If
+        Next
+
+        Canvas.SetZIndex(AnimatedElement, maxZIndex + 1)
+    End Sub
+
+    Private Sub MoveUp()
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
         If TypeOf FocusedItem Is Button Then
@@ -1388,8 +1472,6 @@ Public Class FileExplorer
     End Sub
 
     Private Sub MoveDown()
-        PlayBackgroundSound(Sounds.Move)
-
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
 
         If TypeOf FocusedItem Is Button Then
@@ -1471,7 +1553,6 @@ Public Class FileExplorer
 #Region "Selection Changes"
 
     Private Sub DevicesListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles DevicesListView.SelectionChanged
-
         If DevicesListView.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
 
             'Play the 'move' sound effect
@@ -1488,7 +1569,6 @@ Public Class FileExplorer
             NewSelectedItem.IsDeviceSelected = Visibility.Visible
             PreviousItem.IsDeviceSelected = Visibility.Hidden
         End If
-
     End Sub
 
     Private Sub FilesFoldersListView_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles FilesFoldersListView.SelectionChanged
@@ -1509,14 +1589,14 @@ Public Class FileExplorer
             PreviousItem.IsFileFolderSelected = Visibility.Hidden
 
             'If the length of 'FileFolderName' (complete path for the most part) is too long then we animate the displayed text
-            If NewSelectedItem.FileFolderName.Length >= 85 Then
+            If NewSelectedItem.FileFolderName.Length >= 75 Then
 
-                'Here it gets a bit complicated as we need to access 'FileFolderNameTextBlock' from the custom DataTemplate
+                'Access 'FileFolderNameTextBlock' from the custom DataTemplate to animate the file/folder name
                 Dim FileFolderContentPresenter As ContentPresenter = FindVisualChild(Of ContentPresenter)(AddedItem)
                 Dim FileFolderDataTemplate As DataTemplate = FilesFoldersListView.ItemTemplate
                 Dim SelectedItemDescription As TextBlock = TryCast(FileFolderDataTemplate.FindName("FileFolderNameTextBlock", FileFolderContentPresenter), TextBlock)
 
-                Animate(SelectedItemDescription, Canvas.LeftProperty, 105, -SelectedItemDescription.ActualWidth, New Duration(TimeSpan.FromMilliseconds(10400)), True)
+                Animate(SelectedItemDescription, Canvas.LeftProperty, 105, -SelectedItemDescription.ActualWidth / 2, New Duration(TimeSpan.FromMilliseconds(10400)), True)
             End If
 
             If NewSelectedItem.Type = "File" Then
@@ -1531,7 +1611,8 @@ Public Class FileExplorer
                         CrossButtonLabel.Text = "Run"
                     Case Else
                         'More in future builds
-                        CrossButtonLabel.Text = "Enter"
+                        CrossButtonLabel.Text = ""
+                        EnterButton.Source = Nothing
                 End Select
             Else
                 CrossButtonLabel.Text = "Enter"
@@ -1610,10 +1691,8 @@ Public Class FileExplorer
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
-            'We are in the Devices ListView
-            If CurrentListView.Name = "DevicesListView" Then
-
-            ElseIf CurrentListView.Name = "FilesFoldersListView" Then
+            'Files/Folders ListView actions
+            If CurrentListView.Name = "FilesFoldersListView" Then
                 'We are in the Files & Folders ListView
                 PlayBackgroundSound(Sounds.SelectItem)
 
@@ -1622,27 +1701,54 @@ Public Class FileExplorer
 
                 'Show side menu options
                 If Canvas.GetLeft(RightMenu) = 1925 Then
+
+                    EnsureHighestZIndex(RightMenu)
                     Animate(RightMenu, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
 
                     Select Case SelectedItem.Type
                         Case "File"
-
                             If SelectedItem.IsExecutable Then
-                                'If the file is executable then add the 'Start' and 'Add to game library' options
-                                SettingButton1.Content = "Start"
-                                SettingButton2.Content = "Add to Copy List"
-                                SettingButton3.Content = "Add to Game Library"
-                                SettingButton4.Content = "Add to Apps Library"
-                                SettingButton5.Content = "Delete"
-                                SettingButton6.Content = "Infos"
+                                'Add options depending on file extension
+                                Dim FInfo As New FileInfo(SelectedItem.FileFolderName)
+                                Select Case FInfo.Extension.ToLower()
+                                    Case ".bin"
+                                        SettingButton1.Content = "Start with ePSXe"
+                                        SettingButton2.Content = "Start with PCSX2"
+                                        SettingButton3.Content = "Start with RPCS3"
+                                        SettingButton4.Content = "Start with shadPS4"
+                                        SettingButton5.Content = "Start with PPSSPP"
+                                        SettingButton6.Content = "Delete"
 
-                                'Show the buttons
-                                Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton5, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton6, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                                        ShowSideSettingButtons(6)
+                                    Case ".elf"
+                                        SettingButton1.Content = "Start with PCSX2"
+                                        SettingButton2.Content = "Start with RPCS3"
+                                        SettingButton3.Content = "Start with shadPS4"
+                                        SettingButton4.Content = "Start with PPSSPP"
+                                        SettingButton5.Content = "Delete"
+
+                                        ShowSideSettingButtons(5)
+                                    Case ".exe"
+                                        SettingButton1.Content = "Start"
+                                        SettingButton2.Content = "Add to Game Library"
+                                        SettingButton3.Content = "Add to Apps Library"
+                                        SettingButton4.Content = "Delete"
+                                        SettingButton5.Content = "Infos"
+
+                                        ShowSideSettingButtons(5)
+                                    Case ".iso"
+                                        SettingButton1.Content = "Start with Dolphin"
+                                        SettingButton2.Content = "Start with PCSX2"
+                                        SettingButton3.Content = "Start with RPCS3"
+                                        SettingButton4.Content = "Start with PPSSPP"
+                                        SettingButton5.Content = "Delete"
+
+                                        ShowSideSettingButtons(5)
+                                    Case ".pkg"
+                                        SettingButton1.Content = "Install PKG File"
+                                        ShowSideSettingButtons(1)
+                                End Select
+
                             Else
                                 'If the file is not executable then add default options
                                 SettingButton1.Content = "Add to Copy List"
@@ -1650,47 +1756,34 @@ Public Class FileExplorer
                                 SettingButton3.Content = "Delete"
                                 SettingButton4.Content = "Infos"
 
-                                Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                                ShowSideSettingButtons(4)
                             End If
 
                             'Focus the first option
                             SettingButton1.Focus()
 
                         Case "Folder"
-
                             'If the folder is executable (like PS3 game backups) add the 'Start' and 'Add to game library' options
                             If SelectedItem.IsExecutable Then
                                 SettingButton1.Content = "Start"
                                 SettingButton2.Content = "Add to Copy List"
-                                SettingButton3.Content = "Add to Game Library"
-                                SettingButton4.Content = "Add to Apps Library"
-                                SettingButton5.Content = "Delete"
-                                SettingButton6.Content = "Infos"
+                                SettingButton3.Content = "Delete"
+                                SettingButton4.Content = "Infos"
 
-                                Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton5, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton6, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                                ShowSideSettingButtons(4)
                             Else
+                                'If the folder is not executable then add default options
                                 SettingButton1.Content = "Add to Copy List"
                                 SettingButton2.Content = "Move"
                                 SettingButton3.Content = "Delete"
                                 SettingButton4.Content = "Infos"
 
-                                Animate(SettingButton1, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton2, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton3, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
-                                Animate(SettingButton4, Canvas.LeftProperty, 1925, 1430, New Duration(TimeSpan.FromMilliseconds(300)))
+                                ShowSideSettingButtons(4)
                             End If
 
+                            'Focus the first option
                             SettingButton1.Focus()
                     End Select
-
                 Else
                     'Remove the options side menu
                     Animate(RightMenu, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
@@ -1700,15 +1793,11 @@ Public Class FileExplorer
                     Animate(SettingButton3, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
                     Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
-                    'Remove SettingButton5 & SettingButton 6 if they were shown
-                    If Canvas.GetLeft(SettingButton5) = 1430 Then
-                        Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                    End If
-                    If Canvas.GetLeft(SettingButton6) = 1430 Then
-                        Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-                    End If
+                    'Remove SettingButton5 & SettingButton6 if they were shown
+                    If Canvas.GetLeft(SettingButton5) = 1430 Then Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+                    If Canvas.GetLeft(SettingButton6) = 1430 Then Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
-                    'Set the focus back
+                    'Set the focus back on the last selected item
                     Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
                     NextSelectedListViewItem.Focus()
                 End If
@@ -1724,14 +1813,10 @@ Public Class FileExplorer
             Animate(SettingButton4, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
             'Remove SettingButton5 & SettingButton 6 if they were shown
-            If Canvas.GetLeft(SettingButton5) = 1430 Then
-                Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-            End If
-            If Canvas.GetLeft(SettingButton6) = 1430 Then
-                Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
-            End If
+            If Canvas.GetLeft(SettingButton5) = 1430 Then Animate(SettingButton5, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
+            If Canvas.GetLeft(SettingButton6) = 1430 Then Animate(SettingButton6, Canvas.LeftProperty, 1430, 1925, New Duration(TimeSpan.FromMilliseconds(300)))
 
-            'Set the focus back
+            'Set the focus back on the last selected item
             Dim NextSelectedListViewItem As ListViewItem = TryCast(FilesFoldersListView.Items(FilesFoldersListView.SelectedIndex), ListViewItem)
             NextSelectedListViewItem.Focus()
         End If
@@ -1740,23 +1825,28 @@ Public Class FileExplorer
     Private Function AddGameFromFileExplorer(SelectedFileBrowserListViewItem As FileBrowserListViewItem) As Boolean
         Dim IsDirectory As Boolean = (File.GetAttributes(SelectedFileBrowserListViewItem.FileFolderName) And FileAttributes.Directory) = FileAttributes.Directory
 
-        If Not IsDirectory AndAlso SupportedGameExtension(SelectedFileBrowserListViewItem.FileFolderName) Then
+        If Not IsDirectory AndAlso SupportedGameExtension(SelectedFileBrowserListViewItem.FileFolderName) Then 'Only .exe games for now
             Dim FileNameWithoutExtension As String = Path.GetFileNameWithoutExtension(SelectedFileBrowserListViewItem.FileFolderName)
             Dim FileVersionInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(SelectedFileBrowserListViewItem.FileFolderName)
-            Dim NewTitle As String
 
             'Set the title
+            Dim NewTitle As String
             If Not String.IsNullOrEmpty(FileVersionInfo.ProductName) Then
                 NewTitle = FileVersionInfo.ProductName
             Else
                 NewTitle = FileNameWithoutExtension
             End If
 
-            'Add to GameList
-            Using SW As New StreamWriter(GameLibraryPath, True)
-                SW.WriteLine("PC;" + NewTitle + ";" + SelectedFileBrowserListViewItem.FileFolderName + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                SW.Close()
-            End Using
+            'Create new OrbisGamesList.Game
+            Dim NewOrbisGame As New OrbisGamesList.Game() With {.Platform = "PC", .Name = NewTitle, .ExecutablePath = SelectedFileBrowserListViewItem.FileFolderName, .ShowInLibrary = "True", .ShowOnHome = "True", .Group = ""}
+
+            'Add selected game to the library
+            Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+            Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+            GamesList.Games.Add(NewOrbisGame)
+
+            Dim NewGamesListJSON As String = JsonConvert.SerializeObject(GamesList, Formatting.Indented, New JsonSerializerSettings With {.NullValueHandling = NullValueHandling.Ignore})
+            File.WriteAllText(GameLibraryPath, NewGamesListJSON)
 
             'Reload the Home menu
             For Each Win In System.Windows.Application.Current.Windows()
@@ -1790,10 +1880,15 @@ Public Class FileExplorer
             End If
 
             'Add to AppsList
-            Using SW As New StreamWriter(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt", True)
-                SW.WriteLine("App=" + NewTitle + ";" + SelectedFileBrowserListViewItem.FileFolderName + ";" + "ShowInLibrary=True" + ";" + "ShowOnHome=True")
-                SW.Close()
-            End Using
+            Dim NewOrbisApp As New OrbisAppList.App() With {.Name = NewTitle, .ExecutablePath = SelectedFileBrowserListViewItem.FileFolderName, .ShowInLibrary = "True", .ShowOnHome = "True", .Group = ""}
+
+            'Add selected App to the library
+            Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+            Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+            AppsList.Apps.Add(NewOrbisApp)
+
+            Dim NewAppsListJSON As String = JsonConvert.SerializeObject(AppsList, Formatting.Indented, New JsonSerializerSettings With {.NullValueHandling = NullValueHandling.Ignore})
+            File.WriteAllText(AppLibraryPath, NewAppsListJSON)
 
             'Reload the Home menu
             For Each Win In System.Windows.Application.Current.Windows()
@@ -1832,19 +1927,26 @@ Public Class FileExplorer
         FilesFoldersListView.Items.Refresh()
     End Function
 
-    Private Sub LaunchGameOrApplication(SelectedFile As FileBrowserListViewItem)
+    Private Sub LaunchGameOrApplication(SelectedFile As FileBrowserListViewItem, Optional StartUsingEmulator As String = "")
         'Play 'start' sound effect
         PlayBackgroundSound(Sounds.SelectItem)
 
         'Start the game
         For Each Win In System.Windows.Application.Current.Windows()
             If Win.ToString = "OrbisPro.MainWindow" Then
+                CType(Win, MainWindow).PauseInput = True
                 CType(Win, MainWindow).StartedGameExecutable = SelectedFile.FileFolderName
+                CType(Win, MainWindow).ReduceUsage()
                 Exit For
             End If
         Next
 
-        StartGame(SelectedFile.FileFolderName)
+        If Not String.IsNullOrEmpty(StartUsingEmulator) Then
+            StartGame(SelectedFile.FileFolderName, StartUsingEmulator)
+        Else
+            StartGame(SelectedFile.FileFolderName)
+        End If
+
         BeginAnimation(OpacityProperty, ClosingAnimation)
     End Sub
 
@@ -1861,6 +1963,10 @@ Public Class FileExplorer
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else

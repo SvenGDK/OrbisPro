@@ -6,7 +6,7 @@ Imports System.Windows.Media.Animation
 Imports System.ComponentModel
 Imports SharpDX.XInput
 Imports System.Threading
-Imports System.Text
+Imports Newtonsoft.Json
 
 Public Class GameLibrary
 
@@ -20,6 +20,8 @@ Public Class GameLibrary
     Private ButtonsBoxRightAnim As New DoubleAnimation With {.From = 1438, .To = 1930, .Duration = New Duration(TimeSpan.FromMilliseconds(300))}
 
     Public Opener As String
+    Public Confirmed As Boolean = False
+    Public LastSelectedItem As AppListViewItem
 
     'Controller input
     Private MainController As Controller
@@ -36,73 +38,58 @@ Public Class GameLibrary
 
         'Load games
         If File.Exists(GameLibraryPath) Then
-            For Each Game In File.ReadAllLines(GameLibraryPath)
-                If Game.StartsWith("PS1Game") Then
-                    Dim NewGameListViewItem As New AppListViewItem() With {
-                        .AppTitle = Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)),
-                        .IsAppSelected = Visibility.Hidden,
-                        .AppLaunchPath = Game.Split("="c)(1).Split(";"c)(0),
-                        .IsGame = True}
-
-                    ApplicationLibrary.Items.Add(NewGameListViewItem)
-                ElseIf Game.StartsWith("PS2Game") Then
-                    Dim NewGameListViewItem As New AppListViewItem() With {
-                        .AppTitle = Path.GetFileNameWithoutExtension(Game.Split("="c)(1).Split(";"c)(0)),
-                        .IsAppSelected = Visibility.Hidden,
-                        .AppLaunchPath = Game.Split("="c)(1).Split(";"c)(0),
-                        .IsGame = True}
-
-                    ApplicationLibrary.Items.Add(NewGameListViewItem)
-                ElseIf Game.StartsWith("PS3Game") Then
-                    Dim PS3GameFolderName = Directory.GetParent(Game.Split("="c)(1).Split(";"c)(0))
-                    Dim NewGameListViewItem As New AppListViewItem() With {
-                        .AppTitle = PS3GameFolderName.Parent.Parent.Name,
-                        .IsAppSelected = Visibility.Hidden,
-                        .AppLaunchPath = Game.Split("="c)(1).Split(";"c)(0),
-                        .IsGame = True}
-
-                    ApplicationLibrary.Items.Add(NewGameListViewItem)
-                ElseIf Game.StartsWith("PC") Then
-                    Dim NewGameListViewItem As New AppListViewItem() With {
-                        .AppTitle = Game.Split(";"c)(1),
-                        .IsAppSelected = Visibility.Hidden,
-                        .AppLaunchPath = Game.Split(";"c)(2),
-                        .IsGame = True}
-
-                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(Game.Split(";"c)(2))) Then
-                        NewGameListViewItem.AppIcon = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(Game.Split(";"c)(2)), UriKind.RelativeOrAbsolute))
-                    Else
-                        NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(Game.Split(";"c)(2))
-                    End If
-
-                    ApplicationLibrary.Items.Add(NewGameListViewItem)
-                End If
-            Next
+            Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+            Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+            If GamesList IsNot Nothing Then
+                For Each Game In GamesList.Games()
+                    Select Case Game.Platform
+                        Case "PC"
+                            Dim NewGameListViewItem As New AppListViewItem() With {.AppTitle = Game.Name, .IsAppSelected = Visibility.Hidden, .AppLaunchPath = Game.ExecutablePath, .IsGame = True}
+                            If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(Game.ExecutablePath)) Then
+                                NewGameListViewItem.AppIcon = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(Game.ExecutablePath), UriKind.RelativeOrAbsolute))
+                            Else
+                                NewGameListViewItem.AppIcon = GetExecutableIconAsImageSource(Game.ExecutablePath)
+                            End If
+                            ApplicationLibrary.Items.Add(NewGameListViewItem)
+                        Case "PS1", "PS2"
+                            Dim NewGameListViewItem As New AppListViewItem() With {.AppTitle = Game.Name, .IsAppSelected = Visibility.Hidden, .AppLaunchPath = Game.ExecutablePath, .IsGame = True}
+                            ApplicationLibrary.Items.Add(NewGameListViewItem)
+                        Case "PS3"
+                            Dim PS3GameFolderName = Directory.GetParent(Game.ExecutablePath)
+                            Dim NewGameListViewItem As New AppListViewItem() With {.AppTitle = PS3GameFolderName.Parent.Parent.Name, .IsAppSelected = Visibility.Hidden, .AppLaunchPath = Game.ExecutablePath, .IsGame = True}
+                            ApplicationLibrary.Items.Add(NewGameListViewItem)
+                        Case "PS4"
+                            Dim NewGameListViewItem As New AppListViewItem() With {.IsAppSelected = Visibility.Hidden, .AppTitle = Game.Name, .AppLaunchPath = Game.ExecutablePath, .IsGame = True}
+                            If Not String.IsNullOrEmpty(Game.IconPath) Then
+                                NewGameListViewItem.AppIcon = New BitmapImage(New Uri(Game.IconPath, UriKind.RelativeOrAbsolute))
+                            End If
+                            ApplicationLibrary.Items.Add(NewGameListViewItem)
+                    End Select
+                Next
+            End If
         End If
 
         'Load applications
-        If File.Exists(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt") Then
-            For Each LineWithApp As String In File.ReadAllLines(FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                If LineWithApp.Split("="c)(1).Split(";"c).Length = 3 AndAlso LineWithApp.StartsWith("App") Then
-                    Dim NewAppListViewItem As New AppListViewItem() With {
-                        .AppTitle = LineWithApp.Split("="c)(1).Split(";"c)(0),
-                        .AppLaunchPath = LineWithApp.Split("="c)(1).Split(";"c)(1),
-                        .IsGame = False,
-                        .IsAppSelected = Visibility.Hidden}
-
-                    If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(LineWithApp.Split("="c)(1).Split(";"c)(1))) Then
-                        NewAppListViewItem.AppIcon = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(LineWithApp.Split("="c)(1).Split(";"c)(1)), UriKind.RelativeOrAbsolute))
-                    Else
-                        NewAppListViewItem.AppIcon = GetExecutableIconAsImageSource(LineWithApp.Split("="c)(1).Split(";"c)(1))
+        If File.Exists(AppLibraryPath) Then
+            Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+            Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+            If AppsList IsNot Nothing Then
+                For Each RegisteredApp In AppsList.Apps()
+                    If String.IsNullOrEmpty(RegisteredApp.IconPath) Then
+                        Dim NewAppListViewItem As New AppListViewItem() With {.AppTitle = RegisteredApp.Name, .AppLaunchPath = RegisteredApp.ExecutablePath, .IsGame = False, .IsAppSelected = Visibility.Hidden}
+                        If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(RegisteredApp.ExecutablePath)) Then
+                            NewAppListViewItem.AppIcon = New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(RegisteredApp.ExecutablePath), UriKind.RelativeOrAbsolute))
+                        Else
+                            NewAppListViewItem.AppIcon = GetExecutableIconAsImageSource(RegisteredApp.ExecutablePath)
+                        End If
+                        ApplicationLibrary.Items.Add(NewAppListViewItem)
                     End If
-
-                    ApplicationLibrary.Items.Add(NewAppListViewItem)
-                End If
-            Next
+                Next
+            End If
         End If
 
         If ApplicationLibrary.Items.Count > 0 Then
-            'Focus the first game
+            'Focus the first item
             Dim FirstListViewItem As ListViewItem = CType(ApplicationLibrary.ItemContainerGenerator.ContainerFromIndex(0), ListViewItem)
             FirstListViewItem.Focus()
 
@@ -129,6 +116,13 @@ Public Class GameLibrary
 
     Private Sub GameLibrary_Activated(sender As Object, e As EventArgs) Handles Me.Activated
         PauseInput = False
+
+        'Remove selected game if confirmed
+        If LastSelectedItem IsNot Nothing AndAlso Confirmed Then
+            RemoveGameOrAppFromLibrary(LastSelectedItem)
+            LastSelectedItem = Nothing
+            Confirmed = False
+        End If
     End Sub
 
     Private Sub GameLibrary_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
@@ -140,30 +134,64 @@ Public Class GameLibrary
 #End Region
 
     Private Sub ClosingAnim_Completed(sender As Object, e As EventArgs) Handles ClosingAnimation.Completed
+        PlayBackgroundSound(Sounds.Back)
+
+        'Reactivate previous window
+        Select Case Opener
+            Case "FileExplorer"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.FileExplorer" Then
+                        CType(Win, FileExplorer).Activate()
+                        Exit For
+                    End If
+                Next
+            Case "MainWindow"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.MainWindow" Then
+                        CType(Win, MainWindow).Activate()
+                        Exit For
+                    End If
+                Next
+            Case "OpenWindows"
+                For Each Win In System.Windows.Application.Current.Windows()
+                    If Win.ToString = "OrbisPro.OpenWindows" Then
+                        CType(Win, OpenWindows).Activate()
+                        Exit For
+                    End If
+                Next
+        End Select
+
         Close()
     End Sub
 
 #Region "Input"
 
     Private Sub GameLibrary_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Dim FocusedItem = FocusManager.GetFocusedElement(Me)
             Select Case e.Key
                 Case Key.A
-                    ShowHideSideMenu()
+                    If TypeOf FocusedItem Is ListViewItem Then
+                        Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
+                        LastSelectedItem = SelectedGameOrApp
+
+                        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
+                            .Top = 0,
+                            .Left = 0,
+                            .Opacity = 0,
+                            .Opener = "GameLibrary",
+                            .MessageTitle = SelectedGameOrApp.AppTitle,
+                            .MessageDescription = "Do you really want to remove " + SelectedGameOrApp.AppTitle + " from your Library ? This will also remove it from the Home screen."}
+
+                        NewSystemDialog.ConfirmButton.Visibility = Visibility.Visible
+                        NewSystemDialog.ConfirmTextBlock.Visibility = Visibility.Visible
+                        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                        NewSystemDialog.Show()
+                    End If
                 Case Key.C
                     BeginAnimation(OpacityProperty, ClosingAnimation)
                 Case Key.S
-                    If TypeOf FocusedItem Is ListViewItem Then
-
-                        Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
-                        If SelectedGameOrApp.IsGame Then
-                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, GameLibraryPath)
-                        Else
-                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                        End If
-
-                    End If
+                    ShowHideSideMenu()
                 Case Key.X
                     If TypeOf FocusedItem Is Button Then
 
@@ -229,18 +257,26 @@ Public Class GameLibrary
                     End If
                 ElseIf MainGamepadButton_B_Button_Pressed Then
                     BeginAnimation(OpacityProperty, ClosingAnimation)
-                ElseIf MainGamepadButton_Y_Button_Pressed Then
+                ElseIf MainGamepadButton_Start_Button_Pressed Then
                     ShowHideSideMenu()
-                ElseIf MainGamepadButton_X_Button_Pressed Then
+                ElseIf MainGamepadButton_Y_Button_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
-
                         Dim SelectedGameOrApp As AppListViewItem = CType(ApplicationLibrary.SelectedItem, AppListViewItem)
-                        If SelectedGameOrApp.IsGame Then
-                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, GameLibraryPath)
-                        Else
-                            RemoveGameOrAppFromLibrary(SelectedGameOrApp, FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.txt")
-                        End If
+                        LastSelectedItem = SelectedGameOrApp
 
+                        Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
+                            .Top = 0,
+                            .Left = 0,
+                            .Opacity = 0,
+                            .SetupStep = True,
+                            .Opener = "GameLibrary",
+                            .MessageTitle = SelectedGameOrApp.AppTitle,
+                            .MessageDescription = "Do you really want to remove " + SelectedGameOrApp.AppTitle + " from your Library ? This will also remove it the Home screen."}
+
+                        NewSystemDialog.ConfirmButton.Visibility = Visibility.Visible
+                        NewSystemDialog.ConfirmTextBlock.Visibility = Visibility.Visible
+                        NewSystemDialog.BeginAnimation(OpacityProperty, New DoubleAnimation With {.From = 0, .To = 1, .Duration = New Duration(TimeSpan.FromMilliseconds(500))})
+                        NewSystemDialog.Show()
                     End If
                 ElseIf MainGamepadButton_DPad_Left_Pressed Then
                     MoveLeft()
@@ -266,11 +302,59 @@ Public Class GameLibrary
     End Function
 
     Private Sub ChangeButtonLayout()
-        If SharedDeviceModel = DeviceModel.ROGAlly Then
-            BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_b.png", UriKind.RelativeOrAbsolute))
-            StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_a.png", UriKind.RelativeOrAbsolute))
-            RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_x.png", UriKind.RelativeOrAbsolute))
-            ActionButton.Source = New BitmapImage(New Uri("/Icons/Buttons/rog_y.png", UriKind.RelativeOrAbsolute))
+        Dim GamepadButtonLayout As String = MainConfigFile.IniReadValue("Gamepads", "ButtonLayout")
+
+        If SharedDeviceModel = DeviceModel.PC AndAlso MainController Is Nothing Then
+            'Show keyboard keys instead of gamepad buttons
+            BackButton.Source = New BitmapImage(New Uri("/Icons/Keys/C_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            RemoveButton.Source = New BitmapImage(New Uri("/Icons/Keys/A_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            StartButton.Source = New BitmapImage(New Uri("/Icons/Keys/X_Key_Dark.png", UriKind.RelativeOrAbsolute))
+            OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/S_Key_Dark.png", UriKind.RelativeOrAbsolute))
+        Else
+            If Not String.IsNullOrEmpty(GamepadButtonLayout) Then
+                Select Case GamepadButtonLayout
+                    Case "PS3"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Circle.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Start.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Cross.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS3/PS3_Triangle.png", UriKind.RelativeOrAbsolute))
+                    Case "PS4"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Circle.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Options.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Cross.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS4/PS4_Triangle.png", UriKind.RelativeOrAbsolute))
+                    Case "PS5"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Circle.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Options.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Cross.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PS5/PS5_Triangle.png", UriKind.RelativeOrAbsolute))
+                    Case "PS Vita"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Circle.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Start.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Cross.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/PSV/Vita_Triangle.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_B.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_Start.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_A.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Steam/Steam_Y.png", UriKind.RelativeOrAbsolute))
+                    Case "Steam Deck"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_B.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_Dots.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_A.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/SteamDeck/SteamDeck_Y.png", UriKind.RelativeOrAbsolute))
+                    Case "Xbox 360"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_B.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_Start.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_A.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/Xbox360/360_Y.png", UriKind.RelativeOrAbsolute))
+                    Case "ROG Ally"
+                        BackButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_b.png", UriKind.RelativeOrAbsolute))
+                        OptionsButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_options.png", UriKind.RelativeOrAbsolute))
+                        StartButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_a.png", UriKind.RelativeOrAbsolute))
+                        RemoveButton.Source = New BitmapImage(New Uri("/Icons/Buttons/ROGAlly/rog_y.png", UriKind.RelativeOrAbsolute))
+                End Select
+            End If
         End If
     End Sub
 
@@ -280,6 +364,9 @@ Public Class GameLibrary
 
     Private Sub ApplicationLibrary_SelectionChanged(sender As Object, e As SelectionChangedEventArgs) Handles ApplicationLibrary.SelectionChanged
         If ApplicationLibrary.SelectedItem IsNot Nothing And e.RemovedItems.Count <> 0 Then
+
+            PlayBackgroundSound(Sounds.Move)
+
             Dim PreviousItem As AppListViewItem = CType(e.RemovedItems(0), AppListViewItem)
             Dim SelectedItem As AppListViewItem = CType(e.AddedItems(0), AppListViewItem)
 
@@ -312,8 +399,6 @@ Public Class GameLibrary
     Private Sub MoveUp()
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
         If TypeOf FocusedItem Is ListViewItem Then
-            PlayBackgroundSound(Sounds.Move)
-
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
@@ -324,8 +409,6 @@ Public Class GameLibrary
                 ApplicationLibrary.SelectedIndex -= 3
             End If
         ElseIf TypeOf FocusedItem Is Button Then
-            PlayBackgroundSound(Sounds.Move)
-
             If MenuMoveCreateFolderButton.IsFocused Then
                 MenuUninstallButton.Focus()
             ElseIf MenuUninstallButton.IsFocused Then
@@ -341,8 +424,6 @@ Public Class GameLibrary
     Private Sub MoveDown()
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
         If TypeOf FocusedItem Is ListViewItem Then
-            PlayBackgroundSound(Sounds.Move)
-
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
@@ -353,8 +434,6 @@ Public Class GameLibrary
                 ApplicationLibrary.SelectedIndex += 3
             End If
         ElseIf TypeOf FocusedItem Is Button Then
-            PlayBackgroundSound(Sounds.Move)
-
             If MenuMoveCreateFolderButton.IsFocused Then
                 MenuStartAppButton.Focus()
             ElseIf MenuStartAppButton.IsFocused Then
@@ -370,8 +449,6 @@ Public Class GameLibrary
     Private Sub MoveLeft()
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
         If TypeOf FocusedItem Is ListViewItem Then
-            PlayBackgroundSound(Sounds.Move)
-
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
@@ -387,8 +464,6 @@ Public Class GameLibrary
     Private Sub MoveRight()
         Dim FocusedItem = FocusManager.GetFocusedElement(Me)
         If TypeOf FocusedItem Is ListViewItem Then
-            PlayBackgroundSound(Sounds.Move)
-
             'Get the ListView of the selected item
             Dim CurrentListView As ListView = GetAncestorOfType(Of ListView)(CType(FocusedItem, FrameworkElement))
 
@@ -460,6 +535,7 @@ Public Class GameLibrary
         'Start the game
         For Each Win In System.Windows.Application.Current.Windows()
             If Win.ToString = "OrbisPro.MainWindow" Then
+                CType(Win, MainWindow).PauseInput = True
                 CType(Win, MainWindow).StartedGameExecutable = SelectedApp.AppLaunchPath
                 Exit For
             End If
@@ -469,17 +545,41 @@ Public Class GameLibrary
         BeginAnimation(OpacityProperty, ClosingAnimation)
     End Sub
 
-    Private Sub RemoveGameOrAppFromLibrary(SelectedApp As AppListViewItem, FromFile As String)
-        Dim NewLines As New List(Of String)()
+    Private Sub RemoveGameOrAppFromLibrary(SelectedApp As AppListViewItem)
 
-        For Each Line As String In File.ReadAllLines(FromFile)
-            If Not Line.Contains(SelectedApp.AppTitle) Then
-                NewLines.Add(Line)
+        If SelectedApp.IsGame Then
+            If File.Exists(GameLibraryPath) Then
+                Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+                Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+                If GamesList IsNot Nothing Then
+
+                    For Each Game In GamesList.Games()
+                        If Game.Name = SelectedApp.AppTitle Then
+                            GamesList.Games.Remove(Game)
+                            Exit For
+                        End If
+                    Next
+
+                    Dim NewGamesListJSON As String = JsonConvert.SerializeObject(GamesList, Formatting.Indented, New JsonSerializerSettings With {.NullValueHandling = NullValueHandling.Ignore})
+                    File.WriteAllText(GameLibraryPath, NewGamesListJSON)
+                End If
             End If
-        Next
+        Else
+            Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+            Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+            If AppsList IsNot Nothing Then
 
-        'Save
-        File.WriteAllLines(FromFile, NewLines.ToArray(), Encoding.UTF8)
+                For Each RegisteredApp In AppsList.Apps()
+                    If RegisteredApp.Name = SelectedApp.AppTitle Then
+                        AppsList.Apps.Remove(RegisteredApp)
+                        Exit For
+                    End If
+                Next
+
+                Dim NewAppsListJSON As String = JsonConvert.SerializeObject(AppsList, Formatting.Indented, New JsonSerializerSettings With {.NullValueHandling = NullValueHandling.Ignore})
+                File.WriteAllText(AppLibraryPath, NewAppsListJSON)
+            End If
+        End If
 
         'Remove from ApplicationLibrary
         ApplicationLibrary.Items.Remove(ApplicationLibrary.SelectedItem)
@@ -519,6 +619,10 @@ Public Class GameLibrary
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\gradient_bg.mp4", UriKind.Absolute)
             Case "PS2 Dots"
                 BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\ps2_bg.mp4", UriKind.Absolute)
+            Case "Blue Bokeh Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Bluebokehdust.mp4", UriKind.Absolute)
+            Case "Golden Dust"
+                BackgroundMedia.Source = New Uri(FileIO.FileSystem.CurrentDirectory + "\System\Backgrounds\Goldendust.mp4", UriKind.Absolute)
             Case "Custom"
                 BackgroundMedia.Source = New Uri(MainConfigFile.IniReadValue("System", "CustomBackgroundPath"), UriKind.Absolute)
             Case Else
@@ -570,6 +674,8 @@ Public Class GameLibrary
 #End Region
 
     Private Sub ExceptionDialog(MessageTitle As String, MessageDescription As String)
+        PauseInput = True
+
         Dim NewSystemDialog As New SystemDialog() With {.ShowActivated = True,
             .Top = 0,
             .Left = 0,

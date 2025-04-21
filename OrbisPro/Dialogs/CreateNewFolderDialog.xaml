@@ -1,0 +1,113 @@
+﻿<Window x:Name="CreateNewFolderDialogWindow" x:Class="CreateNewFolderDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="OrbisPro - Create New Folder" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
+    <Canvas x:Name="CreateNewFolderDialogCanvas">
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+
+        <TextBlock x:Name="MainTitle" Text="Add to New Folder" Canvas.Left="101" Canvas.Top="43" FontFamily="SST Light" Foreground="White" FontSize="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Separator x:Name="TopSeparator" Height="10" Canvas.Top="134" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+        <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="944" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="CancelButton" Height="48" Canvas.Left="252" Canvas.Top="959" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock x:Name="CancelTextBlock" Text="Cancel" Canvas.Left="305" Canvas.Top="959" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Image x:Name="EnterButton" Height="48" Canvas.Left="92" Canvas.Top="959" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock x:Name="EnterTextBlock" Text="Enter" Canvas.Left="145" Canvas.Top="959" FontFamily="SST Light" Foreground="White" FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBlock Text="Name" Canvas.Left="435" Canvas.Top="197" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBox x:Name="FolderNameTextBox" Canvas.Left="563" Canvas.Top="191" Width="1050" FontFamily="SST Ultra Light" FontSize="36" Padding="7,5,5,7" Foreground="White" SelectionBrush="{x:Null}" BorderBrush="White" BorderThickness="3,3,3,3" SelectionOpacity="1" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <TextBox.Background>
+                <SolidColorBrush Color="Black" Opacity="0.4"/>
+            </TextBox.Background>
+        </TextBox>
+        <TextBlock Text="Number of Items" Canvas.Left="239" Canvas.Top="288" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <TextBlock x:Name="FolderItemsCountTextBlock" Canvas.Left="563" TextWrapping="Wrap" Text="1" Canvas.Top="277" Foreground="White" FontFamily="SST Light" FontSize="36" Width="75" Height="75" TextAlignment="Center" Padding="0,10,0,0" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <TextBlock.Background>
+                <SolidColorBrush Color="White" Opacity="0.2"/>
+            </TextBlock.Background>
+        </TextBlock>
+        <TextBlock Text="Content" Canvas.Left="401" Canvas.Top="387" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Button x:Name="SelectButton" Content="Select" Canvas.Left="563" Canvas.Top="373" Width="500" Height="80" FontSize="36" BorderBrush="#FF959595" Foreground="White" BorderThickness="4" FontFamily="SST" FocusVisualStyle="{x:Null}" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Background>
+                <SolidColorBrush Color="White" Opacity="0.2"/>
+            </Button.Background>
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="BigCancelButton" Content="Cancel" Canvas.Left="563" Canvas.Top="804" Width="400" Height="80" FontSize="36" BorderBrush="#FF959595" Foreground="White" BorderThickness="4" FontFamily="SST" FocusVisualStyle="{x:Null}" HorizontalContentAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Button.Background>
+                <SolidColorBrush Color="White" Opacity="0.2"/>
+            </Button.Background>
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <Button x:Name="OKButton" Content="OK" Canvas.Left="1034" Canvas.Top="804" Width="400" Height="80" FontSize="36" BorderBrush="#FF959595" Foreground="White" BorderThickness="4" FontFamily="SST" FocusVisualStyle="{x:Null}" HorizontalContentAlignment="Center" HorizontalAlignment="Left" VerticalAlignment="Center">
+            <Button.Background>
+                <SolidColorBrush Color="White" Opacity="0.2"/>
+            </Button.Background>
+            <Button.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </Button.Effect>
+        </Button>
+        <ListView x:Name="FolderContentListView" Height="280" Canvas.Left="563" Canvas.Top="476" Width="1050" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontFamily="SST Light" FontSize="36" IsTextSearchEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" SelectedIndex="0" FocusVisualStyle="{x:Null}" BorderThickness="0" SelectionMode="Single" d:ItemsSource="{d:SampleData ItemCount=19}" ScrollViewer.CanContentScroll="True" HorizontalAlignment="Center" VerticalAlignment="Top" Focusable="False">
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel FocusVisualStyle="{x:Null}"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="Focusable" Value="False" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListViewItem}">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Canvas Height="128" Width="128" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" FocusVisualStyle="{x:Null}" Margin="5,5,5,5">
+                        <Canvas.Background>
+                            <SolidColorBrush Color="Black" Opacity="0.5"/>
+                        </Canvas.Background>
+                        <Image Width="128" Height="128" Source="{Binding FolderContentAppIcon}" FocusVisualStyle="{x:Null}"/>
+                    </Canvas>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Canvas>
+</Window>

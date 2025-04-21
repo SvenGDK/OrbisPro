@@ -1,0 +1,38 @@
+﻿<Window x:Name="PKGInstallerWindow" x:Class="PKGInstaller"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OrbisPro"
+        mc:Ignorable="d"
+        Title="OrbisPro - PKG Installer" Height="1080" Width="1920" WindowStyle="None" Background="Black" ResizeMode="NoResize" Canvas.Left="0" Canvas.Top="0" 
+        KeyboardNavigation.DirectionalNavigation="None" KeyboardNavigation.TabNavigation="None" KeyboardNavigation.ControlTabNavigation="None">
+    <Canvas x:Name="PKGInstallerCanvas">
+        <MediaElement x:Name="BackgroundMedia" Height="1080" Width="1920" Source="/System/Backgrounds/bluecircles.mp4" LoadedBehavior="Manual" UnloadedBehavior="Manual"/>
+        <TextBlock x:Name="WindowTitle" Text="PKG Installer" FontFamily="SST Light" Foreground="White" FontSize="60" Height="78" Canvas.Left="101" Canvas.Top="43" Width="420">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+        <Separator x:Name="TopSeparator" Background="White" Foreground="{x:Null}" Height="10" Canvas.Top="139" Width="1920"/>
+
+        <TextBlock x:Name="InstallerHeaderTextBlock" TextWrapping="Wrap" FontFamily="SST Roman" Foreground="White" FontSize="36" TextAlignment="Center" Height="150" Canvas.Left="121" Canvas.Top="215" Width="1670"/>
+        <Image x:Name="PKGImage" Canvas.Left="832" Canvas.Top="412" Width="256" Height="256"/>
+
+        <TextBlock x:Name="InstallerStatusTextBlock" FontFamily="SST Roman" Foreground="White" FontSize="24" Height="31" Canvas.Left="374" Canvas.Top="771" Width="1147"/>
+        <ProgressBar x:Name="InstallProgressBar" Background="{x:Null}" Foreground="White" BorderThickness="2" Height="15" Canvas.Left="374" Canvas.Top="807" Width="1147" IsIndeterminate="True">
+            <ProgressBar.BorderBrush>
+                <SolidColorBrush Color="White" Opacity="0.4"/>
+            </ProgressBar.BorderBrush>
+        </ProgressBar>
+
+        <Separator x:Name="BottomSeparator" Background="White" Foreground="{x:Null}" Height="10" Canvas.Top="944" Width="1920"/>
+        <Image x:Name="CancelButton" Source="/Icons/Buttons/PS3/PS3_Circle.png" Height="48" Canvas.Left="1354" Canvas.Top="959" Width="48"/>
+        <TextBlock x:Name="CancelTextBlock" Text="Cancel" FontFamily="SST Light" Foreground="White" FontSize="34" Height="44" Canvas.Left="1407" Canvas.Top="959" Width="102">
+            <TextBlock.Effect>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
+            </TextBlock.Effect>
+        </TextBlock>
+
+    </Canvas>
+</Window>

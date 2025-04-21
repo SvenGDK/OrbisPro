@@ -1,4 +1,5 @@
-﻿Imports System.ComponentModel
+﻿Imports System.Collections.ObjectModel
+Imports System.ComponentModel
 Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.IO
@@ -8,12 +9,21 @@ Imports System.Net.Http
 Imports System.Net.NetworkInformation
 Imports System.Net.Sockets
 Imports System.Text.RegularExpressions
+Imports Newtonsoft.Json
 
 Public Class OrbisUtils
 
     Private Declare Function DeleteObject Lib "gdi32.dll" (hObject As IntPtr) As Boolean
     Public Shared Property MainConfigFile As New INI.IniFile(FileIO.FileSystem.CurrentDirectory + "\System\Settings.ini")
-    Public Shared Property GameLibraryPath As String = FileIO.FileSystem.CurrentDirectory + "\Games\GameList.txt"
+    Public Shared Property AppLibraryPath As String = FileIO.FileSystem.CurrentDirectory + "\Apps\AppsList.json"
+    Public Shared Property GameLibraryPath As String = FileIO.FileSystem.CurrentDirectory + "\Games\GamesList.json"
+    Public Shared Property FoldersPath As String = FileIO.FileSystem.CurrentDirectory + "\System\Folders.json"
+
+    Private Shared _OrbisBackground As String
+    Private Shared _SharedDeviceModel As DeviceModel
+    Private Shared _UsedDriveList As List(Of DriveListViewItem)
+    Private Shared ReadOnly Separator As String() = New String() {"  "}
+
     Public Shared Property OrbisBackground As String
         Get
             Return _OrbisBackground
@@ -22,6 +32,7 @@ Public Class OrbisUtils
             _OrbisBackground = Value
         End Set
     End Property
+
     Public Shared Property SharedDeviceModel As DeviceModel
         Get
             Return _SharedDeviceModel
@@ -31,9 +42,14 @@ Public Class OrbisUtils
         End Set
     End Property
 
-    Private Shared _OrbisBackground As String
-    Private Shared _SharedDeviceModel As DeviceModel
-    Private Shared ReadOnly Separator As String() = New String() {"  "}
+    Public Shared Property UsedDriveList As List(Of DriveListViewItem)
+        Get
+            Return _UsedDriveList
+        End Get
+        Set
+            _UsedDriveList = Value
+        End Set
+    End Property
 
     Public Enum SystemMessage
         ErrorMessage
@@ -52,7 +68,7 @@ Public Class OrbisUtils
         Claw
     End Enum
 
-    Public Shared Function CheckDeviceModel() As String
+    Public Shared Sub CheckDeviceModel()
         Dim MOS As New ManagementObjectSearcher("SELECT * FROM Win32_ComputerSystem")
         Dim Model As String = String.Empty
 
@@ -69,9 +85,7 @@ Public Class OrbisUtils
             Case Else
                 SharedDeviceModel = DeviceModel.PC
         End Select
-
-        Return Model
-    End Function
+    End Sub
 
 #End Region
 
@@ -191,6 +205,60 @@ Public Class OrbisUtils
         Return wpfBitmap
     End Function
 
+    Public Shared Function CreateFolderImage(Image1 As BitmapImage, Image2 As BitmapImage, Image3 As BitmapImage, Image4 As BitmapImage) As ImageSource
+        Dim NewDrawingVisual As New DrawingVisual()
+        Using NewDrawingContext = NewDrawingVisual.RenderOpen()
+            NewDrawingContext.DrawImage(Image1, New Rect(0, 0, 128, 128))
+            NewDrawingContext.DrawImage(Image2, New Rect(128, 0, 128, 128))
+            NewDrawingContext.DrawImage(Image3, New Rect(0, 128, 128, 128))
+            NewDrawingContext.DrawImage(Image4, New Rect(128, 128, 128, 128))
+        End Using
+
+        Dim NewRenderTargetBitmap As New RenderTargetBitmap(256, 256, 96, 96, PixelFormats.Pbgra32)
+        NewRenderTargetBitmap.Render(NewDrawingVisual)
+
+        If NewRenderTargetBitmap IsNot Nothing Then
+            Return NewRenderTargetBitmap
+        Else
+            Return Nothing
+        End If
+    End Function
+
+    Public Shared Function BitmapSourceFromByteArray(buffer As Byte()) As BitmapSource
+        Dim bitmap = New BitmapImage()
+
+        Using stream = New MemoryStream(buffer)
+            bitmap.BeginInit()
+            bitmap.CacheOption = BitmapCacheOption.OnLoad
+            bitmap.StreamSource = stream
+            bitmap.EndInit()
+        End Using
+
+        bitmap.Freeze()
+        Return bitmap
+    End Function
+
+    Public Shared Function GetIconForExtension(WindowIconCache As Dictionary(Of String, BitmapImage), FileExtension As String) As BitmapImage
+        FileExtension = FileExtension.ToLowerInvariant()
+        Dim ExistingBitmapImage As BitmapImage = Nothing
+        'Check for existing icon
+        If WindowIconCache.TryGetValue(FileExtension, ExistingBitmapImage) Then
+            Return ExistingBitmapImage
+        Else
+            'Add icon to cache
+            Dim IconPath As String = $"/Icons/FileIcons/{FileExtension}.png"
+            Dim NewBitmapImage As New BitmapImage()
+            NewBitmapImage.BeginInit()
+            NewBitmapImage.UriSource = New Uri(IconPath, UriKind.RelativeOrAbsolute)
+            NewBitmapImage.DecodePixelHeight = 90
+            NewBitmapImage.DecodePixelWidth = 90
+            NewBitmapImage.EndInit()
+
+            WindowIconCache(FileExtension) = NewBitmapImage
+            Return NewBitmapImage
+        End If
+    End Function
+
 #End Region
 
     Public Shared Async Function IsURLValidAsync(Url As String) As Task(Of Boolean)
@@ -297,6 +365,162 @@ Public Class OrbisUtils
     Public Shared Function GetHexString(Source As String) As String
         Dim b As Byte() = System.Text.Encoding.UTF8.GetBytes(Source)
         Return BitConverter.ToString(b).Replace("-", "")
+    End Function
+
+    Public Shared Function FormatSizeAsString(Size As Long) As String
+        Dim DoubleBytes As Double
+        Try
+            Select Case Size
+                Case Is >= 1099511627776
+                    DoubleBytes = Size / 1099511627776 'TB
+                    Return FormatNumber(DoubleBytes, 2) & " TB"
+                Case 1073741824 To 1099511627775
+                    DoubleBytes = Size / 1073741824 'GB
+                    Return FormatNumber(DoubleBytes, 2) & " GB"
+                Case 1048576 To 1073741823
+                    DoubleBytes = Size / 1048576 'MB
+                    Return FormatNumber(DoubleBytes, 2) & " MB"
+                Case 1024 To 1048575
+                    DoubleBytes = Size / 1024 'KB
+                    Return FormatNumber(DoubleBytes, 2) & " KB"
+                Case 0 To 1023
+                    DoubleBytes = Size ' Bytes
+                    Return FormatNumber(DoubleBytes, 2) & " Bytes"
+                Case Else
+                    Return ""
+            End Select
+        Catch
+            Return ""
+        End Try
+    End Function
+
+    'Private Function GetPartitionAndDriveLetter() As String()
+    '    Dim USBPartition As String = ""
+    '    Dim USBLetter As String = ""
+
+    '    For Each DiskDrive In New ManagementObjectSearcher("select * from Win32_DiskDrive where InterfaceType='USB'").Get()
+    '        For Each DiskPartition As ManagementObject In New ManagementObjectSearcher("ASSOCIATORS OF {Win32_DiskDrive.DeviceID='" + DiskDrive("DeviceID").ToString + "'} WHERE AssocClass = Win32_DiskDriveToDiskPartition").Get()
+    '            USBPartition = DiskPartition("Name").ToString()
+    '            For Each Disk In New ManagementObjectSearcher("ASSOCIATORS OF {Win32_DiskPartition.DeviceID='" + DiskPartition("DeviceID").ToString + "'} WHERE AssocClass =Win32_LogicalDiskToPartition").Get()
+    '                USBLetter = Disk("Name").ToString()
+    '            Next
+    '        Next
+    '    Next
+
+    '    If Not String.IsNullOrEmpty(USBPartition) AndAlso Not String.IsNullOrEmpty(USBLetter) Then
+    '        Return {USBPartition, USBLetter}
+    '    Else
+    '        Return {"", ""}
+    '    End If
+    'End Function
+
+    Public Shared Function GetDriveLetterFromMask(ByRef Unit As Integer) As Char
+        Dim NewChar As Char = Nothing
+        For i As Integer = 0 To 25
+            If Unit = (2 ^ i) Then
+                NewChar = Chr(Asc("A") + i)
+            End If
+        Next
+        Return NewChar
+    End Function
+
+    Public Shared Function GetFolderItemsCount(GroupName As String) As String
+        If File.Exists(AppLibraryPath) AndAlso File.Exists(GameLibraryPath) Then
+            Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+            Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+            Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+            Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+            Dim ListOfMatches As New List(Of String)()
+
+            'Check the Apps list
+            For Each RegisteredApp In AppsList.Apps()
+                If RegisteredApp.Group = GroupName Then
+                    ListOfMatches.Add(RegisteredApp.ExecutablePath)
+                End If
+            Next
+
+            'Check the Games list
+            For Each RegisteredGame In GamesList.Games()
+                If RegisteredGame.Group = GroupName Then
+                    ListOfMatches.Add(RegisteredGame.ExecutablePath)
+                End If
+            Next
+
+            If ListOfMatches.Count > 0 Then
+                Return ListOfMatches.Count.ToString()
+            Else
+                Return ""
+            End If
+        Else
+            Return ""
+        End If
+    End Function
+
+    Public Shared Function GetFolderItems(GroupName As String) As ObservableCollection(Of FolderContentListViewItem)
+
+        Dim NewFolderContentListing As New ObservableCollection(Of FolderContentListViewItem)()
+
+        If File.Exists(AppLibraryPath) AndAlso File.Exists(GameLibraryPath) Then
+            Dim AppsListJSON As String = File.ReadAllText(AppLibraryPath)
+            Dim AppsList As OrbisAppList = JsonConvert.DeserializeObject(Of OrbisAppList)(AppsListJSON)
+            Dim GamesListJSON As String = File.ReadAllText(GameLibraryPath)
+            Dim GamesList As OrbisGamesList = JsonConvert.DeserializeObject(Of OrbisGamesList)(GamesListJSON)
+
+            'Get some executable paths to find some images for the folder
+            Dim ListOfMatches As New List(Of Tuple(Of String, String))()
+            Dim FinalListOfMatches As New List(Of Tuple(Of BitmapImage, String))()
+
+            'Check the Apps list
+            For Each RegisteredApp In AppsList.Apps()
+                If RegisteredApp.Group = GroupName Then
+                    If Not String.IsNullOrEmpty(RegisteredApp.ExecutablePath) Then
+                        ListOfMatches.Add(New Tuple(Of String, String)(RegisteredApp.ExecutablePath, RegisteredApp.Name))
+                    End If
+                End If
+            Next
+
+            'Check the Games list
+            For Each RegisteredGame In GamesList.Games()
+                If RegisteredGame.Group = GroupName Then
+                    If Not String.IsNullOrEmpty(RegisteredGame.ExecutablePath) Then
+                        ListOfMatches.Add(New Tuple(Of String, String)(RegisteredGame.ExecutablePath, RegisteredGame.Name))
+                    End If
+                End If
+            Next
+
+            'Try to get up to 6 icons 
+            If ListOfMatches.Count > 0 Then
+
+                For Each FoundMatch In ListOfMatches
+                    If Path.GetExtension(FoundMatch.Item1) = ".exe" Then
+                        If Not String.IsNullOrEmpty(GameStarter.CheckForExistingIconAsset(FoundMatch.Item1)) Then
+                            'Add with icon to the final collection
+                            FinalListOfMatches.Add(New Tuple(Of BitmapImage, String)(New BitmapImage(New Uri(GameStarter.CheckForExistingIconAsset(FoundMatch.Item1), UriKind.RelativeOrAbsolute)), FoundMatch.Item2))
+                        Else
+                            'Add without icon to the final collection
+                            FinalListOfMatches.Add(New Tuple(Of BitmapImage, String)(Nothing, FoundMatch.Item2))
+                        End If
+                    Else
+                        'Add without icon to the final collection
+                        FinalListOfMatches.Add(New Tuple(Of BitmapImage, String)(Nothing, FoundMatch.Item2))
+                    End If
+                Next
+
+                'Add the found items to the collection
+                For Each FoundGameOrApp In FinalListOfMatches
+                    Dim NewFolderContentListViewItem As New FolderContentListViewItem() With {.FolderContentAppIcon = FoundGameOrApp.Item1, .FolderName = GroupName, .GameAppTitle = FoundGameOrApp.Item2}
+                    NewFolderContentListing.Add(NewFolderContentListViewItem)
+                Next
+
+                'Return the collection
+                Return NewFolderContentListing
+            Else
+                Return Nothing
+            End If
+        Else
+            Return Nothing
+        End If
+
     End Function
 
 End Class

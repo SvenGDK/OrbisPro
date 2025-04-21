@@ -68,7 +68,6 @@ Public Class SystemMediaPlayer
                     If Win.ToString = "OrbisPro.Downloads" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, Downloads).Activate()
-                        CType(Win, Downloads).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -77,7 +76,6 @@ Public Class SystemMediaPlayer
                     If Win.ToString = "OrbisPro.FileExplorer" Then
                         'Re-activate the 'File Explorer'
                         CType(Win, FileExplorer).Activate()
-                        CType(Win, FileExplorer).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -85,7 +83,6 @@ Public Class SystemMediaPlayer
                 For Each Win In System.Windows.Application.Current.Windows()
                     If Win.ToString = "OrbisPro.MainWindow" Then
                         CType(Win, MainWindow).Activate()
-                        CType(Win, MainWindow).PauseInput = False
                         Exit For
                     End If
                 Next
@@ -120,7 +117,7 @@ Public Class SystemMediaPlayer
 #Region "Input"
 
     Private Sub SystemMediaPlayer_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
-        If Not e.Key = LastKeyboardKey Then
+        If Not e.Key = LastKeyboardKey AndAlso PauseInput = False Then
             Select Case e.Key
                 Case Key.A
                     PauseMedia()

@@ -137,7 +137,7 @@
             </TextBlock.Effect>
         </TextBlock>
 
-        <TextBlock x:Name="UsernameTextBlock" Text="Username : " Canvas.Left="362" Canvas.Top="324" FontFamily="SST Ultra Light" Foreground="White" FontSize="40" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <TextBlock x:Name="UsernameTextBlock" Text="Username : " Canvas.Left="362" Canvas.Top="324" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Left" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
@@ -153,12 +153,12 @@
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <TextBlock Text="Select a Background : " Canvas.Left="175" Canvas.Top="594" FontFamily="SST Ultra Light" Foreground="White" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <TextBlock Text="Select a Background : " Canvas.Left="175" Canvas.Top="594" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
         </TextBlock>
-        <TextBlock Text="Select a Sound Pack : " Canvas.Left="183" Canvas.Top="708" FontFamily="SST Ultra Light" Foreground="White" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <TextBlock Text="Select a Sound Pack : " Canvas.Left="183" Canvas.Top="708" FontFamily="SST Light" Foreground="White" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Top">
             <TextBlock.Effect>
                 <DropShadowEffect ShadowDepth="1" BlurRadius="4"/>
             </TextBlock.Effect>
@@ -166,6 +166,8 @@
         <ComboBox x:Name="BackgroundsComboBox" Canvas.Left="585" Canvas.Top="588" Width="750" FontFamily="SST Ultra Light" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Top" Style="{DynamicResource ComboBoxFlatStyle}" Foreground="White" SelectedIndex="1">
             <ComboBoxItem Content="Blue Bubbles"/>
             <ComboBoxItem Content="Orange/Red Gradient Waves"/>
+            <ComboBoxItem Content="Blue Bokeh Dust"/>
+            <ComboBoxItem Content="Golden Dust"/>
             <ComboBoxItem Content="PS2 Dots"/>
         </ComboBox>
         <ComboBox x:Name="AudioPacksComboBox" Canvas.Left="585" Canvas.Top="702" Width="750" FontFamily="SST Ultra Light" FontSize="36" Style="{DynamicResource ComboBoxFlatStyle}" Foreground="White" SelectedIndex="2" HorizontalAlignment="Center" VerticalAlignment="Top">
@@ -176,13 +178,13 @@
         </ComboBox>
 
         <Separator x:Name="BottomSeparator" Height="10" Canvas.Top="938" Width="1920" Background="White" Foreground="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="136" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="136" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="BackTextBlock" Canvas.Left="191" TextWrapping="Wrap" Text="Back" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="EnterButton" Height="48" Canvas.Left="1477" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="EnterButton" Height="48" Canvas.Left="1477" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="ContinueTextBlock" Canvas.Left="1532" TextWrapping="Wrap" Text="Finish Setup" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0.985">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>

@@ -30,19 +30,19 @@
         <TextBlock x:Name="WebPageTitleTextBlock" Text="Title" Foreground="White" FontSize="36" HorizontalAlignment="Left" Canvas.Left="165" Canvas.Top="169" VerticalAlignment="Center" Width="1135" FontFamily="SST Ultra Light"/>
         <Image x:Name="FaviconImage" Height="48" Width="48" HorizontalAlignment="Center" Canvas.Left="101" Canvas.Top="169" VerticalAlignment="Top"/>
         <wv2:WebView2 Name="InternalBrowser" Source="https://twitter.com/SvenGDK" Width="1718" Height="620" Canvas.Left="101" Canvas.Top="302" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Image x:Name="BackButton" Height="48" Canvas.Left="101" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_circle.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="BackButton" Height="48" Canvas.Left="101" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Circle.png" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <TextBlock x:Name="BackTextBlock" Canvas.Left="156" TextWrapping="Wrap" Text="Close" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="FocusButton" Height="48" Canvas.Left="1468" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="FocusButton" Height="48" Canvas.Left="1468" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Triangle.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="FocusTextBlock" Canvas.Left="1523" TextWrapping="Wrap" Text="Focus Address Bar" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
             </TextBlock.Effect>
         </TextBlock>
-        <Image x:Name="NavigateButton" Height="48" Canvas.Left="274" Canvas.Top="955" Width="48" Source="/Icons/Buttons/ps_cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <Image x:Name="NavigateButton" Height="48" Canvas.Left="274" Canvas.Top="955" Width="48" Source="/Icons/Buttons/PS3/PS3_Cross.png" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <TextBlock x:Name="NavigateTextBlock" Canvas.Left="329" TextWrapping="Wrap" Text="Navigate" Canvas.Top="955" Foreground="White" FontFamily="SST Light" FontSize="36" HorizontalAlignment="Left" VerticalAlignment="Center">
             <TextBlock.Effect>
                 <DropShadowEffect BlurRadius="4" ShadowDepth="1"/>
