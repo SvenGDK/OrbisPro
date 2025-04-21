@@ -1,3 +1,9 @@
+# Update v0.4.1
+- Fixes gamepad navigation when selecting content of a folder
+- Fixes a crash in the Home Menu when selecting a folder that contains a system app
+- Use new update URL for new updates
+- Updated the OrbisProUpdater
+
 # Update v0.4.0
 
 # Feature Updates
