@@ -14,7 +14,8 @@ OrbisPro is on a BETA stage and some bugs may occur while running the applicatio
 Pleas read the Wiki on how to use/set up OrbisPro: https://github.com/SvenGDK/OrbisPro/wiki/First-Run
 
 ## Software Requirements
-- [.NET Desktop Runtime 9.0.4 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x64-installer) or [.NET Desktop Runtime 9.0.4 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x86-installer)
+- Windows 10 x64 or newer
+- [.NET Desktop Runtime 9.0.4 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x64-installer)
 - Latest .NET Windows Updates
 - .NET Framework 3.5 installed : ["Programs & Features" -> "Turn Windows features on or off"](https://github.com/user-attachments/assets/1971d7bc-e56c-4067-856b-020bb5f68618)
 - DirectX End-User Runtime [DirectX End-User Runtime](https://download.microsoft.com/download/1/7/1/1718ccc4-6315-4d8e-9543-8e28a4e18c4c/dxwebsetup.exe)
@@ -24,16 +25,13 @@ Pleas read the Wiki on how to use/set up OrbisPro: https://github.com/SvenGDK/Or
 - CPU: AMD Zen 2 / Intel Skylake with 4 cores and 8 threads or more (x64, AVX2 support recommended)
 - GPU: AMD HD 5000 series or newer / NVIDIA GTX 400 or newer / Intel HD Graphics 500 or newer (OpenGL 4.3 support recommended)
 - RAM: 8 GB RAM or better
-- OS: Windows 10 x64 or newer
 - Display: 1920x1080 @ 60Hz with 100% scaling
 
 <b>Recommended</b>
 - CPU: AMD Zen 2 / Intel Skylake with 6 cores and 12 threads, 8 cores or more (x64, AVX2 support)
 - GPU: AMD RX 400 / NVIDIA GTX 900 or newer (With Vulkan API support)
 - RAM: 8 GB Dual Channel (2x4 GB)
-- OS: Windows 10 or 11 x64
 - Display: 1920x1080 @ 120Hz with 100% scaling
-- [.NET Desktop Runtime 9.0.4 x64](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x64-installer) or [.NET Desktop Runtime 9.0.4 x86](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-9.0.4-windows-x86-installer)
 
 ## Current Available Core Features
 - System Setup
