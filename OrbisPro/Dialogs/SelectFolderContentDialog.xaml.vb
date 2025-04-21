@@ -333,44 +333,44 @@ Public Class SelectFolderContentDialog
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
 
-                        Dim SelectedIndex As Integer = FolderContentListView.SelectedIndex
-                        Dim NextIndex As Integer = FolderContentListView.SelectedIndex - 1
+                        Dim SelectedIndex As Integer = FolderContentSelection.SelectedIndex
+                        Dim NextIndex As Integer = FolderContentSelection.SelectedIndex - 1
 
                         If Not NextIndex = -1 Then
-                            FolderContentListView.SelectedIndex -= 1
+                            FolderContentSelection.SelectedIndex -= 1
                         End If
                     End If
                 ElseIf MainGamepadButton_DPad_Right_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
 
-                        Dim SelectedIndex As Integer = FolderContentListView.SelectedIndex
-                        Dim NextIndex As Integer = FolderContentListView.SelectedIndex + 1
+                        Dim SelectedIndex As Integer = FolderContentSelection.SelectedIndex
+                        Dim NextIndex As Integer = FolderContentSelection.SelectedIndex + 1
 
-                        If Not NextIndex = FolderContentListView.Items.Count Then
-                            FolderContentListView.SelectedIndex += 1
+                        If Not NextIndex = FolderContentSelection.Items.Count Then
+                            FolderContentSelection.SelectedIndex += 1
                         End If
                     End If
                 ElseIf MainGamepadButton_DPad_Up_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
 
-                        Dim SelectedIndex As Integer = FolderContentListView.SelectedIndex
-                        Dim NextIndex As Integer = FolderContentListView.SelectedIndex - 4
+                        Dim SelectedIndex As Integer = FolderContentSelection.SelectedIndex
+                        Dim NextIndex As Integer = FolderContentSelection.SelectedIndex - 4
 
-                        If Not NextIndex = FolderContentListView.Items.Count Then
-                            FolderContentListView.SelectedIndex -= 4
+                        If Not NextIndex = FolderContentSelection.Items.Count Then
+                            FolderContentSelection.SelectedIndex -= 4
                         End If
                     End If
                 ElseIf MainGamepadButton_DPad_Down_Pressed Then
                     If TypeOf FocusedItem Is ListViewItem Then
                         PlayBackgroundSound(Sounds.Move)
 
-                        Dim SelectedIndex As Integer = FolderContentListView.SelectedIndex
-                        Dim NextIndex As Integer = FolderContentListView.SelectedIndex + 4
+                        Dim SelectedIndex As Integer = FolderContentSelection.SelectedIndex
+                        Dim NextIndex As Integer = FolderContentSelection.SelectedIndex + 4
 
-                        If Not NextIndex = FolderContentListView.Items.Count Then
-                            FolderContentListView.SelectedIndex += 4
+                        If Not NextIndex = FolderContentSelection.Items.Count Then
+                            FolderContentSelection.SelectedIndex += 4
                         End If
                     End If
                 End If

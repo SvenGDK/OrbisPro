@@ -142,7 +142,7 @@ Public Class SetupCheckUpdates
             WaitedFor = 0
 
             'Start the Updater
-            Dim NewProcessStartInfo As New ProcessStartInfo() With {.FileName = FileIO.FileSystem.CurrentDirectory + "\OrbisProUpdate.exe", .Arguments = "runas", .UseShellExecute = True}
+            Dim NewProcessStartInfo As New ProcessStartInfo() With {.FileName = FileIO.FileSystem.CurrentDirectory + "\OrbisProUpdate.exe", .UseShellExecute = True}
             Dim NewOrbisProUpdateProcess As New Process() With {.StartInfo = NewProcessStartInfo}
             NewOrbisProUpdateProcess.Start()
 
@@ -151,12 +151,12 @@ Public Class SetupCheckUpdates
     End Sub
 
     Private Async Sub CheckForUpdates()
-        If Await IsURLValidAsync("http://89.58.2.209/orbispro.txt") Then
+        If Await IsURLValidAsync("https://github.com/SvenGDK/PS-Multi-Tools/raw/main/LatestBuild.txt") Then
             Dim OrbisProInfo As FileVersionInfo = FileVersionInfo.GetVersionInfo(FileIO.FileSystem.CurrentDirectory + "\OrbisPro.exe")
             Dim CurrentOrbisProVersion As String = OrbisProInfo.FileVersion
 
             Dim VerCheckClient As New HttpClient()
-            Dim NewOrbisProVersion As String = Await VerCheckClient.GetStringAsync("http://89.58.2.209/orbispro.txt")
+            Dim NewOrbisProVersion As String = Await VerCheckClient.GetStringAsync("https://github.com/SvenGDK/OrbisPro/raw/main/LatestBuild.txt")
 
             If CurrentOrbisProVersion < NewOrbisProVersion Then
                 TopLabel.Text = "An update is available and will be downloaded."
@@ -199,7 +199,7 @@ Public Class SetupCheckUpdates
 
         Try
             Using UpdateClient As New HttpClient()
-                Dim NewHttpResponseMessage As HttpResponseMessage = Await UpdateClient.GetAsync("http://89.58.2.209/OrbisProUpdate.exe")
+                Dim NewHttpResponseMessage As HttpResponseMessage = Await UpdateClient.GetAsync("https://github.com/SvenGDK/OrbisPro/raw/main/OrbisProUpdate.exe")
                 If NewHttpResponseMessage.IsSuccessStatusCode Then
                     Dim NewStream As Stream = Await NewHttpResponseMessage.Content.ReadAsStreamAsync()
                     Using NewFileStream As New FileStream("OrbisProUpdate.exe", FileMode.Create)
